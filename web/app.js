@@ -2,10 +2,10 @@
   const $ = (s) => document.querySelector(s);
   const els = {
     mode: $('#mode'), tier: $('#tier'), table: $('#table'), gameCount: $('#gameCount'),
-    atLeft: $('#atLeft'), stocks: $('#stocks'), sectionDelta: $('#sectionDelta'),
-    sectionBar: $('#sectionBar'), eventBanner: $('#eventBanner'), eventTitle: $('#eventTitle'),
+    atLeft: $('#atLeft'), stocks: $('#stocks'),
+    eventBanner: $('#eventBanner'), eventTitle: $('#eventTitle'),
     eventNote: $('#eventNote'), normalPattern: $('#normalPattern'), ceiling: $('#ceiling'),
-    atPattern: $('#atPattern'), netRate: $('#netRate'), totalMedals: $('#totalMedals'),
+    atPattern: $('#atPattern'), netRate: $('#netRate'), totalDiff: $('#totalDiff'),
     history: $('#history'), debug: $('#debugState'), statusLamp: $('#statusLamp'),
     statusText: $('#statusText')
   };
@@ -86,14 +86,11 @@
     els.gameCount.textContent = s.totalGames.toLocaleString();
     els.atLeft.textContent = s.inAT ? s.atGamesLeft + 'G' : '0G';
     els.stocks.textContent = s.stocks;
-    const progress = Math.max(0, Math.min(100, (s.sectionDelta / 2400) * 100));
-    els.sectionDelta.textContent = s.sectionDelta.toLocaleString() + ' / 2400';
-    els.sectionBar.style.width = progress + '%';
     els.normalPattern.textContent = 'P' + s.normalPattern;
     els.ceiling.textContent = '天井 ' + s.normalCeiling + 'G / 現在 ' + s.normalGames + 'G';
     els.atPattern.textContent = s.inAT ? 'P' + s.atPattern : '-';
     els.netRate.textContent = s.inAT ? '純増 約' + (s.atTier === 'upper' ? '12' : '6') + '枚/G' : '純増 -';
-    els.totalMedals.textContent = s.totalMedals.toLocaleString();
+    els.totalDiff.textContent = (s.totalDiff >= 0 ? '+' : '') + s.totalDiff.toLocaleString();
     els.debug.textContent = JSON.stringify(s,null,2);
     els.statusLamp.className = 'status-lamp ' + (s.inAT ? 'at' : 'live');
     els.statusText.textContent = s.inAT ? 'AT' : 'NORMAL';
