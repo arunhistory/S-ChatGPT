@@ -129,3 +129,30 @@ h1{margin:3px 0 0;font-size:clamp(22px,5vw,38px);letter-spacing:.04em}
   margin:2px 5px;
 }
 .reel>span[data-kind="penguin"] small{color:#31465d}
+
+.reel-result{
+  width:364px;
+  margin:-8px auto 16px;
+  display:grid;
+  grid-template-columns:auto 1fr auto auto;
+  gap:8px;
+  align-items:center;
+  padding:8px 10px;
+  border:1px solid #303a51;
+  border-radius:10px;
+  background:#080b12;
+  font-size:11px;
+}
+.reel-result span{color:#7f8ba9}
+.reel-result b{font-size:13px}
+.debug-tools{display:flex;gap:10px;align-items:center;margin:10px 0}
+.debug-tools label{font-size:12px}
+.debug-tools select{
+  flex:1;
+  min-width:0;
+  background:#0d1320;
+  color:#f5f7ff;
+  border:1px solid #35405e;
+  border-radius:8px;
+  padding:8px;
+}
