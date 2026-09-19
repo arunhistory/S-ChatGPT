@@ -380,7 +380,7 @@
     els.atLeft.textContent = s.inAT ? s.atGamesLeft + 'G' : '0G';
     els.stocks.textContent = s.stocks;
     els.normalPattern.textContent = 'P' + s.normalPattern;
-    els.ceiling.textContent = '天井 ' + s.normalCeiling + 'G / 現在 ' + s.normalGames + 'G';
+    els.ceiling.textContent = '天井 ' + s.normalCeiling + 'G / 表示 ' + s.normalDisplayGames + 'G / 実 ' + s.normalActualGames + 'G';
     els.atPattern.textContent = s.inAT ? 'P' + s.atPattern : '-';
     els.netRate.textContent = s.inAT ? '純増 約' + (s.atTier === 'upper' ? '12' : '6') + '枚/G' : '純増 -';
     els.totalDiff.textContent = (s.totalDiff >= 0 ? '+' : '') + s.totalDiff.toLocaleString();

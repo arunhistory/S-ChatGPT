@@ -129,7 +129,10 @@ struct MachineState {
     int setting = 6;
     NormalMode normal_mode = NormalMode::NormalA;
     int normal_pattern = 0;
-    int normal_games = 0;
+    // 通常エリアの実回転数と表示回転数は別管理。
+    // 実回転数はレバーONした回数、表示回転数は短縮当選で追加加算される進行値。
+    int normal_actual_games = 0;
+    int normal_display_games = 0;
     int normal_ceiling = 1500;
     bool special_window_checked = false;
     int cz_misses = 0;
@@ -188,6 +191,7 @@ private:
     void rerollNormalModeAndPattern();
     void rerollATTableAndPattern();
     int chooseNormalCeiling(NormalMode mode, int pattern);
+    void advanceNormalDisplayGames(int games);
     void startAT(ATTier tier, bool withStock, std::vector<Event>& out, const char* reason);
     void endAT(std::vector<Event>& out);
     void applySectionDelta(long long medals, std::vector<Event>& out);

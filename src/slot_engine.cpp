@@ -93,7 +93,8 @@ void SlotEngine::rerollNormalModeAndPattern() {
     }
     state_.normal_mode = static_cast<NormalMode>(pick);
     state_.normal_pattern = static_cast<int>(rng_() % 10ULL);
-    state_.normal_games = 0;
+    state_.normal_actual_games = 0;
+    state_.normal_display_games = 0;
     state_.special_window_checked = false;
     state_.normal_ceiling = chooseNormalCeiling(state_.normal_mode, state_.normal_pattern);
 }
@@ -112,6 +113,12 @@ int SlotEngine::chooseNormalCeiling(NormalMode mode, int pattern) {
         case NormalMode::Special: return chance(0.95) ? 777 : 1500;
     }
     return 1500;
+}
+
+void SlotEngine::advanceNormalDisplayGames(int games) {
+    // 通常1G消化時は+1。今後の高確率「短縮」当選時はここへ追加Gを渡す。
+    // 実回転数(normal_actual_games)は一切変更しない。
+    if (games > 0) state_.normal_display_games += games;
 }
 
 void SlotEngine::rerollATTableAndPattern() {
@@ -285,7 +292,8 @@ std::vector<Event> SlotEngine::spinNormal() {
     if (state_.in_at) return out;
 
     ++state_.total_games;
-    ++state_.normal_games;
+    ++state_.normal_actual_games;
+    advanceNormalDisplayGames(1);
 
     // 通常時の成立役は2^27の整数マスから排他的に抽選。
     state_.last_reel_role = drawNormalReelRole();
@@ -300,7 +308,7 @@ std::vector<Event> SlotEngine::spinNormal() {
     // 通常遊技は3枚BET。成立役の戻しはリール停止後にWASM APIから加算する。
     applySectionDelta(-3, out);
 
-    if (state_.normal_mode == NormalMode::SuperHeaven && !state_.special_window_checked && state_.normal_games >= 20) {
+    if (state_.normal_mode == NormalMode::SuperHeaven && !state_.special_window_checked && state_.normal_actual_games >= 20) {
         state_.special_window_checked = true;
         if (chance(config_.special_from_super_heaven_rate)) {
             state_.normal_mode = NormalMode::Special;
@@ -343,7 +351,8 @@ std::vector<Event> SlotEngine::spinNormal() {
         return out;
     }
 
-    if (state_.normal_games >= state_.normal_ceiling) return resolveNormalCeiling();
+    // テーブル天井は表示回転数で管理。短縮で表示Gが天井へ到達しても発動する。
+    if (state_.normal_display_games >= state_.normal_ceiling) return resolveNormalCeiling();
     return out;
 }
 
@@ -603,7 +612,10 @@ std::string SlotEngine::stateJson() const {
     o << "{\"setting\":" << state_.setting
       << ",\"normalMode\":\"" << normalModeName(state_.normal_mode) << "\""
       << ",\"normalPattern\":" << state_.normal_pattern + 1
-      << ",\"normalGames\":" << state_.normal_games
+      // normalGames は既存UI互換のため表示回転数を返す。
+      << ",\"normalGames\":" << state_.normal_display_games
+      << ",\"normalActualGames\":" << state_.normal_actual_games
+      << ",\"normalDisplayGames\":" << state_.normal_display_games
       << ",\"normalCeiling\":" << state_.normal_ceiling
       << ",\"inAT\":" << (state_.in_at ? "true" : "false")
       << ",\"atTier\":\"" << atTierName(state_.at_tier) << "\""
