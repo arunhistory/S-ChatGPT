@@ -1,0 +1,570 @@
+#include "slot_engine.hpp"
+
+#include <algorithm>
+#include <sstream>
+
+namespace schatgpt {
+namespace {
+
+template <typename T>
+T clampv(T v, T lo, T hi) { return std::min(hi, std::max(lo, v)); }
+
+std::string escapeJson(const std::string& s) {
+    std::ostringstream o;
+    for (char c : s) {
+        switch (c) {
+            case '"': o << "\\\""; break;
+            case '\\': o << "\\\\"; break;
+            case '\n': o << "\\n"; break;
+            case '\r': o << "\\r"; break;
+            case '\t': o << "\\t"; break;
+            default: o << c;
+        }
+    }
+    return o.str();
+}
+
+} // namespace
+
+SlotEngine::SlotEngine(std::uint64_t seed, GameConfig config)
+    : config_(std::move(config)), rng_(seed) {
+    rerollNormalModeAndPattern();
+}
+
+void SlotEngine::reset(std::uint64_t seed) {
+    rng_.seed(seed);
+    state_ = {};
+    state_.setting = 6;
+    rerollNormalModeAndPattern();
+}
+
+double SlotEngine::uniform01() {
+    return std::generate_canonical<double, 53>(rng_);
+}
+
+bool SlotEngine::chance(double p) {
+    if (p <= 0.0) return false;
+    if (p >= 1.0) return true;
+    return uniform01() < p;
+}
+
+int SlotEngine::weightedGames(const std::vector<WeightedGames>& table) {
+    const double r = uniform01();
+    double acc = 0.0;
+    for (const auto& e : table) {
+        acc += e.weight;
+        if (r < acc) return e.games;
+    }
+    return table.empty() ? 0 : table.back().games;
+}
+
+int SlotEngine::weightedUpperChains() {
+    const double r = uniform01();
+    double acc = 0.0;
+    for (const auto& e : config_.upper_special_chains) {
+        acc += e.weight;
+        if (r < acc) return e.chains;
+    }
+    return config_.upper_special_chains.empty() ? 1 : config_.upper_special_chains.back().chains;
+}
+
+void SlotEngine::rerollNormalModeAndPattern() {
+    const double r = uniform01();
+    double acc = 0.0;
+    int pick = 0;
+    for (int i = 0; i < 4; ++i) {
+        acc += config_.normal_mode_weights[i];
+        if (r < acc) { pick = i; break; }
+    }
+    state_.normal_mode = static_cast<NormalMode>(pick);
+    state_.normal_pattern = static_cast<int>(rng_() % 10ULL);
+    state_.normal_games = 0;
+    state_.special_window_checked = false;
+    state_.normal_ceiling = chooseNormalCeiling(state_.normal_mode, state_.normal_pattern);
+}
+
+int SlotEngine::chooseNormalCeiling(NormalMode mode, int pattern) {
+    static constexpr std::array<int,10> A{500,700,750,900,1000,1100,1250,1350,1450,1500};
+    static constexpr std::array<int,10> B{250,300,400,500,600,700,750,800,1000,1250};
+    static constexpr std::array<int,10> H{100,200,250,300,400,500,600,700,750,750};
+    static constexpr std::array<int,10> SH{50,50,100,100,200,200,250,250,300,300};
+    pattern = clampv(pattern, 0, 9);
+    switch (mode) {
+        case NormalMode::NormalA: return A[pattern];
+        case NormalMode::NormalB: return B[pattern];
+        case NormalMode::Heaven: return H[pattern];
+        case NormalMode::SuperHeaven: return SH[pattern];
+        case NormalMode::Special: return chance(0.95) ? 777 : 1500;
+    }
+    return 1500;
+}
+
+void SlotEngine::rerollATTableAndPattern() {
+    state_.at_table = static_cast<ATTable>(rng_() % 4ULL);
+    state_.at_pattern = static_cast<int>(rng_() % 5ULL);
+}
+
+void SlotEngine::startAT(ATTier tier, bool withStock, std::vector<Event>& out, const char* reason) {
+    state_.in_at = true;
+    state_.at_tier = tier;
+    state_.at_games_left = weightedGames(config_.initial_games);
+    if (withStock) ++state_.stocks;
+    rerollATTableAndPattern();
+
+    std::ostringstream note;
+    note << reason << "; initial=" << state_.at_games_left << "G";
+    if (tier == ATTier::Upper && state_.stocks >= config_.shining_star_stock_threshold && chance(config_.shining_star_rate)) {
+        note << "; Shining Star indication";
+    }
+    out.push_back({EventType::ATStart, state_.at_games_left, note.str()});
+}
+
+void SlotEngine::applySectionDelta(long long medals, std::vector<Event>& out) {
+    state_.section_delta += medals;
+    state_.total_medals += medals;
+    if (state_.section_delta >= 2400) {
+        const int pref = stockPreferenceLevel();
+        state_.section_delta -= 2400;
+        state_.stocks = 0;
+        out.push_back({EventType::SectionCross, pref, "section cross: one preference lottery; stock threshold level applied"});
+        rerollATTableAndPattern();
+    }
+}
+
+int SlotEngine::stockPreferenceLevel() const {
+    if (state_.stocks >= 5) return 3;
+    if (state_.stocks >= 3) return 2;
+    if (state_.stocks >= 1) return 1;
+    return 0;
+}
+
+std::vector<Event> SlotEngine::playCZ() {
+    std::vector<Event> out;
+    bool resolved = false;
+    for (int g = 1; g <= config_.cz_games && !resolved; ++g) {
+        if (chance(config_.cz_base_at_rate)) {
+            startAT(ATTier::Lower, false, out, "CZ direct AT");
+            state_.cz_misses = 0;
+            resolved = true;
+            break;
+        }
+        if (chance(config_.cz_base_bonus_rate)) {
+            out.push_back({EventType::Bonus, config_.bonus_medals, "CZ bonus hit"});
+            auto b = playBonus();
+            out.insert(out.end(), b.begin(), b.end());
+            state_.cz_misses = 0;
+            resolved = true;
+            break;
+        }
+    }
+    if (!resolved) {
+        ++state_.cz_misses;
+        if (state_.cz_misses >= config_.cz_miss_ceiling) {
+            state_.cz_misses = 0;
+            out.push_back({EventType::Bonus, config_.bonus_medals, "CZ 3-miss ceiling -> bonus"});
+            auto b = playBonus();
+            out.insert(out.end(), b.begin(), b.end());
+        }
+    }
+    return out;
+}
+
+std::vector<Event> SlotEngine::playBonus() {
+    std::vector<Event> out;
+    const bool wasInAT = state_.in_at;
+    applySectionDelta(config_.bonus_medals, out);
+
+    if (chance(config_.bonus_to_stock_rate)) {
+        ++state_.stocks;
+        out.push_back({EventType::StockGain, state_.stocks, "bonus 10% stock lottery"});
+    }
+
+    if (chance(config_.bonus_to_episode_rate)) {
+        applySectionDelta(config_.episode_bonus_medals, out);
+        out.push_back({EventType::EpisodeBonus, config_.episode_bonus_medals, "1% post-bonus episode promotion"});
+        if (chance(config_.episode_to_middle_at_rate)) {
+            if (wasInAT) {
+                if (state_.at_tier == ATTier::Lower) {
+                    state_.at_tier = ATTier::Middle;
+                    out.push_back({EventType::TierUp, 0, "episode 1/3 -> middle AT"});
+                }
+            } else {
+                startAT(ATTier::Middle, false, out, "episode 1/3 middle AT");
+                state_.bonus_at_misses = 0;
+                rerollNormalModeAndPattern();
+                return out;
+            }
+        }
+    }
+
+    if (wasInAT) return out;
+
+    if (chance(config_.bonus_to_at_rate) || state_.bonus_at_misses >= config_.bonus_at_miss_ceiling - 1) {
+        state_.bonus_at_misses = 0;
+        startAT(ATTier::Lower, false, out, "bonus performance cleared -> AT");
+    } else {
+        ++state_.bonus_at_misses;
+    }
+    rerollNormalModeAndPattern();
+    return out;
+}
+
+std::vector<Event> SlotEngine::resolveNormalCeiling() {
+    std::vector<Event> out;
+    if (state_.normal_mode == NormalMode::Special) {
+        if (state_.normal_ceiling == 777) {
+            const int result = static_cast<int>(rng_() % 3ULL);
+            if (result == 0) startAT(ATTier::Lower, false, out, "special 777 ceiling: AT");
+            else if (result == 1) startAT(ATTier::Middle, true, out, "special 777 ceiling: 1/8192-equivalent reward");
+            else startAT(ATTier::Upper, false, out, "special 777 ceiling: 1/32768-equivalent reward");
+        } else {
+            out.push_back({EventType::Freeze, 0, "special 1500 ceiling: freeze-favored"});
+            startAT(ATTier::Upper, true, out, "special 1500 ceiling freeze reward");
+        }
+        rerollNormalModeAndPattern();
+        return out;
+    }
+
+    const double r = uniform01();
+    if (r < 0.70) {
+        out.push_back({EventType::CZ, 0, "normal ceiling -> CZ"});
+        auto c = playCZ(); out.insert(out.end(), c.begin(), c.end());
+    } else if (r < 0.95) {
+        out.push_back({EventType::Bonus, config_.bonus_medals, "normal ceiling -> bonus"});
+        auto b = playBonus(); out.insert(out.end(), b.begin(), b.end());
+    } else {
+        startAT(ATTier::Lower, false, out, "normal ceiling -> AT");
+        rerollNormalModeAndPattern();
+    }
+    return out;
+}
+
+std::vector<Event> SlotEngine::spinNormal() {
+    std::vector<Event> out;
+    if (state_.in_at) return out;
+
+    ++state_.total_games;
+    ++state_.normal_games;
+
+    if (state_.normal_mode == NormalMode::SuperHeaven && !state_.special_window_checked && state_.normal_games >= 20) {
+        state_.special_window_checked = true;
+        if (chance(config_.special_from_super_heaven_rate)) {
+            state_.normal_mode = NormalMode::Special;
+            state_.normal_pattern = static_cast<int>(rng_() % 10ULL);
+            state_.normal_ceiling = chooseNormalCeiling(NormalMode::Special, state_.normal_pattern);
+        }
+    }
+
+    const std::uint32_t draw = static_cast<std::uint32_t>(rng_() & (NORMAL_RNG_SPACE - 1u));
+    if (draw == 0u) {
+        out.push_back({EventType::Freeze, 0, "1/134217728 freeze"});
+        startAT(ATTier::Upper, true, out, "freeze -> upper AT + stock");
+        rerollNormalModeAndPattern();
+        return out;
+    }
+    if (draw < NORMAL_RNG_SPACE / config_.rare_upper_den + 1u) {
+        startAT(ATTier::Upper, false, out, "1/32768 upper AT direct");
+        rerollNormalModeAndPattern();
+        return out;
+    }
+    if (draw < NORMAL_RNG_SPACE / config_.rare_mid_stock_den + NORMAL_RNG_SPACE / config_.rare_upper_den + 1u) {
+        startAT(ATTier::Middle, true, out, "1/8192 middle AT + stock");
+        rerollNormalModeAndPattern();
+        return out;
+    }
+
+    if (chance(config_.raw_at_rate)) {
+        startAT(ATTier::Lower, false, out, "raw AT route");
+        rerollNormalModeAndPattern();
+        return out;
+    }
+    if (chance(config_.raw_bonus_rate)) {
+        out.push_back({EventType::Bonus, config_.bonus_medals, "raw bonus"});
+        auto b = playBonus(); out.insert(out.end(), b.begin(), b.end());
+        return out;
+    }
+    if (chance(config_.raw_cz_rate)) {
+        out.push_back({EventType::CZ, 0, "raw CZ"});
+        auto c = playCZ(); out.insert(out.end(), c.begin(), c.end());
+        return out;
+    }
+
+    if (state_.normal_games >= state_.normal_ceiling) return resolveNormalCeiling();
+    return out;
+}
+
+std::vector<Event> SlotEngine::playSpecialZone(bool upper) {
+    std::vector<Event> out;
+    if (!upper) {
+        for (int g = 0; g < config_.special_zone_games; ++g) {
+            if (!chance(config_.special_zone_hit_rate)) continue;
+            if (chance(config_.special_result_add_rate)) {
+                const int add = weightedGames(config_.special_add_games);
+                state_.at_games_left += add;
+                out.push_back({EventType::ATAddGames, add, "special zone chained add"});
+            } else {
+                out.push_back({EventType::Bonus, config_.bonus_medals, "special zone bonus"});
+                auto b = playBonus(); out.insert(out.end(), b.begin(), b.end());
+            }
+        }
+        return out;
+    }
+
+    const int chains = weightedUpperChains();
+    for (int c = 0; c < chains; ++c) {
+        for (int g = 0; g < 3; ++g) {
+            const bool hasWin = chance(0.5);
+            const int op = hasWin ? static_cast<int>(rng_() % 4ULL) : -1;
+            (void)op;
+        }
+        if (chance(config_.special_result_add_rate)) {
+            const int add = weightedGames(config_.special_add_games);
+            state_.at_games_left += add;
+            out.push_back({EventType::ATAddGames, add, "upper-special preset add"});
+        } else {
+            out.push_back({EventType::Bonus, config_.bonus_medals, "upper-special preset bonus"});
+            auto b = playBonus(); out.insert(out.end(), b.begin(), b.end());
+        }
+    }
+    return out;
+}
+
+std::vector<Event> SlotEngine::resolveATEvent() {
+    std::vector<Event> out;
+
+    double scale = 1.0;
+    if (state_.at_tier == ATTier::Middle) scale = config_.middle_event_scale;
+    if (state_.at_tier == ATTier::Upper) scale = config_.upper_event_scale;
+
+    double hit = config_.lower_hit_rate * scale;
+    double add = config_.lower_add_rate * scale;
+    double special = config_.lower_special_rate * scale;
+    double episode = config_.lower_episode_rate * scale;
+    double upperSpecial = config_.lower_upper_special_rate * scale;
+    double fall = config_.lower_fall_rate;
+    if (state_.at_tier == ATTier::Middle) fall = config_.middle_fall_rate;
+    if (state_.at_tier == ATTier::Upper) fall = config_.upper_fall_rate;
+
+    switch (state_.at_table) {
+        case ATTable::Normal: break;
+        case ATTable::Heaven:
+            hit *= 1.9;
+            episode *= 1.4;
+            break;
+        case ATTable::SuperHeaven:
+            add *= 2.4;
+            episode *= 1.25;
+            break;
+        case ATTable::Specialized:
+            hit *= 0.55;
+            add *= 0.55;
+            special *= 2.8;
+            upperSpecial *= 2.5;
+            break;
+    }
+
+    static constexpr double patternFactor[5]{0.82, 0.92, 1.00, 1.10, 1.20};
+    const double pf = patternFactor[clampv(state_.at_pattern, 0, 4)];
+    hit *= pf; add *= pf; special *= pf;
+
+    const double total = hit + fall + add + special
+        + ((state_.at_table == ATTable::Heaven || state_.at_table == ATTable::SuperHeaven) ? episode : 0.0)
+        + ((state_.at_table == ATTable::Specialized) ? upperSpecial : 0.0);
+    const double r = uniform01();
+    if (r >= total) return out;
+    double x = r;
+
+    if ((x -= hit) < 0.0) {
+        out.push_back({EventType::Bonus, config_.bonus_medals, "AT normal hit -> 50 medal bonus"});
+        auto b = playBonus(); out.insert(out.end(), b.begin(), b.end());
+        return out;
+    }
+    if ((x -= fall) < 0.0) {
+        if (state_.at_tier == ATTier::Middle) {
+            if (chance(config_.middle_fall_to_lower_rate)) {
+                state_.at_tier = ATTier::Lower;
+                out.push_back({EventType::TierDown, 0, "middle fall -> lower AT"});
+            }
+        } else if (state_.at_tier == ATTier::Upper) {
+            if (chance(config_.upper_fall_to_end_rate)) endAT(out);
+        }
+        return out;
+    }
+    if ((x -= add) < 0.0) {
+        const int g = weightedGames(config_.add_games);
+        state_.at_games_left += g;
+        out.push_back({EventType::ATAddGames, g, "one-shot add"});
+        return out;
+    }
+    if ((x -= special) < 0.0) {
+        out.push_back({EventType::SpecialZone, 0, "special zone"});
+        auto z = playSpecialZone(false); out.insert(out.end(), z.begin(), z.end());
+        return out;
+    }
+
+    const bool episodeAllowed = state_.at_table == ATTable::Heaven || state_.at_table == ATTable::SuperHeaven;
+    if (episodeAllowed) {
+        if ((x -= episode) < 0.0) {
+            applySectionDelta(config_.episode_bonus_medals, out);
+            out.push_back({EventType::EpisodeBonus, config_.episode_bonus_medals, "direct episode in heaven/super-heaven"});
+            if (state_.at_tier == ATTier::Lower && chance(config_.episode_to_middle_at_rate)) {
+                state_.at_tier = ATTier::Middle;
+                out.push_back({EventType::TierUp, 0, "episode 1/3 -> middle AT"});
+            }
+            return out;
+        }
+    }
+
+    if (state_.at_table == ATTable::Specialized && (x -= upperSpecial) < 0.0) {
+        out.push_back({EventType::UpperSpecialZone, 0, "upper special zone"});
+        auto z = playSpecialZone(true); out.insert(out.end(), z.begin(), z.end());
+        return out;
+    }
+    return out;
+}
+
+std::vector<Event> SlotEngine::resolveUpperComeback() {
+    std::vector<Event> out;
+    if (chance(config_.upper_comeback_rate)) {
+        state_.in_at = true;
+        state_.at_tier = ATTier::Upper;
+        state_.at_games_left = weightedGames(config_.initial_games);
+        rerollATTableAndPattern();
+        out.push_back({EventType::UpperComeback, config_.upper_comeback_games, "64G comeback success -> upper AT restart"});
+    } else {
+        out.push_back({EventType::ATEnd, config_.upper_comeback_games, "64G comeback failed"});
+        rerollNormalModeAndPattern();
+    }
+    return out;
+}
+
+void SlotEngine::endAT(std::vector<Event>& out) {
+    if (state_.stocks > 0) {
+        --state_.stocks;
+        state_.at_games_left = weightedGames(config_.initial_games);
+        rerollATTableAndPattern();
+        out.push_back({EventType::ATStart, state_.at_games_left, "stock activated; common initial-game lottery; table/pattern re-roll"});
+        return;
+    }
+
+    if (state_.at_tier == ATTier::Upper) {
+        state_.in_at = false;
+        auto c = resolveUpperComeback();
+        out.insert(out.end(), c.begin(), c.end());
+        return;
+    }
+
+    state_.in_at = false;
+    out.push_back({EventType::ATEnd, 0, "AT ended"});
+    rerollNormalModeAndPattern();
+}
+
+std::vector<Event> SlotEngine::spinAT() {
+    std::vector<Event> out;
+    if (!state_.in_at) return out;
+
+    ++state_.total_games;
+    if (state_.at_games_left <= 0) {
+        endAT(out);
+        return out;
+    }
+
+    --state_.at_games_left;
+    const int net = state_.at_tier == ATTier::Upper ? config_.upper_net_per_game
+                  : (state_.at_tier == ATTier::Middle ? config_.middle_net_per_game : config_.lower_net_per_game);
+    applySectionDelta(net, out);
+
+    if (chance(config_.at_table_pattern_move_rate)) rerollATTableAndPattern();
+
+    auto ev = resolveATEvent();
+    out.insert(out.end(), ev.begin(), ev.end());
+
+    if (state_.in_at && state_.at_games_left <= 0) endAT(out);
+    return out;
+}
+
+const char* SlotEngine::normalModeName(NormalMode v) {
+    switch (v) {
+        case NormalMode::NormalA: return "normal_a";
+        case NormalMode::NormalB: return "normal_b";
+        case NormalMode::Heaven: return "heaven";
+        case NormalMode::SuperHeaven: return "super_heaven";
+        case NormalMode::Special: return "special";
+    }
+    return "unknown";
+}
+const char* SlotEngine::atTierName(ATTier v) {
+    switch (v) {
+        case ATTier::Lower: return "lower";
+        case ATTier::Middle: return "middle";
+        case ATTier::Upper: return "upper";
+    }
+    return "unknown";
+}
+const char* SlotEngine::atTableName(ATTable v) {
+    switch (v) {
+        case ATTable::Normal: return "normal";
+        case ATTable::Heaven: return "heaven";
+        case ATTable::SuperHeaven: return "super_heaven";
+        case ATTable::Specialized: return "specialized";
+    }
+    return "unknown";
+}
+const char* SlotEngine::eventName(EventType v) {
+    switch (v) {
+        case EventType::None: return "none";
+        case EventType::CZ: return "cz";
+        case EventType::Bonus: return "bonus";
+        case EventType::EpisodeBonus: return "episode_bonus";
+        case EventType::ATStart: return "at_start";
+        case EventType::ATAddGames: return "at_add_games";
+        case EventType::SpecialZone: return "special_zone";
+        case EventType::UpperSpecialZone: return "upper_special_zone";
+        case EventType::StockGain: return "stock_gain";
+        case EventType::TierUp: return "tier_up";
+        case EventType::TierDown: return "tier_down";
+        case EventType::ATEnd: return "at_end";
+        case EventType::UpperComeback: return "upper_comeback";
+        case EventType::Freeze: return "freeze";
+        case EventType::SectionCross: return "section_cross";
+    }
+    return "unknown";
+}
+
+std::string SlotEngine::stateJson() const {
+    std::ostringstream o;
+    o << "{\"setting\":" << state_.setting
+      << ",\"normalMode\":\"" << normalModeName(state_.normal_mode) << "\""
+      << ",\"normalPattern\":" << state_.normal_pattern + 1
+      << ",\"normalGames\":" << state_.normal_games
+      << ",\"normalCeiling\":" << state_.normal_ceiling
+      << ",\"inAT\":" << (state_.in_at ? "true" : "false")
+      << ",\"atTier\":\"" << atTierName(state_.at_tier) << "\""
+      << ",\"atTable\":\"" << atTableName(state_.at_table) << "\""
+      << ",\"atPattern\":" << state_.at_pattern + 1
+      << ",\"atGamesLeft\":" << state_.at_games_left
+      << ",\"stocks\":" << state_.stocks
+      << ",\"sectionDelta\":" << state_.section_delta
+      << ",\"totalMedals\":" << state_.total_medals
+      << ",\"totalGames\":" << state_.total_games << "}";
+    return o.str();
+}
+
+std::string SlotEngine::eventsJson(const std::vector<Event>& events, const MachineState& state) {
+    std::ostringstream o;
+    o << "{\"events\":[";
+    for (std::size_t i = 0; i < events.size(); ++i) {
+        if (i) o << ',';
+        o << "{\"type\":\"" << eventName(events[i].type) << "\",\"value\":" << events[i].value
+          << ",\"note\":\"" << escapeJson(events[i].note) << "\"}";
+    }
+    o << "],\"inAT\":" << (state.in_at ? "true" : "false")
+      << ",\"gamesLeft\":" << state.at_games_left
+      << ",\"stocks\":" << state.stocks << "}";
+    return o.str();
+}
+
+std::string SlotEngine::spinNormalJson() { return eventsJson(spinNormal(), state_); }
+std::string SlotEngine::spinATJson() { return eventsJson(spinAT(), state_); }
+
+} // namespace schatgpt
