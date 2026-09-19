@@ -48,6 +48,29 @@
         </div>
       </div>
 
+      <div class="stage-screen" id="stageScreen" data-scene="normal" aria-label="演出画面">
+        <div class="stage-bg"></div>
+        <div class="stage-light"></div>
+        <div class="stage-particles" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+        <div class="character-layer">
+          <div class="character-sprite" id="characterSprite" aria-hidden="true">
+            <span class="character-face">🐧</span>
+            <span class="character-shadow"></span>
+          </div>
+        </div>
+        <div class="effect-layer" id="effectLayer"></div>
+        <div class="cutin-layer" id="cutinLayer">
+          <div class="cutin-panel">
+            <span id="cutinEyebrow">S-CHATGPT</span>
+            <strong id="cutinTitle">READY</strong>
+            <small id="cutinSub">演出待機中</small>
+          </div>
+        </div>
+        <div class="stage-caption" id="stageCaption">通常ステージ</div>
+      </div>
+
       <div class="event-banner" id="eventBanner">
         <span class="event-kicker">LAST EVENT</span>
         <strong id="eventTitle">READY</strong>
