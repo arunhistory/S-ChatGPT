@@ -24,4 +24,5 @@ EXPORT void slot_reset(std::uint32_t seed_lo, std::uint32_t seed_hi) {
 EXPORT const char* slot_state_json() { return hold(engine.stateJson()); }
 EXPORT const char* slot_spin_normal_json() { return hold(engine.spinNormalJson()); }
 EXPORT const char* slot_spin_at_json() { return hold(engine.spinATJson()); }
+EXPORT const char* slot_apply_reel_payout_json(int medals) { return hold(engine.applyReelPayoutJson(medals)); }
 }
