@@ -8,7 +8,11 @@
     netRate: $('#netRate'), totalDiff: $('#totalDiff'), history: $('#history'),
     debug: $('#debugState'), statusLamp: $('#statusLamp'), statusText: $('#statusText'),
     lever: $('#lever'), autoToggle: $('#autoToggle'), reset: $('#reset'),
-    roleResult: $('#roleResult'), payoutResult: $('#payoutResult'), roleTest: $('#roleTest')
+    roleResult: $('#roleResult'), payoutResult: $('#payoutResult'), roleTest: $('#roleTest'),
+    stageScreen: $('#stageScreen'), characterSprite: $('#characterSprite'),
+    effectLayer: $('#effectLayer'), cutinLayer: $('#cutinLayer'),
+    cutinEyebrow: $('#cutinEyebrow'), cutinTitle: $('#cutinTitle'),
+    cutinSub: $('#cutinSub'), stageCaption: $('#stageCaption')
   };
 
   const reels = [$('#reel1'), $('#reel2'), $('#reel3')];
@@ -94,6 +98,68 @@
   let autoTimers = [];
 
   const mod = (n, m) => ((n % m) + m) % m;
+
+  const clearStageClasses = () => {
+    els.effectLayer.className = 'effect-layer';
+    els.cutinLayer.className = 'cutin-layer';
+    els.stageScreen.classList.remove('role-penguin','role-strong','role-hit','freeze-lock');
+  };
+
+  const stageCue = (role, phase = 'result') => {
+    clearStageClasses();
+
+    const cue = {
+      one_medal: { fx:'', title:'1枚役', sub:'静かな払い出し', eyebrow:'NORMAL' },
+      bell9: { fx:'yellow', title:'BELL', sub:'9枚', eyebrow:'YELLOW' },
+      bell15: { fx:'gold', title:'BIG BELL', sub:'15枚', eyebrow:'GOLD' },
+      replay: { fx:'blue', title:'REPLAY', sub:'もう一度', eyebrow:'BLUE' },
+      weak_cherry: { fx:'green', title:'CHERRY', sub:'弱チェリー', eyebrow:'GREEN' },
+      strong_cherry: { fx:'red slash', title:'強チェリー', sub:'中段チェリー', eyebrow:'RED', cls:'role-strong' },
+      weak_chance: { fx:'purple', title:'CHANCE', sub:'弱チャンス目', eyebrow:'PURPLE' },
+      strong_chance: { fx:'red slash', title:'強チャンス目', sub:'🐧 🍒 🐧', eyebrow:'RED', cls:'role-strong' },
+      penguin_chance: { fx:'stripe', title:'PENGUIN CHANCE', sub:'🐧 🐧 🐧', eyebrow:'BLUE × LIGHT BLUE', cls:'role-penguin' },
+      hit: { fx:'red flash', title:'HIT', sub:'🟥7 🟥7 BAR', eyebrow:'RED', cls:'role-hit' },
+      at: { fx:'gold flash', title:'AT START', sub:'🟥7 🟥7 🟥7', eyebrow:'GOLD', cls:'role-hit' },
+      tier_up: { fx:'gold', title:'AT 昇格', sub:'BAR BAR BAR', eyebrow:'GOLD', cls:'role-hit' },
+      freeze: { fx:'stripe flash', title:'FREEZE', sub:'🟦7 🟦7 🟦7', eyebrow:'PREMIUM', cls:'freeze-lock' },
+      watermelon: { fx:'green', title:'WATERMELON', sub:'スイカ', eyebrow:'GREEN' },
+      miss: { fx:'', title:'', sub:'', eyebrow:'' }
+    }[role] || { fx:'', title:'', sub:'', eyebrow:'' };
+
+    if (cue.cls) els.stageScreen.classList.add(...cue.cls.split(' '));
+    if (cue.fx) els.effectLayer.className = 'effect-layer ' + cue.fx;
+
+    if (phase === 'spin') {
+      if (['strong_cherry','strong_chance','penguin_chance','hit','at','tier_up','freeze'].includes(role)) {
+        els.stageCaption.textContent = role === 'freeze' ? '……' : '気配がする…';
+        if (role === 'freeze') els.effectLayer.className = 'effect-layer stripe';
+      }
+      return;
+    }
+
+    if (role !== 'miss') {
+      els.cutinEyebrow.textContent = cue.eyebrow;
+      els.cutinTitle.textContent = cue.title;
+      els.cutinSub.textContent = cue.sub;
+      void els.cutinLayer.offsetWidth;
+      els.cutinLayer.classList.add('show');
+    }
+  };
+
+  const updateStageScene = (s) => {
+    let scene = 'normal';
+    let caption = '通常ステージ';
+    if (s.normalMode === 'special') {
+      scene = 'special';
+      caption = '特殊ステージ';
+    }
+    if (s.inAT) {
+      scene = s.atTier === 'upper' ? 'upper' : 'at';
+      caption = s.atTier === 'upper' ? '上位AT' : 'AT';
+    }
+    els.stageScreen.dataset.scene = scene;
+    els.stageCaption.textContent = caption;
+  };
 
   const visibleKind = (index, position, row) => {
     const strip = reelStrips[index];
@@ -320,6 +386,7 @@
     els.debug.textContent = JSON.stringify(s, null, 2);
     els.statusLamp.className = 'status-lamp ' + (s.inAT ? 'at' : 'live');
     els.statusText.textContent = s.inAT ? 'AT' : 'NORMAL';
+    updateStageScene(s);
   };
 
   const beginGame = () => {
@@ -344,6 +411,8 @@
     pendingPayout = forcedRole
       ? accountingReturnForRole(forcedRole)
       : Number(pendingResult.reelPayout || 0);
+
+    stageCue(pendingRole, 'spin');
 
     for (let i = 0; i < 3; i++) startReelMotion(i);
 
@@ -379,6 +448,7 @@
 
     pushEvents(allEvents);
     showFinalBanner(allEvents, pendingRole, pendingRole === 'replay' ? 0 : payout);
+    stageCue(pendingRole, 'result');
     render(state());
 
     if (autoEnabled) {
@@ -444,6 +514,7 @@
     els.eventTitle.textContent = 'RESET';
     els.eventNote.textContent = 'レバーを叩け';
     els.eventBanner.className = 'event-banner';
+    clearStageClasses();
     render(state());
   };
 
