@@ -7,8 +7,9 @@
     eventNote: $('#eventNote'), normalPattern: $('#normalPattern'), ceiling: $('#ceiling'),
     atPattern: $('#atPattern'), netRate: $('#netRate'), totalDiff: $('#totalDiff'),
     history: $('#history'), debug: $('#debugState'), statusLamp: $('#statusLamp'),
-    statusText: $('#statusText')
+    statusText: $('#statusText'), lever: $('#lever'), autoToggle: $('#autoToggle'), reset: $('#reset')
   };
+
   const reels = [$('#reel1'), $('#reel2'), $('#reel3')];
   const stops = [...document.querySelectorAll('.stop')];
   const history = [];
@@ -41,19 +42,49 @@
     upper_comeback:'上位引き戻し', freeze:'FREEZE', section_cross:'有利区間 CROSS'
   };
 
+  let gameActive = false;
+  let pendingResult = null;
+  let reelTimers = [null, null, null];
+  let reelStopped = [true, true, true];
+  let autoEnabled = false;
+  let autoTimers = [];
+
   const randomizeReel = (el) => {
     const spans = [...el.querySelectorAll('span')];
-    spans.forEach(s => s.textContent = symbols[Math.floor(Math.random()*symbols.length)]);
+    spans.forEach(s => s.textContent = symbols[Math.floor(Math.random() * symbols.length)]);
   };
-  const animateReels = () => {
-    reels.forEach((r,i) => {
-      r.classList.add('spinning');
-      setTimeout(() => { randomizeReel(r); r.classList.remove('spinning'); }, 90 + i*80);
-    });
-    stops.forEach((b,i) => {
-      b.classList.add('active');
-      setTimeout(() => b.classList.remove('active'), 160 + i*80);
-    });
+
+  const clearAutoTimers = () => {
+    autoTimers.forEach(clearTimeout);
+    autoTimers = [];
+  };
+
+  const startReelMotion = (index) => {
+    reelStopped[index] = false;
+    reels[index].classList.add('spinning');
+    stops[index].disabled = false;
+    stops[index].classList.add('active');
+
+    reelTimers[index] = setInterval(() => {
+      randomizeReel(reels[index]);
+    }, 70);
+  };
+
+  const stopReelMotion = (index) => {
+    if (!gameActive || reelStopped[index]) return;
+
+    reelStopped[index] = true;
+    if (reelTimers[index]) {
+      clearInterval(reelTimers[index]);
+      reelTimers[index] = null;
+    }
+
+    randomizeReel(reels[index]);
+    reels[index].classList.remove('spinning');
+    stops[index].classList.remove('active');
+    stops[index].disabled = true;
+
+    if (reelStopped.every(Boolean)) finishGame();
   };
 
   const isPremium = (type) => ['freeze','upper_special_zone'].includes(type);
@@ -64,14 +95,18 @@
       history.unshift({ ...e, at: new Date().toLocaleTimeString('ja-JP',{hour12:false}) });
     }
     history.splice(14);
+
     els.history.innerHTML = history.map(e =>
-      '<li class="'+(isPremium(e.type)?'premium':'')+'"><b>'+ (eventLabels[e.type] || e.type) +'</b><span>'+ (e.note || '') +(e.value ? ' ['+e.value+']':'')+'</span></li>'
+      '<li class="' + (isPremium(e.type) ? 'premium' : '') + '"><b>' +
+      (eventLabels[e.type] || e.type) + '</b><span>' + (e.note || '') +
+      (e.value ? ' [' + e.value + ']' : '') + '</span></li>'
     ).join('');
+
     if (events.length) {
       const e = events[events.length - 1];
       els.eventTitle.textContent = eventLabels[e.type] || e.type.toUpperCase();
       els.eventNote.textContent = e.note || '';
-      els.eventBanner.className = 'event-banner' + (isPremium(e.type)?' premium':isHot(e.type)?' hot':'');
+      els.eventBanner.className = 'event-banner' + (isPremium(e.type) ? ' premium' : isHot(e.type) ? ' hot' : '');
     } else {
       els.eventTitle.textContent = 'NO HIT';
       els.eventNote.textContent = '次ゲームへ';
@@ -91,39 +126,117 @@
     els.atPattern.textContent = s.inAT ? 'P' + s.atPattern : '-';
     els.netRate.textContent = s.inAT ? '純増 約' + (s.atTier === 'upper' ? '12' : '6') + '枚/G' : '純増 -';
     els.totalDiff.textContent = (s.totalDiff >= 0 ? '+' : '') + s.totalDiff.toLocaleString();
-    els.debug.textContent = JSON.stringify(s,null,2);
+    els.debug.textContent = JSON.stringify(s, null, 2);
     els.statusLamp.className = 'status-lamp ' + (s.inAT ? 'at' : 'live');
     els.statusText.textContent = s.inAT ? 'AT' : 'NORMAL';
   };
 
-  const spin = () => {
+  const beginGame = () => {
+    if (gameActive) return;
+
+    gameActive = true;
+    pendingResult = null;
+    reelStopped = [false, false, false];
+
+    els.lever.disabled = true;
+    els.eventTitle.textContent = 'SPINNING';
+    els.eventNote.textContent = 'STOPボタンでリールを止めろ';
+    els.eventBanner.className = 'event-banner';
+
     const s0 = state();
-    animateReels();
-    const result = callJson(s0.inAT ? 'slot_spin_at_json' : 'slot_spin_normal_json');
-    pushEvents(result.events || []);
-    render(state());
+    pendingResult = callJson(s0.inAT ? 'slot_spin_at_json' : 'slot_spin_normal_json');
+
+    for (let i = 0; i < 3; i++) startReelMotion(i);
+
+    if (autoEnabled) {
+      clearAutoTimers();
+      autoTimers.push(setTimeout(() => stopReelMotion(0), 450));
+      autoTimers.push(setTimeout(() => stopReelMotion(1), 700));
+      autoTimers.push(setTimeout(() => stopReelMotion(2), 950));
+    }
   };
 
-  $('#lever').onclick = spin;
-  stops.forEach(b => b.onclick = () => b.classList.toggle('active'));
-  $('#auto10').onclick = () => {
-    let i = 0;
-    const run = () => {
-      if (i++ >= 10) return;
-      spin();
-      setTimeout(run, 110);
-    };
-    run();
+  const finishGame = () => {
+    if (!gameActive) return;
+
+    gameActive = false;
+    els.lever.disabled = false;
+
+    const result = pendingResult || { events: [] };
+    pendingResult = null;
+
+    pushEvents(result.events || []);
+    render(state());
+
+    if (autoEnabled) {
+      clearAutoTimers();
+      autoTimers.push(setTimeout(beginGame, 450));
+    }
   };
-  $('#reset').onclick = () => {
+
+  const setAuto = (enabled) => {
+    autoEnabled = enabled;
+    els.autoToggle.textContent = enabled ? 'AUTO ON' : 'AUTO OFF';
+    els.autoToggle.classList.toggle('on', enabled);
+    els.autoToggle.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+
+    if (!enabled) {
+      clearAutoTimers();
+      return;
+    }
+
+    if (!gameActive) {
+      clearAutoTimers();
+      autoTimers.push(setTimeout(beginGame, 250));
+    } else {
+      clearAutoTimers();
+      if (!reelStopped[0]) autoTimers.push(setTimeout(() => stopReelMotion(0), 250));
+      if (!reelStopped[1]) autoTimers.push(setTimeout(() => stopReelMotion(1), 500));
+      if (!reelStopped[2]) autoTimers.push(setTimeout(() => stopReelMotion(2), 750));
+    }
+  };
+
+  const resetMachine = () => {
+    clearAutoTimers();
+    autoEnabled = false;
+    els.autoToggle.textContent = 'AUTO OFF';
+    els.autoToggle.classList.remove('on');
+    els.autoToggle.setAttribute('aria-pressed', 'false');
+
+    reelTimers.forEach((timer, i) => {
+      if (timer) clearInterval(timer);
+      reelTimers[i] = null;
+      reels[i].classList.remove('spinning');
+      stops[i].classList.remove('active');
+      stops[i].disabled = true;
+    });
+
+    gameActive = false;
+    pendingResult = null;
+    reelStopped = [true, true, true];
+    els.lever.disabled = false;
+
     const seed = BigInt(Date.now());
-    Module.ccall('slot_reset', null, ['number','number'], [Number(seed & 0xffffffffn), Number(seed >> 32n)]);
+    Module.ccall('slot_reset', null, ['number','number'], [
+      Number(seed & 0xffffffffn),
+      Number(seed >> 32n)
+    ]);
+
     history.length = 0;
     els.history.innerHTML = '';
     els.eventTitle.textContent = 'RESET';
-    els.eventNote.textContent = '新しいシードで開始';
+    els.eventNote.textContent = 'レバーを叩け';
+    els.eventBanner.className = 'event-banner';
     render(state());
   };
+
+  els.lever.onclick = beginGame;
+  stops.forEach((button, index) => {
+    button.disabled = true;
+    button.onclick = () => stopReelMotion(index);
+  });
+  els.autoToggle.onclick = () => setAuto(!autoEnabled);
+  els.reset.onclick = resetMachine;
 
   render(state());
 })();
