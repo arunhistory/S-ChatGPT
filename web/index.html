@@ -62,6 +62,11 @@
       <div class="payline"></div>
     </section>
 
+    <div class="reel-result">
+      <span>停止役</span><b id="roleResult">---</b>
+      <span>払出</span><b id="payoutResult">0枚</b>
+    </div>
+
     <section class="controls">
       <button id="lever" class="lever">LEVER<br><small>1 GAME</small></button>
       <div class="stops">
@@ -102,7 +107,27 @@
     </section>
 
     <details class="debug">
-      <summary>DEBUG STATE</summary>
+      <summary>DEBUG STATE / 成立役テスト</summary>
+      <div class="debug-tools">
+        <label for="roleTest">次ゲーム成立役</label>
+        <select id="roleTest">
+          <option value="">C++抽選に従う</option>
+          <option value="penguin_chance">🐧🐧🐧 ペンギンチャンス</option>
+          <option value="strong_chance">🐧🍒🐧 強チャンス目</option>
+          <option value="weak_chance">🐧🐧＋任意 弱チャンス目</option>
+          <option value="weak_cherry">🍒↻＋任意 弱チェリー</option>
+          <option value="strong_cherry">🍒非↻＋任意 強チェリー</option>
+          <option value="bell9">中段🔔🔔🔔 9枚</option>
+          <option value="bell15">右上がり🔔🔔🔔 15枚</option>
+          <option value="watermelon">🍉🍉🍉 スイカ</option>
+          <option value="replay">↻↻↻ リプレイ</option>
+          <option value="hit">🟥7🟥7BAR 当たり</option>
+          <option value="at">🟥7🟥7🟥7 AT</option>
+          <option value="tier_up">BAR BAR BAR AT昇格</option>
+          <option value="freeze">🟦7🟦7🟦7 フリーズ（強制揃い）</option>
+          <option value="miss">ハズレ</option>
+        </select>
+      </div>
       <pre id="debugState">WASM未読込</pre>
     </details>
   </main>
