@@ -1,0 +1,61 @@
+name: Build and deploy WASM
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+          actions-cache-folder: emsdk-cache
+
+      - name: Configure WASM
+        run: emcmake cmake -S . -B build-wasm -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build WASM
+        run: cmake --build build-wasm --target slot_wasm -j2
+
+      - name: Assemble site
+        run: |
+          mkdir -p dist
+          cp web/index.html web/app.js web/styles.css dist/
+          cp build-wasm/slot.js build-wasm/slot.wasm dist/
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
