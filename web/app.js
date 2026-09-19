@@ -40,6 +40,7 @@
 
   const roleLabels = {
     miss:'ハズレ',
+    one_medal:'1枚役',
     penguin_chance:'ペンギンチャンス',
     strong_chance:'強チャンス目',
     weak_chance:'弱チャンス目',
@@ -85,6 +86,7 @@
   let gameActive = false;
   let pendingResult = null;
   let pendingRole = 'miss';
+  let pendingPayout = 0;
   let reelTimers = [null, null, null];
   let reelStopped = [true, true, true];
   let reelPositions = [0, 0, 0];
@@ -147,20 +149,26 @@
     return 'miss';
   };
 
-  const payoutForRole = (role) => role === 'bell9' ? 9 : role === 'bell15' ? 15 : 0;
+  const accountingReturnForRole = (role) => {
+    if (role === 'one_medal') return 1;
+    if (role === 'bell9') return 9;
+    if (role === 'bell15') return 15;
+    if (role === 'replay') return 3; // 3枚BETを差枚会計上相殺
+    return 0;
+  };
 
-  const deriveRoleFromEvents = (events) => {
+  const deriveRoleFromResult = (result) => {
     const forced = els.roleTest.value;
     if (forced) return forced;
 
-    const types = new Set((events || []).map(e => e.type));
+    const events = result.events || [];
+    const types = new Set(events.map(e => e.type));
     if (types.has('freeze')) return 'freeze';
     if (types.has('bonus') || types.has('episode_bonus')) return 'hit';
     if (types.has('tier_up')) return 'tier_up';
     if (types.has('at_start')) return 'at';
 
-    // 小役確率は未決定。勝手な出現率を置かず、通常時はハズレ扱い。
-    return 'miss';
+    return result.reelRole || 'miss';
   };
 
   const targetForRole = (role, index) => {
@@ -215,6 +223,9 @@
       return base;
     }
 
+    // 1枚役は専用停止形をまだ持たないので、見た目はハズレ系停止形へ逃がす。
+    const physicalRole = pendingRole === 'one_medal' ? 'miss' : pendingRole;
+
     // ハズレ/任意リールは、最後の停止で予約済み停止形を偶然完成させない候補を優先。
     const willAllStop = reelStopped.filter(Boolean).length === 2;
     if (willAllStop) {
@@ -222,8 +233,8 @@
         const candidate = mod(base + slip, strip.length);
         const test = [...reelPositions];
         test[index] = candidate;
-        if (pendingRole === 'miss' && classifyPattern(test) === 'miss') return candidate;
-        if (pendingRole !== 'miss' && classifyPattern(test) === pendingRole) return candidate;
+        if (physicalRole === 'miss' && classifyPattern(test) === 'miss') return candidate;
+        if (physicalRole !== 'miss' && classifyPattern(test) === physicalRole) return candidate;
       }
     }
 
@@ -327,7 +338,12 @@
 
     const s0 = state();
     pendingResult = callJson(s0.inAT ? 'slot_spin_at_json' : 'slot_spin_normal_json');
-    pendingRole = deriveRoleFromEvents(pendingResult.events || []);
+    pendingRole = deriveRoleFromResult(pendingResult);
+
+    const forcedRole = els.roleTest.value;
+    pendingPayout = forcedRole
+      ? accountingReturnForRole(forcedRole)
+      : Number(pendingResult.reelPayout || 0);
 
     for (let i = 0; i < 3; i++) startReelMotion(i);
 
@@ -349,7 +365,7 @@
     pendingResult = null;
 
     const actualRole = classifyPattern();
-    const payout = payoutForRole(actualRole);
+    const payout = pendingPayout;
     let allEvents = [...(result.events || [])];
 
     if (payout > 0) {
@@ -357,11 +373,12 @@
       allEvents = allEvents.concat(payoutResult.events || []);
     }
 
-    els.roleResult.textContent = roleLabels[actualRole] || actualRole;
-    els.payoutResult.textContent = payout + '枚';
+    // 成立役はC++抽選結果を表示。停止形そのものはactualRoleで内部確認可能。
+    els.roleResult.textContent = roleLabels[pendingRole] || pendingRole;
+    els.payoutResult.textContent = pendingRole === 'replay' ? 'REPLAY' : payout + '枚';
 
     pushEvents(allEvents);
-    showFinalBanner(allEvents, actualRole, payout);
+    showFinalBanner(allEvents, pendingRole, pendingRole === 'replay' ? 0 : payout);
     render(state());
 
     if (autoEnabled) {
@@ -410,6 +427,7 @@
     gameActive = false;
     pendingResult = null;
     pendingRole = 'miss';
+    pendingPayout = 0;
     reelStopped = [true, true, true];
     els.lever.disabled = false;
 
