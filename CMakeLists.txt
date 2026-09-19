@@ -15,7 +15,7 @@ if(EMSCRIPTEN)
   target_link_libraries(slot_wasm PRIVATE slot_engine)
   set_target_properties(slot_wasm PROPERTIES OUTPUT_NAME "slot")
   target_link_options(slot_wasm PRIVATE
-    "-sEXPORTED_FUNCTIONS=['_slot_reset','_slot_state_json','_slot_spin_normal_json','_slot_spin_at_json']"
+    "-sEXPORTED_FUNCTIONS=['_slot_reset','_slot_state_json','_slot_spin_normal_json','_slot_spin_at_json','_slot_apply_reel_payout_json']"
     "-sEXPORTED_RUNTIME_METHODS=['UTF8ToString','ccall']"
     "-sALLOW_MEMORY_GROWTH=1"
     "-sMODULARIZE=1"
