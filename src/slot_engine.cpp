@@ -120,13 +120,35 @@ void SlotEngine::startAT(ATTier tier, bool withStock, std::vector<Event>& out, c
 }
 
 void SlotEngine::applySectionDelta(long long medals, std::vector<Event>& out) {
-    state_.section_delta += medals;
-    state_.total_medals += medals;
-    if (state_.section_delta >= 2400) {
+    // 6.5号機型: 有利区間開始時を差枚0として管理する。
+    // 「区間内の最低差枚から+2400」ではなく、現在の区間差枚が+2400に到達したら区間を切る。
+    state_.section_diff += medals;
+    state_.total_diff += medals;
+    if (state_.section_diff < state_.section_min_diff) {
+        state_.section_min_diff = state_.section_diff;
+    }
+
+    if (state_.section_diff >= 2400) {
         const int pref = stockPreferenceLevel();
-        state_.section_delta -= 2400;
+        const long long ended_diff = state_.section_diff;
+        const long long ended_min = state_.section_min_diff;
+
+        // ストックは次区間へ個数のまま持ち越さず、0/1/3/5閾値の優遇レベルへ変換。
         state_.stocks = 0;
-        out.push_back({EventType::SectionCross, pref, "section cross: one preference lottery; stock threshold level applied"});
+        ++state_.section_count;
+
+        // 次の有利区間は新しい差枚0から開始。
+        state_.section_diff = 0;
+        state_.section_min_diff = 0;
+
+        std::ostringstream note;
+        note << "6.5 section cut at +" << ended_diff
+             << " from section start; section minimum=" << ended_min
+             << "; one next-section preference lottery level=" << pref;
+        out.push_back({EventType::SectionCross, pref, note.str()});
+
+        // 現在は次区間開始時の内部ATテーブル/パターン再抽選のみ実装。
+        // 0/1/3/5優遇レベル別の最終ルーレット重みは未決定のため勝手に固定しない。
         rerollATTableAndPattern();
     }
 }
@@ -142,6 +164,10 @@ std::vector<Event> SlotEngine::playCZ() {
     std::vector<Event> out;
     bool resolved = false;
     for (int g = 1; g <= config_.cz_games && !resolved; ++g) {
+        ++state_.total_games;
+        // CZも実ゲームなので3枚BETを差枚へ反映。
+        applySectionDelta(-3, out);
+
         if (chance(config_.cz_base_at_rate)) {
             startAT(ATTier::Lower, false, out, "CZ direct AT");
             state_.cz_misses = 0;
@@ -245,6 +271,9 @@ std::vector<Event> SlotEngine::spinNormal() {
 
     ++state_.total_games;
     ++state_.normal_games;
+
+    // 通常遊技は3枚BET。小役払出は役抽選実装時に別途加算する。
+    applySectionDelta(-3, out);
 
     if (state_.normal_mode == NormalMode::SuperHeaven && !state_.special_window_checked && state_.normal_games >= 20) {
         state_.special_window_checked = true;
@@ -544,8 +573,10 @@ std::string SlotEngine::stateJson() const {
       << ",\"atPattern\":" << state_.at_pattern + 1
       << ",\"atGamesLeft\":" << state_.at_games_left
       << ",\"stocks\":" << state_.stocks
-      << ",\"sectionDelta\":" << state_.section_delta
-      << ",\"totalMedals\":" << state_.total_medals
+      << ",\"sectionDiff\":" << state_.section_diff
+      << ",\"sectionMinDiff\":" << state_.section_min_diff
+      << ",\"sectionCount\":" << state_.section_count
+      << ",\"totalDiff\":" << state_.total_diff
       << ",\"totalGames\":" << state_.total_games << "}";
     return o.str();
 }
