@@ -18,6 +18,7 @@
     { kind:'alt-seven', html:'7<small>BLUE</small>' },
     { kind:'bell', html:'🔔<small>BELL</small>' },
     { kind:'cherry', html:'🍒<small>CHERRY</small>' },
+    { kind:'watermelon', html:'🍉<small>WATERMELON</small>' },
     { kind:'replay', html:'↻<small>REPLAY</small>' },
     { kind:'bar', html:'BAR' },
     { kind:'chance', html:'★<small>CHANCE</small>' },
@@ -27,9 +28,9 @@
 
   // 固定リール配列。回転中も停止時もこの配列からしか図柄は出さない。
   const reelStrips = [
-    ['seven','bell','replay','miss','cherry','bar','bell','chance','miss','replay','alt-seven','bell','miss','cherry','replay','bar','bell','miss','chance','replay','bell'],
-    ['bell','miss','replay','cherry','seven','bell','bar','miss','replay','chance','bell','alt-seven','miss','replay','cherry','bell','bar','miss','replay','chance','bell'],
-    ['replay','bell','miss','bar','cherry','replay','bell','seven','miss','chance','replay','bell','alt-seven','miss','bar','replay','cherry','bell','miss','chance','replay']
+    ['seven','bell','replay','miss','cherry','bar','bell','watermelon','miss','replay','alt-seven','bell','miss','cherry','replay','bar','bell','miss','chance','watermelon','bell'],
+    ['bell','miss','replay','cherry','seven','bell','bar','watermelon','replay','chance','bell','alt-seven','miss','replay','cherry','bell','bar','miss','watermelon','chance','bell'],
+    ['replay','bell','miss','bar','cherry','replay','bell','seven','watermelon','chance','replay','bell','alt-seven','miss','bar','replay','cherry','bell','watermelon','chance','replay']
   ];
 
   let Module;
