@@ -23,6 +23,14 @@
     { kind:'chance', html:'★<small>CHANCE</small>' },
     { kind:'miss', html:'×<small>ハズレ</small>' }
   ];
+  const symbolByKind = Object.fromEntries(symbols.map(s => [s.kind, s]));
+
+  // 固定リール配列。回転中も停止時もこの配列からしか図柄は出さない。
+  const reelStrips = [
+    ['seven','bell','replay','miss','cherry','bar','bell','chance','miss','replay','alt-seven','bell','miss','cherry','replay','bar','bell','miss','chance','replay','bell'],
+    ['bell','miss','replay','cherry','seven','bell','bar','miss','replay','chance','bell','alt-seven','miss','replay','cherry','bell','bar','miss','replay','chance','bell'],
+    ['replay','bell','miss','bar','cherry','replay','bell','seven','miss','chance','replay','bell','alt-seven','miss','bar','replay','cherry','bell','miss','chance','replay']
+  ];
 
   let Module;
   try {
@@ -55,16 +63,57 @@
   let pendingResult = null;
   let reelTimers = [null, null, null];
   let reelStopped = [true, true, true];
+  let reelPositions = [0, 0, 0];
   let autoEnabled = false;
   let autoTimers = [];
 
-  const randomizeReel = (el) => {
-    const spans = [...el.querySelectorAll(':scope > span')];
-    spans.forEach(s => {
-      const symbol = symbols[Math.floor(Math.random() * symbols.length)];
-      s.dataset.kind = symbol.kind;
-      s.innerHTML = symbol.html;
+  const mod = (n, m) => ((n % m) + m) % m;
+
+  const renderReel = (index) => {
+    const strip = reelStrips[index];
+    const center = mod(reelPositions[index], strip.length);
+    const kinds = [
+      strip[mod(center - 1, strip.length)],
+      strip[center],
+      strip[mod(center + 1, strip.length)]
+    ];
+
+    const spans = [...reels[index].querySelectorAll(':scope > span')];
+    spans.forEach((el, row) => {
+      const symbol = symbolByKind[kinds[row]];
+      el.dataset.kind = symbol.kind;
+      el.innerHTML = symbol.html;
     });
+  };
+
+  const centerKind = (index, position = reelPositions[index]) => {
+    const strip = reelStrips[index];
+    return strip[mod(position, strip.length)];
+  };
+
+  const isSevenKind = (kind) => kind === 'seven' || kind === 'alt-seven';
+
+  // まだ「どの成立役で赤7/青7を揃えるか」は未決定。
+  // そのため現段階では、停止制御で accidental 7揃いを必ず回避する。
+  const chooseStopPosition = (index) => {
+    const strip = reelStrips[index];
+    const base = mod(reelPositions[index], strip.length);
+
+    for (let slip = 0; slip <= 4; slip++) {
+      const candidate = mod(base + slip, strip.length);
+
+      // 今止めるリールが最後なら、中央ラインの3リールが全て7系になる候補を禁止。
+      const willAllStop = reelStopped.filter(Boolean).length === 2;
+      if (willAllStop) {
+        const kinds = [0,1,2].map(i => i === index ? centerKind(i, candidate) : centerKind(i));
+        if (kinds.every(isSevenKind)) continue;
+      }
+
+      return candidate;
+    }
+
+    // 配列上0〜4コマ全てが不適切なケースは通常起きないが、保険で5コマ目には進めず現在位置。
+    return base;
   };
 
   const clearAutoTimers = () => {
@@ -79,20 +128,24 @@
     stops[index].classList.add('active');
 
     reelTimers[index] = setInterval(() => {
-      randomizeReel(reels[index]);
+      reelPositions[index] = mod(reelPositions[index] + 1, reelStrips[index].length);
+      renderReel(index);
     }, 70);
   };
 
   const stopReelMotion = (index) => {
     if (!gameActive || reelStopped[index]) return;
 
-    reelStopped[index] = true;
     if (reelTimers[index]) {
       clearInterval(reelTimers[index]);
       reelTimers[index] = null;
     }
 
-    randomizeReel(reels[index]);
+    // STOP入力位置から0〜4コマの範囲で停止位置を決定。
+    reelPositions[index] = chooseStopPosition(index);
+    renderReel(index);
+    reelStopped[index] = true;
+
     reels[index].classList.remove('spinning');
     stops[index].classList.remove('active');
     stops[index].disabled = true;
@@ -251,5 +304,7 @@
   els.autoToggle.onclick = () => setAuto(!autoEnabled);
   els.reset.onclick = resetMachine;
 
+  reelPositions = reelStrips.map(strip => Math.floor(Math.random() * strip.length));
+  reelPositions.forEach((_, i) => renderReel(i));
   render(state());
 })();
