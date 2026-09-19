@@ -156,6 +156,7 @@ public:
     std::string stateJson() const;
     std::string spinNormalJson();
     std::string spinATJson();
+    std::string applyReelPayoutJson(int medals);
 
 private:
     GameConfig config_;
