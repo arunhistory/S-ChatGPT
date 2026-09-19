@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>S-ChatGPT Slot Prototype</title>
+  <style>
+    body{font-family:system-ui,sans-serif;max-width:900px;margin:24px auto;padding:0 16px;background:#111;color:#eee}
+    button{font-size:18px;padding:12px 18px;margin:4px;border-radius:10px;border:0;cursor:pointer}
+    pre{background:#1c1c1c;padding:16px;border-radius:12px;overflow:auto;white-space:pre-wrap}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+  </style>
+</head>
+<body>
+  <h1>S-ChatGPT Slot Prototype</h1>
+  <p>C++ / WebAssembly core. JSは表示とWASM呼び出しのみ。</p>
+  <div class="row">
+    <button id="normal">通常 1G</button>
+    <button id="at">AT 1G</button>
+    <button id="reset">Reset</button>
+  </div>
+  <h2>State</h2><pre id="state">WASM未読込</pre>
+  <h2>Events</h2><pre id="events">-</pre>
+  <script src="slot.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
