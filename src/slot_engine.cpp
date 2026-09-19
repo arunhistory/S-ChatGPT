@@ -121,6 +121,11 @@ void SlotEngine::advanceNormalDisplayGames(int games) {
     if (games > 0) state_.normal_display_games += games;
 }
 
+bool SlotEngine::canEnterHighProbability() const {
+    // 「50Gまでは入らない」ため、解禁は実回転数51G目から。
+    return state_.normal_actual_games > config_.high_probability_block_through_actual_games;
+}
+
 void SlotEngine::rerollATTableAndPattern() {
     state_.at_table = static_cast<ATTable>(rng_() % 4ULL);
     state_.at_pattern = static_cast<int>(rng_() % 5ULL);
@@ -616,6 +621,7 @@ std::string SlotEngine::stateJson() const {
       << ",\"normalGames\":" << state_.normal_display_games
       << ",\"normalActualGames\":" << state_.normal_actual_games
       << ",\"normalDisplayGames\":" << state_.normal_display_games
+      << ",\"highProbabilityUnlocked\":" << (canEnterHighProbability() ? "true" : "false")
       << ",\"normalCeiling\":" << state_.normal_ceiling
       << ",\"inAT\":" << (state_.in_at ? "true" : "false")
       << ",\"atTier\":\"" << atTierName(state_.at_tier) << "\""

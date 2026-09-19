@@ -56,6 +56,10 @@ struct GameConfig {
     std::array<double, 4> normal_mode_weights{0.45, 0.35, 0.15, 0.05};
     double special_from_super_heaven_rate = 0.10;
 
+    // 通常エリアの高確率モードは実回転数50Gまでは進入禁止。
+    // 51G目以降から高確率への移行抽選を許可する。
+    int high_probability_block_through_actual_games = 50;
+
     int bonus_medals = 50;
     int episode_bonus_medals = 80;
     double bonus_to_episode_rate = 0.01;
@@ -192,6 +196,7 @@ private:
     void rerollATTableAndPattern();
     int chooseNormalCeiling(NormalMode mode, int pattern);
     void advanceNormalDisplayGames(int games);
+    bool canEnterHighProbability() const;
     void startAT(ATTier tier, bool withStock, std::vector<Event>& out, const char* reason);
     void endAT(std::vector<Event>& out);
     void applySectionDelta(long long medals, std::vector<Event>& out);
