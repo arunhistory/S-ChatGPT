@@ -1,17 +1,18 @@
-name: Build and deploy WASM
+name: Build WASM
 
 on:
   push:
     branches: ["main"]
+    paths-ignore:
+      - "web/slot.js"
+      - "web/slot.wasm"
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
-  group: pages
+  group: wasm-build
   cancel-in-progress: true
 
 jobs:
@@ -33,29 +34,19 @@ jobs:
       - name: Build WASM
         run: cmake --build build-wasm --target slot_wasm -j2
 
-      - name: Assemble site
+      - name: Copy generated runtime
         run: |
-          mkdir -p dist
-          cp web/index.html web/app.js web/styles.css dist/
-          cp build-wasm/slot.js build-wasm/slot.wasm dist/
+          cp build-wasm/slot.js web/slot.js
+          cp build-wasm/slot.wasm web/slot.wasm
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Commit generated WASM
+        run: |
+          if git diff --quiet -- web/slot.js web/slot.wasm; then
+            echo "No generated changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add web/slot.js web/slot.wasm
+          git commit -m "Build WebAssembly runtime [skip ci]"
+          git push
