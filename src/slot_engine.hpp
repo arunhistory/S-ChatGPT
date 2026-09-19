@@ -129,8 +129,13 @@ struct MachineState {
     int at_games_left = 0;
     int stocks = 0;
 
-    long long section_delta = 0;
-    long long total_medals = 0;
+    // 6.5号機型の有利区間差枚管理。
+    // section_diff は「有利区間開始時=0」を基準にした現在差枚。
+    // section_min_diff はデバッグ/履歴用で、2400枚切断判定の基準には使わない。
+    long long section_diff = 0;
+    long long section_min_diff = 0;
+    long long total_diff = 0;
+    long long section_count = 0;
     long long total_games = 0;
 };
 
