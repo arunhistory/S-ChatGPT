@@ -15,11 +15,13 @@
   const history = [];
   const symbols = [
     { kind:'seven', html:'7' },
+    { kind:'alt-seven', html:'7<small>BLUE</small>' },
     { kind:'bell', html:'🔔<small>BELL</small>' },
     { kind:'cherry', html:'🍒<small>CHERRY</small>' },
     { kind:'replay', html:'↻<small>REPLAY</small>' },
     { kind:'bar', html:'BAR' },
-    { kind:'chance', html:'★<small>CHANCE</small>' }
+    { kind:'chance', html:'★<small>CHANCE</small>' },
+    { kind:'miss', html:'×<small>ハズレ</small>' }
   ];
 
   let Module;
