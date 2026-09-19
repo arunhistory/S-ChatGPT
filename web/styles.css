@@ -121,3 +121,11 @@ h1{margin:3px 0 0;font-size:clamp(22px,5vw,38px);letter-spacing:.04em}
   margin:2px 5px;
 }
 .reel>span[data-kind="watermelon"] small{color:#126a3a}
+
+.reel>span[data-kind="penguin"]{
+  color:#1c2633;
+  background:linear-gradient(#f7fbff,#d9e6f3);
+  border-radius:8px;
+  margin:2px 5px;
+}
+.reel>span[data-kind="penguin"] small{color:#31465d}
