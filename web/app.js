@@ -29,9 +29,9 @@
 
   // 固定リール配列。回転中も停止時もこの配列からしか図柄は出さない。
   const reelStrips = [
-    ['seven','bell','replay','miss','cherry','bar','bell','watermelon','miss','replay','alt-seven','bell','penguin','cherry','replay','bar','bell','miss','chance','watermelon','bell'],
-    ['bell','miss','replay','cherry','seven','bell','bar','watermelon','replay','chance','bell','alt-seven','penguin','replay','cherry','bell','bar','miss','watermelon','chance','bell'],
-    ['replay','bell','miss','penguin','cherry','replay','bell','watermelon','miss','chance','alt-seven','seven','bar','miss','replay','bell','cherry','watermelon','miss','chance','replay']
+    ['seven','replay','miss','cherry','bar','replay','bell','watermelon','miss','alt-seven','replay','penguin','cherry','bar','miss','replay','bell','chance','watermelon','miss','replay'],
+    ['bell','replay','miss','seven','watermelon','replay','bar','miss','penguin','replay','alt-seven','miss','cherry','replay','bar','watermelon','miss','chance','bell','replay','miss'],
+    ['replay','miss','bell','penguin','replay','bar','miss','replay','watermelon','chance','alt-seven','seven','bar','replay','miss','bell','replay','bar','miss','replay','miss']
   ];
 
   let Module;
