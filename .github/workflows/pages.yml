@@ -41,7 +41,7 @@ jobs:
 
       - name: Commit generated WASM
         run: |
-          if git diff --quiet -- web/slot.js web/slot.wasm; then
+          if [ -z "$(git status --porcelain -- web/slot.js web/slot.wasm)" ]; then
             echo "No generated changes."
             exit 0
           fi
