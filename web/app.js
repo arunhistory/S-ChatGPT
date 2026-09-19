@@ -13,7 +13,14 @@
   const reels = [$('#reel1'), $('#reel2'), $('#reel3')];
   const stops = [...document.querySelectorAll('.stop')];
   const history = [];
-  const symbols = ['7','BAR','◆','●','★','CHANCE','BONUS'];
+  const symbols = [
+    { kind:'seven', html:'7' },
+    { kind:'bell', html:'🔔<small>BELL</small>' },
+    { kind:'cherry', html:'🍒<small>CHERRY</small>' },
+    { kind:'replay', html:'↻<small>REPLAY</small>' },
+    { kind:'bar', html:'BAR' },
+    { kind:'chance', html:'★<small>CHANCE</small>' }
+  ];
 
   let Module;
   try {
@@ -50,8 +57,12 @@
   let autoTimers = [];
 
   const randomizeReel = (el) => {
-    const spans = [...el.querySelectorAll('span')];
-    spans.forEach(s => s.textContent = symbols[Math.floor(Math.random() * symbols.length)]);
+    const spans = [...el.querySelectorAll(':scope > span')];
+    spans.forEach(s => {
+      const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+      s.dataset.kind = symbol.kind;
+      s.innerHTML = symbol.html;
+    });
   };
 
   const clearAutoTimers = () => {
