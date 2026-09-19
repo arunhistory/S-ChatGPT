@@ -68,6 +68,21 @@ int SlotEngine::weightedUpperChains() {
     return config_.upper_special_chains.empty() ? 1 : config_.upper_special_chains.back().chains;
 }
 
+ReelRole SlotEngine::drawNormalReelRole() {
+    // 2^27マスから1回だけ引く排他的な成立役抽選。
+    // 残り11,744,051マスは今後のチェリー/スイカ/🐧/チャンス目/ハズレ用。
+    std::uint32_t draw = static_cast<std::uint32_t>(rng_() & (NORMAL_RNG_SPACE - 1u));
+
+    if (draw < ROLE_ONE_MEDAL_COUNT) return ReelRole::OneMedal;
+    draw -= ROLE_ONE_MEDAL_COUNT;
+    if (draw < ROLE_BELL9_COUNT) return ReelRole::Bell9;
+    draw -= ROLE_BELL9_COUNT;
+    if (draw < ROLE_BELL15_COUNT) return ReelRole::Bell15;
+    draw -= ROLE_BELL15_COUNT;
+    if (draw < ROLE_REPLAY_COUNT) return ReelRole::Replay;
+    return ReelRole::Miss;
+}
+
 void SlotEngine::rerollNormalModeAndPattern() {
     const double r = uniform01();
     double acc = 0.0;
@@ -272,7 +287,17 @@ std::vector<Event> SlotEngine::spinNormal() {
     ++state_.total_games;
     ++state_.normal_games;
 
-    // 通常遊技は3枚BET。小役払出は役抽選実装時に別途加算する。
+    // 通常時の成立役は2^27の整数マスから排他的に抽選。
+    state_.last_reel_role = drawNormalReelRole();
+    switch (state_.last_reel_role) {
+        case ReelRole::OneMedal: state_.last_reel_payout = 1; break;
+        case ReelRole::Bell9: state_.last_reel_payout = 9; break;
+        case ReelRole::Bell15: state_.last_reel_payout = 15; break;
+        case ReelRole::Replay: state_.last_reel_payout = 3; break; // 3枚BETを相殺
+        case ReelRole::Miss: state_.last_reel_payout = 0; break;
+    }
+
+    // 通常遊技は3枚BET。成立役の戻しはリール停止後にWASM APIから加算する。
     applySectionDelta(-3, out);
 
     if (state_.normal_mode == NormalMode::SuperHeaven && !state_.special_window_checked && state_.normal_games >= 20) {
@@ -492,6 +517,8 @@ std::vector<Event> SlotEngine::spinAT() {
     std::vector<Event> out;
     if (!state_.in_at) return out;
 
+    state_.last_reel_role = ReelRole::Miss;
+    state_.last_reel_payout = 0;
     ++state_.total_games;
     if (state_.at_games_left <= 0) {
         endAT(out);
@@ -539,6 +566,17 @@ const char* SlotEngine::atTableName(ATTable v) {
     }
     return "unknown";
 }
+const char* SlotEngine::reelRoleName(ReelRole v) {
+    switch (v) {
+        case ReelRole::Miss: return "miss";
+        case ReelRole::OneMedal: return "one_medal";
+        case ReelRole::Bell9: return "bell9";
+        case ReelRole::Bell15: return "bell15";
+        case ReelRole::Replay: return "replay";
+    }
+    return "miss";
+}
+
 const char* SlotEngine::eventName(EventType v) {
     switch (v) {
         case EventType::None: return "none";
@@ -577,7 +615,10 @@ std::string SlotEngine::stateJson() const {
       << ",\"sectionMinDiff\":" << state_.section_min_diff
       << ",\"sectionCount\":" << state_.section_count
       << ",\"totalDiff\":" << state_.total_diff
-      << ",\"totalGames\":" << state_.total_games << "}";
+      << ",\"totalGames\":" << state_.total_games
+      << ",\"lastReelRole\":\"" << reelRoleName(state_.last_reel_role) << "\""
+      << ",\"lastReelPayout\":" << state_.last_reel_payout
+      << ",\"roleRemainderCount\":" << ROLE_REMAINDER_COUNT << "}";
     return o.str();
 }
 
@@ -591,7 +632,9 @@ std::string SlotEngine::eventsJson(const std::vector<Event>& events, const Machi
     }
     o << "],\"inAT\":" << (state.in_at ? "true" : "false")
       << ",\"gamesLeft\":" << state.at_games_left
-      << ",\"stocks\":" << state.stocks << "}";
+      << ",\"stocks\":" << state.stocks
+      << ",\"reelRole\":\"" << reelRoleName(state.last_reel_role) << "\""
+      << ",\"reelPayout\":" << state.last_reel_payout << "}";
     return o.str();
 }
 
