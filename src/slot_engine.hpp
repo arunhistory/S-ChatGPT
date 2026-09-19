@@ -10,9 +10,22 @@ namespace schatgpt {
 
 constexpr std::uint32_t NORMAL_RNG_SPACE = 134217728u;
 
+// 通常時ベース用の成立役を2^27の整数マスで固定。
+// 9枚ベル≈1/15, 15枚ベル≈1/80, リプレイ≈1/30, 1枚役≈4/5.
+constexpr std::uint32_t ROLE_BELL9_COUNT = 8947849u;
+constexpr std::uint32_t ROLE_BELL15_COUNT = 1677722u;
+constexpr std::uint32_t ROLE_REPLAY_COUNT = 4473924u;
+constexpr std::uint32_t ROLE_ONE_MEDAL_COUNT = 107374182u;
+constexpr std::uint32_t ROLE_BASE_TOTAL =
+    ROLE_BELL9_COUNT + ROLE_BELL15_COUNT + ROLE_REPLAY_COUNT + ROLE_ONE_MEDAL_COUNT;
+constexpr std::uint32_t ROLE_REMAINDER_COUNT = NORMAL_RNG_SPACE - ROLE_BASE_TOTAL;
+static_assert(ROLE_BASE_TOTAL <= NORMAL_RNG_SPACE);
+
 enum class NormalMode : std::uint8_t { NormalA, NormalB, Heaven, SuperHeaven, Special };
 enum class ATTier : std::uint8_t { Lower, Middle, Upper };
 enum class ATTable : std::uint8_t { Normal, Heaven, SuperHeaven, Specialized };
+enum class ReelRole : std::uint8_t { Miss, OneMedal, Bell9, Bell15, Replay };
+
 enum class EventType : std::uint8_t {
     None, CZ, Bonus, EpisodeBonus, ATStart, ATAddGames, SpecialZone,
     UpperSpecialZone, StockGain, TierUp, TierDown, ATEnd, UpperComeback,
@@ -137,6 +150,9 @@ struct MachineState {
     long long total_diff = 0;
     long long section_count = 0;
     long long total_games = 0;
+
+    ReelRole last_reel_role = ReelRole::Miss;
+    int last_reel_payout = 0; // replayは差枚会計上3枚戻しとして扱う
 };
 
 class SlotEngine {
@@ -167,6 +183,7 @@ private:
     bool chance(double p);
     int weightedGames(const std::vector<WeightedGames>& table);
     int weightedUpperChains();
+    ReelRole drawNormalReelRole();
 
     void rerollNormalModeAndPattern();
     void rerollATTableAndPattern();
@@ -184,6 +201,7 @@ private:
     static const char* atTierName(ATTier v);
     static const char* atTableName(ATTable v);
     static const char* eventName(EventType v);
+    static const char* reelRoleName(ReelRole v);
     static std::string eventsJson(const std::vector<Event>& events, const MachineState& state);
 };
 
