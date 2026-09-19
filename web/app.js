@@ -204,7 +204,8 @@
     if (center[0] === 'penguin' && center[1] === 'cherry' && center[2] === 'penguin') return 'strong_chance';
     if (center.filter(k => k === 'penguin').length === 2) return 'weak_chance';
 
-    if (center[0] === 'cherry' && center[1] === 'replay') return 'weak_cherry';
+    const leftBottom = visibleKind(0, positions[0], 2);
+    if (leftBottom === 'cherry' && center[1] === 'replay') return 'weak_cherry';
     if (center[0] === 'cherry' && center[1] !== 'replay') return 'strong_cherry';
 
     if (center.every(k => k === 'bell')) return 'bell9';
@@ -246,7 +247,7 @@
       case 'strong_chance': return { row:1, kind:index === 1 ? 'cherry' : 'penguin' };
       case 'weak_chance': return index < 2 ? { row:1, kind:'penguin' } : null;
       case 'weak_cherry':
-        if (index === 0) return { row:1, kind:'cherry' };
+        if (index === 0) return { row:2, kind:'cherry' };
         if (index === 1) return { row:1, kind:'replay' };
         return null;
       case 'strong_cherry':
