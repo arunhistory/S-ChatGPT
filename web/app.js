@@ -3,16 +3,18 @@
   const els = {
     mode: $('#mode'), tier: $('#tier'), table: $('#table'), gameCount: $('#gameCount'),
     atLeft: $('#atLeft'), stocks: $('#stocks'),
-    eventBanner: $('#eventBanner'), eventTitle: $('#eventTitle'),
-    eventNote: $('#eventNote'), normalPattern: $('#normalPattern'), ceiling: $('#ceiling'),
-    atPattern: $('#atPattern'), netRate: $('#netRate'), totalDiff: $('#totalDiff'),
-    history: $('#history'), debug: $('#debugState'), statusLamp: $('#statusLamp'),
-    statusText: $('#statusText'), lever: $('#lever'), autoToggle: $('#autoToggle'), reset: $('#reset')
+    eventBanner: $('#eventBanner'), eventTitle: $('#eventTitle'), eventNote: $('#eventNote'),
+    normalPattern: $('#normalPattern'), ceiling: $('#ceiling'), atPattern: $('#atPattern'),
+    netRate: $('#netRate'), totalDiff: $('#totalDiff'), history: $('#history'),
+    debug: $('#debugState'), statusLamp: $('#statusLamp'), statusText: $('#statusText'),
+    lever: $('#lever'), autoToggle: $('#autoToggle'), reset: $('#reset'),
+    roleResult: $('#roleResult'), payoutResult: $('#payoutResult'), roleTest: $('#roleTest')
   };
 
   const reels = [$('#reel1'), $('#reel2'), $('#reel3')];
   const stops = [...document.querySelectorAll('.stop')];
   const history = [];
+
   const symbols = [
     { kind:'seven', html:'7' },
     { kind:'alt-seven', html:'7<small>BLUE</small>' },
@@ -27,25 +29,44 @@
   ];
   const symbolByKind = Object.fromEntries(symbols.map(s => [s.kind, s]));
 
-  // 固定リール配列。回転中も停止時もこの配列からしか図柄は出さない。
+  // 確定済み21コマ配列
+  // 🍉=2/2/1, 🍒=2/1/0, 🔔=2/2/2
+  // 右11〜13は 青7→赤7→BAR
   const reelStrips = [
     ['seven','replay','miss','cherry','bar','replay','bell','watermelon','miss','alt-seven','replay','penguin','cherry','bar','miss','replay','bell','chance','watermelon','miss','replay'],
     ['bell','replay','miss','seven','watermelon','replay','bar','miss','penguin','replay','alt-seven','miss','cherry','replay','bar','watermelon','miss','chance','bell','replay','miss'],
     ['replay','miss','bell','penguin','replay','bar','miss','replay','watermelon','chance','alt-seven','seven','bar','replay','miss','bell','replay','bar','miss','replay','miss']
   ];
 
+  const roleLabels = {
+    miss:'ハズレ',
+    penguin_chance:'ペンギンチャンス',
+    strong_chance:'強チャンス目',
+    weak_chance:'弱チャンス目',
+    weak_cherry:'弱チェリー',
+    strong_cherry:'強チェリー',
+    bell9:'ベル 9枚',
+    bell15:'斜めベル 15枚',
+    watermelon:'スイカ',
+    replay:'リプレイ',
+    hit:'当たり',
+    at:'AT',
+    tier_up:'AT昇格',
+    freeze:'フリーズ'
+  };
+
   let Module;
   try {
     Module = await createSlotModule();
   } catch (err) {
     els.eventTitle.textContent = 'WASM LOAD ERROR';
-    els.eventNote.textContent = 'GitHub Actionsで slot.js / slot.wasm をビルドしてください';
+    els.eventNote.textContent = 'slot.js / slot.wasm のビルドを確認してください';
     els.debug.textContent = String(err);
     return;
   }
 
-  const callJson = (name) => {
-    const ptr = Module.ccall(name, 'number', [], []);
+  const callJson = (name, argTypes = [], args = []) => {
+    const ptr = Module.ccall(name, 'number', argTypes, args);
     return JSON.parse(Module.UTF8ToString(ptr));
   };
   const state = () => callJson('slot_state_json');
@@ -63,6 +84,7 @@
 
   let gameActive = false;
   let pendingResult = null;
+  let pendingRole = 'miss';
   let reelTimers = [null, null, null];
   let reelStopped = [true, true, true];
   let reelPositions = [0, 0, 0];
@@ -71,50 +93,140 @@
 
   const mod = (n, m) => ((n % m) + m) % m;
 
-  const renderReel = (index) => {
+  const visibleKind = (index, position, row) => {
     const strip = reelStrips[index];
-    const center = mod(reelPositions[index], strip.length);
-    const kinds = [
-      strip[mod(center - 1, strip.length)],
-      strip[center],
-      strip[mod(center + 1, strip.length)]
-    ];
+    const offset = row - 1; // 0=上段, 1=中段, 2=下段
+    return strip[mod(position + offset, strip.length)];
+  };
 
+  const renderReel = (index) => {
+    const position = reelPositions[index];
     const spans = [...reels[index].querySelectorAll(':scope > span')];
     spans.forEach((el, row) => {
-      const symbol = symbolByKind[kinds[row]];
+      const symbol = symbolByKind[visibleKind(index, position, row)];
       el.dataset.kind = symbol.kind;
       el.innerHTML = symbol.html;
     });
   };
 
-  const centerKind = (index, position = reelPositions[index]) => {
+  const centerKind = (index, position = reelPositions[index]) => visibleKind(index, position, 1);
+
+  const findExactPosition = (index, kind, row = 1) => {
     const strip = reelStrips[index];
-    return strip[mod(position, strip.length)];
+    for (let pos = 0; pos < strip.length; pos++) {
+      if (visibleKind(index, pos, row) === kind) return pos;
+    }
+    return reelPositions[index];
   };
 
-  const isSevenKind = (kind) => kind === 'seven' || kind === 'alt-seven';
+  const classifyPattern = (positions = reelPositions) => {
+    const center = [0,1,2].map(i => centerKind(i, positions[i]));
+    const diagUp = [
+      visibleKind(0, positions[0], 2),
+      visibleKind(1, positions[1], 1),
+      visibleKind(2, positions[2], 0)
+    ];
 
-  // まだ「どの成立役で赤7/青7を揃えるか」は未決定。
-  // そのため現段階では、停止制御で accidental 7揃いを必ず回避する。
+    if (center.every(k => k === 'alt-seven')) return 'freeze';
+    if (center.every(k => k === 'seven')) return 'at';
+    if (center.every(k => k === 'bar')) return 'tier_up';
+    if (center[0] === 'seven' && center[1] === 'seven' && center[2] === 'bar') return 'hit';
+
+    if (center.every(k => k === 'penguin')) return 'penguin_chance';
+    if (center[0] === 'penguin' && center[1] === 'cherry' && center[2] === 'penguin') return 'strong_chance';
+    if (center.filter(k => k === 'penguin').length === 2) return 'weak_chance';
+
+    if (center[0] === 'cherry' && center[1] === 'replay') return 'weak_cherry';
+    if (center[0] === 'cherry' && center[1] !== 'replay') return 'strong_cherry';
+
+    if (center.every(k => k === 'bell')) return 'bell9';
+    if (diagUp.every(k => k === 'bell')) return 'bell15';
+    if (center.every(k => k === 'watermelon')) return 'watermelon';
+    if (center.every(k => k === 'replay')) return 'replay';
+
+    return 'miss';
+  };
+
+  const payoutForRole = (role) => role === 'bell9' ? 9 : role === 'bell15' ? 15 : 0;
+
+  const deriveRoleFromEvents = (events) => {
+    const forced = els.roleTest.value;
+    if (forced) return forced;
+
+    const types = new Set((events || []).map(e => e.type));
+    if (types.has('freeze')) return 'freeze';
+    if (types.has('bonus') || types.has('episode_bonus')) return 'hit';
+    if (types.has('tier_up')) return 'tier_up';
+    if (types.has('at_start')) return 'at';
+
+    // 小役確率は未決定。勝手な出現率を置かず、通常時はハズレ扱い。
+    return 'miss';
+  };
+
+  const targetForRole = (role, index) => {
+    switch (role) {
+      case 'at': return { row:1, kind:'seven' };
+      case 'tier_up': return { row:1, kind:'bar' };
+      case 'hit': return { row:1, kind:index === 2 ? 'bar' : 'seven' };
+      case 'penguin_chance': return { row:1, kind:'penguin' };
+      case 'strong_chance': return { row:1, kind:index === 1 ? 'cherry' : 'penguin' };
+      case 'weak_chance': return index < 2 ? { row:1, kind:'penguin' } : null;
+      case 'weak_cherry':
+        if (index === 0) return { row:1, kind:'cherry' };
+        if (index === 1) return { row:1, kind:'replay' };
+        return null;
+      case 'strong_cherry':
+        if (index === 0) return { row:1, kind:'cherry' };
+        if (index === 1) return { row:1, notKind:'replay' };
+        return null;
+      case 'bell9': return { row:1, kind:'bell' };
+      case 'bell15':
+        return { row:index === 0 ? 2 : index === 1 ? 1 : 0, kind:'bell' };
+      case 'watermelon': return { row:1, kind:'watermelon' };
+      case 'replay': return { row:1, kind:'replay' };
+      default: return null;
+    }
+  };
+
+  const candidateMatchesTarget = (index, position, target) => {
+    if (!target) return true;
+    const kind = visibleKind(index, position, target.row);
+    if (target.kind) return kind === target.kind;
+    if (target.notKind) return kind !== target.notKind;
+    return true;
+  };
+
   const chooseStopPosition = (index) => {
     const strip = reelStrips[index];
     const base = mod(reelPositions[index], strip.length);
 
-    for (let slip = 0; slip <= 4; slip++) {
-      const candidate = mod(base + slip, strip.length);
-
-      // 今止めるリールが最後なら、中央ラインの3リールが全て7系になる候補を禁止。
-      const willAllStop = reelStopped.filter(Boolean).length === 2;
-      if (willAllStop) {
-        const kinds = [0,1,2].map(i => i === index ? centerKind(i, candidate) : centerKind(i));
-        if (kinds.every(isSevenKind)) continue;
-      }
-
-      return candidate;
+    // 青7フリーズのみ0〜4コマ制御の外。押下位置を無視して中段へ強制揃い。
+    if (pendingRole === 'freeze') {
+      return findExactPosition(index, 'alt-seven', 1);
     }
 
-    // 配列上0〜4コマ全てが不適切なケースは通常起きないが、保険で5コマ目には進めず現在位置。
+    const target = targetForRole(pendingRole, index);
+    if (target) {
+      for (let slip = 0; slip <= 4; slip++) {
+        const candidate = mod(base + slip, strip.length);
+        if (candidateMatchesTarget(index, candidate, target)) return candidate;
+      }
+      // 引き込めない押し位置では取りこぼし。5コマ以上は滑らせない。
+      return base;
+    }
+
+    // ハズレ/任意リールは、最後の停止で予約済み停止形を偶然完成させない候補を優先。
+    const willAllStop = reelStopped.filter(Boolean).length === 2;
+    if (willAllStop) {
+      for (let slip = 0; slip <= 4; slip++) {
+        const candidate = mod(base + slip, strip.length);
+        const test = [...reelPositions];
+        test[index] = candidate;
+        if (pendingRole === 'miss' && classifyPattern(test) === 'miss') return candidate;
+        if (pendingRole !== 'miss' && classifyPattern(test) === pendingRole) return candidate;
+      }
+    }
+
     return base;
   };
 
@@ -143,7 +255,6 @@
       reelTimers[index] = null;
     }
 
-    // STOP入力位置から0〜4コマの範囲で停止位置を決定。
     reelPositions[index] = chooseStopPosition(index);
     renderReel(index);
     reelStopped[index] = true;
@@ -163,21 +274,22 @@
       history.unshift({ ...e, at: new Date().toLocaleTimeString('ja-JP',{hour12:false}) });
     }
     history.splice(14);
-
     els.history.innerHTML = history.map(e =>
       '<li class="' + (isPremium(e.type) ? 'premium' : '') + '"><b>' +
       (eventLabels[e.type] || e.type) + '</b><span>' + (e.note || '') +
       (e.value ? ' [' + e.value + ']' : '') + '</span></li>'
     ).join('');
+  };
 
+  const showFinalBanner = (events, actualRole, payout) => {
     if (events.length) {
       const e = events[events.length - 1];
       els.eventTitle.textContent = eventLabels[e.type] || e.type.toUpperCase();
-      els.eventNote.textContent = e.note || '';
+      els.eventNote.textContent = (e.note || '') + ' / 停止形: ' + roleLabels[actualRole] + (payout ? ' / ' + payout + '枚' : '');
       els.eventBanner.className = 'event-banner' + (isPremium(e.type) ? ' premium' : isHot(e.type) ? ' hot' : '');
     } else {
-      els.eventTitle.textContent = 'NO HIT';
-      els.eventNote.textContent = '次ゲームへ';
+      els.eventTitle.textContent = roleLabels[actualRole] || 'NO HIT';
+      els.eventNote.textContent = payout ? payout + '枚払出' : '次ゲームへ';
       els.eventBanner.className = 'event-banner';
     }
   };
@@ -207,12 +319,15 @@
     reelStopped = [false, false, false];
 
     els.lever.disabled = true;
+    els.roleResult.textContent = '回転中';
+    els.payoutResult.textContent = '---';
     els.eventTitle.textContent = 'SPINNING';
     els.eventNote.textContent = 'STOPボタンでリールを止めろ';
     els.eventBanner.className = 'event-banner';
 
     const s0 = state();
     pendingResult = callJson(s0.inAT ? 'slot_spin_at_json' : 'slot_spin_normal_json');
+    pendingRole = deriveRoleFromEvents(pendingResult.events || []);
 
     for (let i = 0; i < 3; i++) startReelMotion(i);
 
@@ -233,7 +348,20 @@
     const result = pendingResult || { events: [] };
     pendingResult = null;
 
-    pushEvents(result.events || []);
+    const actualRole = classifyPattern();
+    const payout = payoutForRole(actualRole);
+    let allEvents = [...(result.events || [])];
+
+    if (payout > 0) {
+      const payoutResult = callJson('slot_apply_reel_payout_json', ['number'], [payout]);
+      allEvents = allEvents.concat(payoutResult.events || []);
+    }
+
+    els.roleResult.textContent = roleLabels[actualRole] || actualRole;
+    els.payoutResult.textContent = payout + '枚';
+
+    pushEvents(allEvents);
+    showFinalBanner(allEvents, actualRole, payout);
     render(state());
 
     if (autoEnabled) {
@@ -281,6 +409,7 @@
 
     gameActive = false;
     pendingResult = null;
+    pendingRole = 'miss';
     reelStopped = [true, true, true];
     els.lever.disabled = false;
 
@@ -292,6 +421,8 @@
 
     history.length = 0;
     els.history.innerHTML = '';
+    els.roleResult.textContent = '---';
+    els.payoutResult.textContent = '0枚';
     els.eventTitle.textContent = 'RESET';
     els.eventNote.textContent = 'レバーを叩け';
     els.eventBanner.className = 'event-banner';
