@@ -598,4 +598,12 @@ std::string SlotEngine::eventsJson(const std::vector<Event>& events, const Machi
 std::string SlotEngine::spinNormalJson() { return eventsJson(spinNormal(), state_); }
 std::string SlotEngine::spinATJson() { return eventsJson(spinAT(), state_); }
 
+std::string SlotEngine::applyReelPayoutJson(int medals) {
+    std::vector<Event> out;
+    if (medals > 0) {
+        applySectionDelta(medals, out);
+    }
+    return eventsJson(out, state_);
+}
+
 } // namespace schatgpt
