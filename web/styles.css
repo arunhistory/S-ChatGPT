@@ -89,3 +89,12 @@ h1{margin:3px 0 0;font-size:clamp(22px,5vw,38px);letter-spacing:.04em}
   .dashboard{grid-template-columns:1fr 1fr}
   .dashboard .card:last-child{grid-column:1/-1}
 }
+
+.reel>span{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.reel>span small{display:block;margin-top:3px;font-size:8px;letter-spacing:.08em;font-weight:900}
+.reel>span[data-kind="bell"]{color:#6b4b00;background:linear-gradient(#fff8b0,#ffd64a);border-radius:8px;margin:2px 5px}
+.reel>span[data-kind="bell"] small{color:#6b4b00}
+.reel>span[data-kind="cherry"] small{color:#a01324}
+.reel>span[data-kind="replay"]{color:#1d5aa7}
+.reel>span[data-kind="bar"]{font-family:Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif;letter-spacing:.06em}
+.reel>span[data-kind="seven"]{font-size:34px;color:#cf1c35;text-shadow:1px 1px 0 #fff,-1px -1px 0 #fff}
