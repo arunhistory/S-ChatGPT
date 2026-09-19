@@ -412,8 +412,6 @@
       ? accountingReturnForRole(forcedRole)
       : Number(pendingResult.reelPayout || 0);
 
-    stageCue(pendingRole, 'spin');
-
     for (let i = 0; i < 3; i++) startReelMotion(i);
 
     if (autoEnabled) {
@@ -448,7 +446,6 @@
 
     pushEvents(allEvents);
     showFinalBanner(allEvents, pendingRole, pendingRole === 'replay' ? 0 : payout);
-    stageCue(pendingRole, 'result');
     render(state());
 
     if (autoEnabled) {
@@ -515,6 +512,8 @@
     els.eventNote.textContent = 'レバーを叩け';
     els.eventBanner.className = 'event-banner';
     clearStageClasses();
+    els.cutinLayer.classList.remove('show');
+    els.stageCaption.textContent = '通常ステージ';
     render(state());
   };
 
