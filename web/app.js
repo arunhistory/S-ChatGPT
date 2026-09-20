@@ -49,6 +49,7 @@
     bell9:2,
     bell15:3,
     replay:4,
+    three_medal:15,
     weak_cherry:5,
     strong_cherry:6,
     watermelon:7,
@@ -73,6 +74,7 @@
     bell15:'斜めベル 15枚',
     watermelon:'スイカ',
     replay:'リプレイ',
+    three_medal:'3枚役',
     hit:'当たり',
     at:'AT',
     tier_up:'AT昇格',
@@ -178,6 +180,7 @@
       bell9: { fx:'yellow', title:'BELL', sub:'9枚', eyebrow:'YELLOW' },
       bell15: { fx:'gold', title:'BIG BELL', sub:'15枚', eyebrow:'GOLD' },
       replay: { fx:'blue', title:'REPLAY', sub:'もう一度', eyebrow:'BLUE' },
+      three_medal: { fx:'', title:'3枚役', sub:'3枚', eyebrow:'NORMAL' },
       weak_cherry: { fx:'green', title:'CHERRY', sub:'弱チェリー', eyebrow:'GREEN' },
       strong_cherry: { fx:'red slash', title:'強チェリー', sub:'中段チェリー', eyebrow:'RED', cls:'role-strong' },
       weak_chance: { fx:'purple', title:'CHANCE', sub:'弱チャンス目', eyebrow:'PURPLE' },
@@ -284,6 +287,7 @@
     if (diagUp.every(k => k === 'bell')) return 'bell15';
     if (center.every(k => k === 'watermelon')) return 'watermelon';
     if (center.every(k => k === 'replay')) return 'replay';
+    if (center.every(k => k === 'chance')) return 'three_medal';
 
     return 'miss';
   };
@@ -293,6 +297,7 @@
     if (role === 'bell9') return 9;
     if (role === 'bell15') return 15;
     if (role === 'replay') return 3; // 3枚BETを差枚会計上相殺
+    if (role === 'three_medal') return 3;
     if (role === 'hit' || role === 'at' || role === 'tier_up' || role === 'freeze') return 3; // 7/BONUS図柄はリプレイ
     return 0;
   };
@@ -341,6 +346,7 @@
         return { row:index === 0 ? 2 : index === 1 ? 1 : 0, kind:'bell' };
       case 'watermelon': return { row:1, kind:'watermelon' };
       case 'replay': return { row:1, kind:'replay' };
+      case 'three_medal': return { row:1, kind:'chance' };
       default: return null;
     }
   };
@@ -727,7 +733,7 @@
       : (naviMiss
           ? visiblePayout + '枚'
           : (pendingWasBonus
-              ? '+' + payout + '枚'
+              ? (pendingRole === 'replay' ? 'REPLAY' : '+' + payout + '枚')
               : (pendingBellNaviActive && pendingWasAT
                   ? 'AT純増'
                   : ((pendingRole === 'replay' || pendingEntryReplayRole) ? 'REPLAY' : payout + '枚'))));
