@@ -177,8 +177,22 @@ static double challengeJudgeBonus(Role r){
 }
 static Events spinBonus(){
     Events out;out.clear();if(!s.in_bonus)return out;
-    s.nav_order=-1;++s.total_games;
-    if(forced_role>=0&&forced_role<=PenguinChance){s.last_role=(Role)forced_role;forced_role=-1;}else{s.last_role=drawRole();}
+    ++s.total_games;
+
+    bool forced=false;
+    if(forced_role>=0&&forced_role<=PenguinChance){
+        s.last_role=(Role)forced_role;forced_role=-1;forced=true;
+    }else{
+        Role drawn=drawRole();
+        // BONUS / EPISODEは純増6枚AT型。
+        // 指定されたレア役Gだけレア役を優先し、それ以外は6択押し順ベルに集約する。
+        double rare=bonusRareRate(drawn);
+        s.last_role=rare>0.0?drawn:Bell9;
+    }
+
+    // 通常消化GはBONUS/EPISODEとも6択ベルナビ。
+    // DEBUG強制時もBell9を指定した場合だけナビを出す。
+    s.nav_order=s.last_role==Bell9?(int)(next64()%6):-1;
     s.last_payout=0;
 
     double rr=bonusRareRate(s.last_role);
