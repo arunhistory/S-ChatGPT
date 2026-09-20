@@ -810,7 +810,7 @@
         && (pendingResult.inBonus || pendingResult.inAT);
       if (naturalTransition) {
         const entryTypes = new Set([
-          'bonus','episode_bonus','at_start','cold_enter','stock_gain','tier_up'
+          'bonus','episode_bonus','at_start','cold_enter','stock_gain','tier_up','freeze'
         ]);
         const entryEvents = (pendingResult.events || []).filter(e => entryTypes.has(e.type));
         const hasFreezeEntry = entryEvents.some(e => e.type === 'freeze');
