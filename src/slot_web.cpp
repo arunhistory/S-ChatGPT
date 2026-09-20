@@ -23,13 +23,15 @@ static constexpr uint32_t ROLE_BELL15 = 1677722u;
 static constexpr uint32_t ROLE_REPLAY = 4473924u;
 static constexpr uint32_t ROLE_ONE = 107374182u;
 static constexpr uint32_t ROLE_BASE = ROLE_BELL9+ROLE_BELL15+ROLE_REPLAY+ROLE_ONE;
+static constexpr uint32_t ROLE_WEAK_CHERRY=894785u,ROLE_STRONG_CHERRY=134218u,ROLE_WATERMELON=1342177u;
+static constexpr uint32_t ROLE_WEAK_CHANCE=1491308u,ROLE_STRONG_CHANCE=745654u,ROLE_PENGUIN=268435u;
 static constexpr uint32_t ROLE_REMAINDER = RNG_SPACE-ROLE_BASE;
 
 enum NormalTable : uint8_t { NormalA, NormalB, Heaven, SuperHeaven, Special };
 enum Tier : uint8_t { Lower, Middle, Upper };
 enum ATTable : uint8_t { ATNormal, ATHeaven, ATSuperHeaven, Specialized };
-enum Role : uint8_t { Miss, OneMedal, Bell9, Bell15, Replay };
-enum EvType : uint8_t { EvNone, CZ, Bonus, EpisodeBonus, ATStart, ATAddGames, SpecialZone, UpperSpecialZone, StockGain, TierUp, TierDown, ATEnd, UpperComeback, Freeze, SectionCross };
+enum Role : uint8_t { Miss, OneMedal, Bell9, Bell15, Replay, WeakCherry, StrongCherry, Watermelon, WeakChance, StrongChance, PenguinChance };
+enum EvType : uint8_t { EvNone, CZ, Bonus, EpisodeBonus, ATStart, ATAddGames, SpecialZone, UpperSpecialZone, StockGain, TierUp, TierDown, ATEnd, UpperComeback, Freeze, SectionCross, HighEnter, HighExit, Shorten, ColdEnter, SectionReward };
 struct Event { EvType type; int value; const char* note; };
 struct Events { Event e[256]; int n; void clear(){n=0;} void add(EvType t,int v,const char* s){if(n<256)e[n++]={t,v,s};} };
 struct State {
@@ -40,6 +42,10 @@ struct State {
     int normal_display_games;
     int normal_ceiling;
     bool special_window_checked;
+    bool high_active;
+    int high_games;
+    bool cold_at;
+    bool cold_bonus;
     int cz_misses;
     int bonus_at_misses;
     int bell9_streak;
@@ -80,8 +86,8 @@ static Profile profile(){
 static const char* normalName(NormalTable v){switch(v){case NormalA:return"normal_a";case NormalB:return"normal_b";case Heaven:return"heaven";case SuperHeaven:return"super_heaven";case Special:return"special";}return"unknown";}
 static const char* tierName(Tier v){switch(v){case Lower:return"lower";case Middle:return"middle";case Upper:return"upper";}return"unknown";}
 static const char* atTableName(ATTable v){switch(v){case ATNormal:return"normal";case ATHeaven:return"heaven";case ATSuperHeaven:return"super_heaven";case Specialized:return"specialized";}return"unknown";}
-static const char* roleName(Role v){switch(v){case Miss:return"miss";case OneMedal:return"one_medal";case Bell9:return"bell9";case Bell15:return"bell15";case Replay:return"replay";}return"miss";}
-static const char* evName(EvType v){switch(v){case EvNone:return"none";case CZ:return"cz";case Bonus:return"bonus";case EpisodeBonus:return"episode_bonus";case ATStart:return"at_start";case ATAddGames:return"at_add_games";case SpecialZone:return"special_zone";case UpperSpecialZone:return"upper_special_zone";case StockGain:return"stock_gain";case TierUp:return"tier_up";case TierDown:return"tier_down";case ATEnd:return"at_end";case UpperComeback:return"upper_comeback";case Freeze:return"freeze";case SectionCross:return"section_cross";}return"unknown";}
+static const char* roleName(Role v){switch(v){case Miss:return"miss";case OneMedal:return"one_medal";case Bell9:return"bell9";case Bell15:return"bell15";case Replay:return"replay";case WeakCherry:return"weak_cherry";case StrongCherry:return"strong_cherry";case Watermelon:return"watermelon";case WeakChance:return"weak_chance";case StrongChance:return"strong_chance";case PenguinChance:return"penguin_chance";}return"miss";}
+static const char* evName(EvType v){switch(v){case EvNone:return"none";case CZ:return"cz";case Bonus:return"bonus";case EpisodeBonus:return"episode_bonus";case ATStart:return"at_start";case ATAddGames:return"at_add_games";case SpecialZone:return"special_zone";case UpperSpecialZone:return"upper_special_zone";case StockGain:return"stock_gain";case TierUp:return"tier_up";case TierDown:return"tier_down";case ATEnd:return"at_end";case UpperComeback:return"upper_comeback";case Freeze:return"freeze";case SectionCross:return"section_cross";case HighEnter:return"high_enter";case HighExit:return"high_exit";case Shorten:return"shorten";case ColdEnter:return"cold_enter";case SectionReward:return"section_reward";}return"unknown";}
 
 static int initialGames(){
     static const int g[9]={20,30,40,50,75,100,150,200,300};
@@ -94,21 +100,15 @@ static int addGames(){
     double r=u01(),a=0;for(int i=0;i<6;++i){a+=w[i];if(r<a)return g[i];}return 200;
 }
 static int specialAdd(){ static const int g[6]={20,30,40,50,100,200}; static const double w[6]={.30,.25,.20,.15,.08,.02}; double r=u01(),a=0;for(int i=0;i<6;++i){a+=w[i];if(r<a)return g[i];}return 200; }
-static int upperChains(){
-    if(!profile().fullUpper){
-        static const int g6[9]={1,2,3,4,5,6,8,12,16};
-        static const double w6[9]={.20,.18,.16,.14,.11,.08,.06,.04,.03};
-        double r=u01(),a=0;for(int i=0;i<9;++i){a+=w6[i];if(r<a)return g6[i];}return 16;
-    }
-    static const int g[11]={1,2,3,5,8,12,16,24,32,50,100};
-    static const double w[11]={.12,.10,.08,.08,.10,.12,.12,.11,.08,.05,.04};
-    double r=u01(),a=0;for(int i=0;i<11;++i){a+=w[i];if(r<a)return g[i];}return 100;
-}
-static void rerollAT(){s.at_table=(ATTable)(next64()%4);s.at_pattern=(int)(next64()%5);}
+static int upperChains(){double p=profile().fullUpper?.94055:.7543;int n=1;while(chance(p))++n;return n;}
+static int weakShorten(){static const int g[6]={5,10,15,20,25,50};static const double w[6]={.20,.25,.25,.15,.10,.05};double r=u01(),a=0;for(int i=0;i<6;++i){a+=w[i];if(r<a)return g[i];}return 50;}
+static int strongShorten(){static const int g[6]={20,50,75,100,150,200};static const double w[6]={.15,.25,.25,.20,.10,.05};double r=u01(),a=0;for(int i=0;i<6;++i){a+=w[i];if(r<a)return g[i];}return 200;}
+static int continuousShorten(){static const int g[6]={5,20,40,60,80,100};int total=0;bool again=true;while(again){total+=g[next64()%6];again=false;for(int i=0;i<10;++i){if(chance(1.0/15.0)){again=true;break;}}}return total;}
+static void rerollAT(){double r=u01();if(s.at_table==ATHeaven||s.at_table==ATSuperHeaven){if(r<.30)s.at_table=ATNormal;else if(r<.55)s.at_table=ATHeaven;else if(r<.75)s.at_table=ATSuperHeaven;else s.at_table=Specialized;}else{if(r<.50)s.at_table=ATNormal;else if(r<.75)s.at_table=ATHeaven;else s.at_table=Specialized;}s.at_pattern=(int)(next64()%5);}
 static int chooseCeiling(NormalTable m,int p){static const int A[10]={500,700,750,900,1000,1100,1250,1350,1450,1500};static const int B[10]={250,300,400,500,600,700,750,800,1000,1250};static const int H[10]={100,200,250,300,400,500,600,700,750,750};static const int SH[10]={50,50,100,100,200,200,250,250,300,300};p=clampi(p,0,9);switch(m){case NormalA:return A[p];case NormalB:return B[p];case Heaven:return H[p];case SuperHeaven:return SH[p];case Special:return chance(.95)?777:1500;}return 1500;}
-static void rerollNormal(){double r=u01(); if(r<.45)s.normal_table=NormalA;else if(r<.80)s.normal_table=NormalB;else if(r<.95)s.normal_table=Heaven;else s.normal_table=SuperHeaven;s.normal_pattern=(int)(next64()%10);s.normal_actual_games=0;s.normal_display_games=0;s.special_window_checked=false;s.bell9_streak=0;s.normal_ceiling=chooseCeiling(s.normal_table,s.normal_pattern);}
+static void rerollNormal(){double r=u01();if(r<.45)s.normal_table=NormalA;else if(r<.80)s.normal_table=NormalB;else if(r<.95)s.normal_table=Heaven;else s.normal_table=SuperHeaven;s.normal_pattern=(int)(next64()%10);s.normal_actual_games=0;s.normal_display_games=0;s.special_window_checked=false;s.high_active=false;s.high_games=0;s.cold_bonus=false;s.bell9_streak=0;s.normal_ceiling=chooseCeiling(s.normal_table,s.normal_pattern);}
 static bool highUnlocked(){return s.normal_actual_games>50;}
-static Role drawRole(){uint32_t d=(uint32_t)(next64()&(RNG_SPACE-1u));if(d<ROLE_ONE)return OneMedal;d-=ROLE_ONE;if(d<ROLE_BELL9)return Bell9;d-=ROLE_BELL9;if(d<ROLE_BELL15)return Bell15;d-=ROLE_BELL15;if(d<ROLE_REPLAY)return Replay;return Miss;}
+static Role drawRole(){uint32_t d=(uint32_t)(next64()&(RNG_SPACE-1u));if(d<ROLE_ONE)return OneMedal;d-=ROLE_ONE;if(d<ROLE_BELL9)return Bell9;d-=ROLE_BELL9;if(d<ROLE_BELL15)return Bell15;d-=ROLE_BELL15;if(d<ROLE_REPLAY)return Replay;d-=ROLE_REPLAY;if(d<ROLE_WEAK_CHERRY)return WeakCherry;d-=ROLE_WEAK_CHERRY;if(d<ROLE_STRONG_CHERRY)return StrongCherry;d-=ROLE_STRONG_CHERRY;if(d<ROLE_WATERMELON)return Watermelon;d-=ROLE_WATERMELON;if(d<ROLE_WEAK_CHANCE)return WeakChance;d-=ROLE_WEAK_CHANCE;if(d<ROLE_STRONG_CHANCE)return StrongChance;d-=ROLE_STRONG_CHANCE;if(d<ROLE_PENGUIN)return PenguinChance;return Miss;}
 static int prefLevel(){return s.stocks>=5?3:s.stocks>=3?2:s.stocks>=1?1:0;}
 static void sectionDelta(int64_t v,Events& out){s.section_diff+=v;s.total_diff+=v;if(s.section_diff<s.section_min_diff)s.section_min_diff=s.section_diff;if(s.section_diff>=2400){int p=prefLevel();s.stocks=0;++s.section_count;s.section_diff=0;s.section_min_diff=0;out.add(SectionCross,p,"6.5 section cut; stocks collapsed to next-section preference level");rerollAT();}}
 static void startAT(Tier t,bool stock,Events& out,const char* why){s.in_at=true;s.tier=t;s.at_games_left=initialGames();if(stock)++s.stocks;rerollAT();out.add(ATStart,s.at_games_left,why);}
