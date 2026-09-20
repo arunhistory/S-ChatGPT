@@ -96,7 +96,7 @@
   let pendingPayout = 0;
   let pendingWasAT = false;
   let pendingStopOrder = [0, 1, 2];
-  let pendingWatermelonSubstitute = [false, false, false];
+  let pendingAssistSubstitute = [false, false, false];
   let reelTimers = [null, null, null];
   let reelStopped = [true, true, true];
   let reelPositions = [0, 0, 0];
@@ -315,18 +315,24 @@
     return true;
   };
 
-  const chooseWatermelonSubstitutePosition = (index, base) => {
-    const safeKinds = ['replay','bell','bar','chance','miss'];
+  const assistSubstituteRoles = new Set([
+    'watermelon','weak_chance','strong_chance','penguin_chance'
+  ]);
+
+  const chooseAssistSubstitutePosition = (index, base) => {
+    // 目押し失敗でも成立役は消さないアシスト用の代用停止。
+    // 別の確定役・レア役を誤表示しにくい中段図柄を優先する。
+    const safeKinds = ['chance','replay','bar','bell','miss'];
     for (const kind of safeKinds) {
       for (let slip = 0; slip <= 4; slip++) {
         const candidate = mod(base + slip, reelStrips[index].length);
         if (visibleKind(index, candidate, 1) === kind) {
-          pendingWatermelonSubstitute[index] = true;
+          pendingAssistSubstitute[index] = true;
           return candidate;
         }
       }
     }
-    pendingWatermelonSubstitute[index] = true;
+    pendingAssistSubstitute[index] = true;
     return base;
   };
 
@@ -345,10 +351,9 @@
         const candidate = mod(base + slip, strip.length);
         if (candidateMatchesTarget(index, candidate, target)) return candidate;
       }
-      // スイカは4コマで図柄を引き込めない場合、代用停止で成立を維持する。
-      // それ以外の目押し役は従来通り取りこぼし。
-      if (pendingRole === 'watermelon') {
-        return chooseWatermelonSubstitutePosition(index, base);
+      // アシスト対象役は4コマで本来図柄を引き込めなくても代用停止で成立を維持する。
+      if (assistSubstituteRoles.has(pendingRole)) {
+        return chooseAssistSubstitutePosition(index, base);
       }
       return base;
     }
@@ -469,7 +474,7 @@
 
     const s0 = state();
     pendingWasAT = !!s0.inAT;
-    pendingWatermelonSubstitute = [false, false, false];
+    pendingAssistSubstitute = [false, false, false];
     clearBellNavi();
 
     pendingResult = callJson(s0.inAT ? 'slot_spin_at_json' : 'slot_spin_normal_json');
@@ -508,8 +513,8 @@
     pendingResult = null;
 
     const physicalPattern = classifyPattern();
-    const watermelonAssist = pendingRole === 'watermelon' && pendingWatermelonSubstitute.some(Boolean);
-    const actualRole = watermelonAssist ? 'watermelon' : physicalPattern;
+    const assistSubstitute = assistSubstituteRoles.has(pendingRole) && pendingAssistSubstitute.some(Boolean);
+    const actualRole = assistSubstitute ? pendingRole : physicalPattern;
     const payout = pendingPayout;
     let allEvents = [...(result.events || [])];
 
@@ -528,8 +533,8 @@
 
     pushEvents(allEvents);
     showFinalBanner(allEvents, pendingRole, pendingRole === 'replay' ? 0 : payout);
-    if (watermelonAssist) {
-      els.eventNote.textContent += ' / スイカ代用停止';
+    if (assistSubstitute) {
+      els.eventNote.textContent += ' / ' + (roleLabels[pendingRole] || pendingRole) + '代用停止';
     }
     render(state());
     if (!autoEnabled) clearBellNavi();
@@ -587,7 +592,7 @@
     pendingRole = 'miss';
     pendingPayout = 0;
     pendingWasAT = false;
-    pendingWatermelonSubstitute = [false, false, false];
+    pendingAssistSubstitute = [false, false, false];
     clearBellNavi();
     reelStopped = [true, true, true];
     els.lever.disabled = false;
