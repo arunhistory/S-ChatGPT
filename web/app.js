@@ -287,6 +287,7 @@
     const types = new Set(events.map(e => e.type));
 
     // プレミア系は確定時だけ。フェイク虹/フェイクストライプは禁止。
+    if (role === 'entry_judge') return { cls:'omen-purple', fx:'purple', text:'どっちだ…' };
     if (role === 'freeze') return { cls:'omen-premium screen-blackout', fx:'stripe flash rainbow', text:'……', premium:true };
     if (role === 'at' || role === 'tier_up') return { cls:'omen-gold screen-shock', fx:'gold flash', text:'激熱' };
     if (role === 'hit') return { cls:'omen-red screen-shock', fx:'red flash slash', text:'好機' };
@@ -351,6 +352,7 @@
     applyPresentation(presentation);
 
     const cue = {
+      entry_judge: { fx:'purple', title:'', sub:'', eyebrow:'' },
       one_medal: { fx:'', title:'1枚役', sub:'静かな払い出し', eyebrow:'NORMAL' },
       bell9: { fx:'yellow', title:'BELL', sub:'9枚', eyebrow:'YELLOW' },
       bell15: { fx:'gold', title:'BIG BELL', sub:'15枚', eyebrow:'GOLD' },
@@ -1423,7 +1425,10 @@
       setBellNavi(pendingControl.navOrder);
     }
 
-    stageCue(pendingRole, 'spin');
+    stageCue(
+      pendingSyntheticEntry && pendingEntryAmbiguous ? 'entry_judge' : pendingRole,
+      'spin'
+    );
 
     if ((pendingSyntheticEntry || forcedRole === 'freeze') && pendingRole === 'freeze') {
       clearAutoTimers();
