@@ -180,6 +180,7 @@ struct MachineState {
     bool high_probability_active = false;
     int high_probability_games = 0;
     int bell9_streak = 0;
+    int last_nav_order = -1; // ATレバーON時に確定する6択押し順(0..5)
     bool cold_at = false;
     bool cold_bonus = false;
     int cz_misses = 0;
