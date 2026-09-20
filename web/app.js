@@ -133,6 +133,7 @@
   let pendingSyntheticOmen = false;
   let entryCinematicActive = false;
   let freezeSequenceActive = false;
+  let pendingEntryAmbiguous = false;
   let reelTimers = [null, null, null];
   let reelStopped = [true, true, true];
   let reelPositions = [0, 0, 0];
@@ -956,6 +957,55 @@
     }
   };
 
+  const runNormalEntryJudgeCinematic = (role) => {
+    entryCinematicActive = true;
+
+    // 入賞Gのリールは回すが、ジャッジ中はSTOP不可。
+    for (let i = 0; i < 3; i++) {
+      startReelMotion(i);
+      stops[i].disabled = true;
+      stops[i].classList.remove('active');
+    }
+
+    // この時点ではAT/BONUSの答えを一切出さない。
+    els.eventTitle.textContent = '当たり';
+    els.eventNote.textContent = '行き先ジャッジ中';
+    showMachineCinematic('HIT', '当たり', 'BONUSか… ATか…', 'judge');
+
+    autoTimers.push(setTimeout(() => {
+      showMachineCinematic('JUDGE', 'BONUS ？  AT', 'まだ分からない', 'judge versus');
+      els.stageScreen.classList.add('screen-shock','omen-purple');
+      els.effectLayer.className = 'effect-layer purple';
+    }, 650));
+
+    autoTimers.push(setTimeout(() => {
+      const isAT = role === 'at';
+      showMachineCinematic(
+        isAT ? 'AT' : 'BONUS',
+        isAT ? 'AT 突入！' : 'BONUS！',
+        isAT ? '上位を目指せ' : 'ここから勝負',
+        isAT ? 'gold judge-result' : 'red judge-result'
+      );
+      els.stageScreen.classList.remove('omen-purple');
+      els.stageScreen.classList.add(isAT ? 'omen-gold' : 'omen-red');
+      els.effectLayer.className = 'effect-layer ' + (isAT ? 'gold flash' : 'red flash');
+    }, 1350));
+
+    autoTimers.push(setTimeout(() => {
+      const isAT = role === 'at';
+      showMachineCinematic(
+        'TARGET',
+        '🟥7を狙え',
+        isAT ? '🟥7 🟥7 🟥7' : '🟥7 🟥7 BAR',
+        isAT ? 'gold target' : 'red target'
+      );
+      els.eventTitle.textContent = '🟥7を狙え';
+      els.eventNote.textContent = isAT ? 'AT図柄を揃えろ' : 'BONUS図柄を揃えろ';
+      entryCinematicActive = false;
+      unlockEntryStops();
+    }, 2050));
+  };
+
   const runBonusEntryCinematic = (role) => {
     entryCinematicActive = true;
     for (let i = 0; i < 3; i++) {
@@ -1188,6 +1238,7 @@
     pendingControl = null;
     pendingSyntheticEntry = false;
     pendingSyntheticOmen = false;
+    pendingEntryAmbiguous = false;
     clearBellNavi();
 
     // ここがレバーON抽選。直撃予約がある場合は、WASMを進めず
@@ -1219,6 +1270,7 @@
       const queued = atOmenFlow;
       atOmenFlow = null;
       pendingSyntheticEntry = true;
+      pendingEntryAmbiguous = false;
       pendingWasBonus = false;
       pendingWasAT = false;
       pendingWasChallenge = false;
@@ -1236,6 +1288,7 @@
       const queued = deferredEntryReveal;
       deferredEntryReveal = null;
       pendingSyntheticEntry = true;
+      pendingEntryAmbiguous = queued.ambiguous !== false && queued.role !== 'freeze';
       pendingWasBonus = false;
       pendingWasAT = false;
       pendingWasChallenge = false;
@@ -1308,7 +1361,9 @@
         const hasFreezeEntry = entryEvents.some(e => e.type === 'freeze');
         deferredEntryReveal = {
           role: hasFreezeEntry ? 'freeze' : (pendingResult.inBonus ? 'hit' : 'at'),
-          events: entryEvents
+          events: entryEvents,
+          // 通常時の当選は、FREEZE等の確定契機を除きAT/BONUSの行き先を演出で隠す。
+          ambiguous: !hasFreezeEntry
         };
 
         // 現在Gは実際に成立した役だけを表示する。
@@ -1378,7 +1433,14 @@
 
     if ((pendingSyntheticEntry || forcedRole === 'hit' || forcedRole === 'at') && (pendingRole === 'hit' || pendingRole === 'at')) {
       clearAutoTimers();
-      runBonusEntryCinematic(pendingRole);
+
+      // 通常時からの自然当選は最後のジャッジまでAT/BONUSを伏せる。
+      // DEBUG強制やAT中予兆経由など、既に行き先確定を見せてよい経路は従来の確定演出。
+      if (pendingSyntheticEntry && pendingEntryAmbiguous) {
+        runNormalEntryJudgeCinematic(pendingRole);
+      } else {
+        runBonusEntryCinematic(pendingRole);
+      }
       return;
     }
 
@@ -1550,6 +1612,7 @@
     pendingSyntheticOmen = false;
     entryCinematicActive = false;
     freezeSequenceActive = false;
+    pendingEntryAmbiguous = false;
     deferredEntryReveal = null;
     atOmenFlow = null;
     els.machine.classList.remove('freeze-all-off','freeze-return');
