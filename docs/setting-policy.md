@@ -20,6 +20,22 @@
 - EX is not used as the compliance reference profile.
 - Current runtime defaults to EX until settings 1-6 receive their final tuned parameter sets.
 
+## Target payout ratios
+
+These are calibration targets, not measured results.
+
+| Setting | Target payout ratio |
+|---:|---:|
+| 1 / L | 85% |
+| 2 | 96% |
+| 3 | 99% |
+| 4 | 103% |
+| 5 | 108% |
+| 6 | 114% |
+| 7 / EX | 150% |
+
+Setting 6 is the highest Japanese-target profile. EX is the unconstrained personal/exhibition profile and is not part of the Japanese-compliance target set.
+
 ## Current EX payout targets
 
 - Lower AT: approximately +6 medals/game net.
@@ -49,5 +65,5 @@ Setting 6 is derived from EX while keeping the same game rules.
 | Ordinary add mean | 31G | 24.4G |
 | Upper-special expected add | ~690G | ~167G |
 
-The Setting 6 raw normal-route values are provisional calibration knobs until the full normal-state lottery model is integrated.
-Settings 1-5 remain intentionally untuned.
+The Setting 6 raw normal-route values are provisional calibration knobs until the full normal-state lottery model is integrated. Setting 6 must be re-tuned toward the locked 114% long-run target. EX must be tuned toward 150% without weakening its full-spec role.
+Settings 1-5 remain intentionally untuned except for their locked payout-ratio targets.
