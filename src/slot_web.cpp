@@ -63,7 +63,8 @@ static uint64_t next64(){
 }
 static double u01(){ return (double)(next64()>>11) * (1.0/9007199254740992.0); }
 static bool chance(double p){ return p>=1.0 || (p>0.0 && u01()<p); }
-static int clampi(int v,int lo,int hi){return v<lo?lo:(v>hi?hi:v);}\nstatic bool setting6(){return s.setting==6;}
+static int clampi(int v,int lo,int hi){return v<lo?lo:(v>hi?hi:v);}
+static bool setting6(){return s.setting==6;}
 
 static const char* normalName(NormalTable v){switch(v){case NormalA:return"normal_a";case NormalB:return"normal_b";case Heaven:return"heaven";case SuperHeaven:return"super_heaven";case Special:return"special";}return"unknown";}
 static const char* tierName(Tier v){switch(v){case Lower:return"lower";case Middle:return"middle";case Upper:return"upper";}return"unknown";}
@@ -125,7 +126,8 @@ static Events spinAT(){Events out;out.clear();if(!s.in_at)return out;s.last_role
 }
 
 extern "C" {
-__attribute__((visibility("default"))) void slot_reset(uint32_t lo,uint32_t hi){slot::resetState(((uint64_t)hi<<32)|lo);}\n__attribute__((visibility("default"))) void slot_set_setting(int setting){if(setting<1||setting>7)return;slot::s.setting=setting;slot::resetState(slot::next64());}
+__attribute__((visibility("default"))) void slot_reset(uint32_t lo,uint32_t hi){slot::resetState(((uint64_t)hi<<32)|lo);}
+__attribute__((visibility("default"))) void slot_set_setting(int setting){if(setting<1||setting>7)return;slot::s.setting=setting;slot::resetState(slot::next64());}
 __attribute__((visibility("default"))) const char* slot_state_json(){return slot::stateJSON();}
 __attribute__((visibility("default"))) const char* slot_spin_normal_json(){static slot::Events e;e=slot::spinNormal();return slot::eventsJSON(e);}
 __attribute__((visibility("default"))) const char* slot_spin_at_json(){static slot::Events e;e=slot::spinAT();return slot::eventsJSON(e);}
