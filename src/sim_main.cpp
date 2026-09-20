@@ -29,6 +29,7 @@ int main(int argc, char** argv) {
 
     auto ratio = [spins](long long n) -> double { return n ? static_cast<double>(spins) / n : 0.0; };
     std::cout << "setting=" << setting << '\n'
+              << "target_payout_ratio=" << (engine.config().target_payout_ratio * 100.0) << "%\n"
               << "spins=" << spins << '\n'
               << "CZ count=" << cz << " 1/" << ratio(cz) << '\n'
               << "bonus count=" << bonus << " 1/" << ratio(bonus) << '\n'
