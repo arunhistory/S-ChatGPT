@@ -1315,13 +1315,13 @@
 
     stageCue(pendingRole, 'spin');
 
-    if (pendingSyntheticEntry && pendingRole === 'freeze') {
+    if ((pendingSyntheticEntry || forcedRole === 'freeze') && pendingRole === 'freeze') {
       clearAutoTimers();
       runFreezeEntryCinematic();
       return;
     }
 
-    if (pendingSyntheticEntry && (pendingRole === 'hit' || pendingRole === 'at')) {
+    if ((pendingSyntheticEntry || forcedRole === 'hit' || forcedRole === 'at') && (pendingRole === 'hit' || pendingRole === 'at')) {
       clearAutoTimers();
       runBonusEntryCinematic(pendingRole);
       return;
