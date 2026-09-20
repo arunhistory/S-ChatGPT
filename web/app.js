@@ -320,12 +320,18 @@
     'watermelon','weak_chance','strong_chance','penguin_chance'
   ]);
 
+  // 🟥7当選系は、STOP入力そのものを狙える位相へ補正する目押しアシスト。
+  // 青7フリーズのような無条件強制停止とは分け、補正後も0〜4コマ引き込みで停止させる。
+  const aimAssistRoles = new Set(['at','hit']);
+
   const buildSpinControl = (role, result, wasAT) => ({
     role,
     // 制御テーブルはレバーON時点で固定。STOP時は押下位置からこの表を参照するだけ。
     targets: [0,1,2].map(index => targetForRole(role, index)),
     assistSubstitute: assistSubstituteRoles.has(role),
     substituteUsed: [false, false, false],
+    aimAssist: aimAssistRoles.has(role),
+    aimAssistUsed: [false, false, false],
     navOrder: wasAT ? Number(result.navOrder ?? -1) : -1
   });
 
@@ -342,6 +348,25 @@
       }
     }
     pendingControl.substituteUsed[index] = true;
+    return base;
+  };
+
+  const chooseAimAssistedPosition = (index, target, base) => {
+    const strip = reelStrips[index];
+
+    // 押した瞬間に狙い図柄が4コマ圏外なら、目押しアシストで有効STOP位相を少し先へ送る。
+    // その有効位相からの停止自体は必ず0〜4コマの範囲に収める。
+    for (let advance = 1; advance < strip.length; advance++) {
+      const assistedBase = mod(base + advance, strip.length);
+      for (let slip = 0; slip <= 4; slip++) {
+        const candidate = mod(assistedBase + slip, strip.length);
+        if (candidateMatchesTarget(index, candidate, target)) {
+          pendingControl.aimAssistUsed[index] = true;
+          return candidate;
+        }
+      }
+    }
+
     return base;
   };
 
@@ -362,6 +387,12 @@
         const candidate = mod(base + slip, strip.length);
         if (candidateMatchesTarget(index, candidate, target)) return candidate;
       }
+
+      // 🟥7当選系は取りこぼしにせず、狙える位相までSTOPをアシストして成立ラインを完成させる。
+      if (pendingControl.aimAssist) {
+        return chooseAimAssistedPosition(index, target, base);
+      }
+
       // アシスト対象役は4コマで本来図柄を引き込めなくても代用停止で成立を維持する。
       if (pendingControl.assistSubstitute) {
         return chooseAssistSubstitutePosition(index, base);
@@ -528,6 +559,7 @@
     // 停止形は結果ではなく表示。成立役はレバーON時のpendingRoleが唯一の結果。
     const physicalPattern = classifyPattern();
     const assistSubstitute = !!pendingControl?.substituteUsed?.some(Boolean);
+    const aimAssistUsed = !!pendingControl?.aimAssistUsed?.some(Boolean);
     const payout = pendingPayout;
     let allEvents = [...(result.events || [])];
 
@@ -549,7 +581,10 @@
     if (assistSubstitute) {
       els.eventNote.textContent += ' / 代用停止';
     }
-    if (physicalPattern !== pendingRole && !assistSubstitute && pendingRole !== 'one_medal') {
+    if (aimAssistUsed) {
+      els.eventNote.textContent += ' / 目押しアシスト';
+    }
+    if (physicalPattern !== pendingRole && !assistSubstitute && !aimAssistUsed && pendingRole !== 'one_medal') {
       els.eventNote.textContent += ' / 取りこぼし停止';
     }
     stageCue(pendingRole, 'result');
