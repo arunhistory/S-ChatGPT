@@ -31,7 +31,7 @@ enum NormalTable : uint8_t { NormalA, NormalB, Heaven, SuperHeaven, Special };
 enum Tier : uint8_t { Lower, Middle, Upper };
 enum ATTable : uint8_t { ATNormal, ATHeaven, ATSuperHeaven, Specialized };
 enum Role : uint8_t { Miss, OneMedal, Bell9, Bell15, Replay, WeakCherry, StrongCherry, Watermelon, WeakChance, StrongChance, PenguinChance };
-enum EvType : uint8_t { EvNone, CZ, Bonus, EpisodeBonus, ATStart, ATAddGames, SpecialZone, UpperSpecialZone, StockGain, TierUp, TierDown, ATEnd, UpperComeback, Freeze, SectionCross, HighEnter, HighExit, Shorten, ColdEnter, SectionReward };
+enum EvType : uint8_t { EvNone, CZ, Bonus, EpisodeBonus, ChallengeStart, ChallengePoint, ChallengeJudge, ATStart, ATAddGames, SpecialZone, UpperSpecialZone, StockGain, TierUp, TierDown, ATEnd, UpperComeback, Freeze, SectionCross, HighEnter, HighExit, Shorten, ColdEnter, SectionReward };
 struct Event { EvType type; int value; const char* note; };
 struct Events { Event e[256]; int n; void clear(){n=0;} void add(EvType t,int v,const char* s){if(n<256)e[n++]={t,v,s};} };
 struct State {
@@ -56,6 +56,14 @@ struct State {
     int at_pattern;
     int at_games_left;
     int stocks;
+    bool in_bonus;
+    bool episode_bonus;
+    bool bonus_return_to_at;
+    int bonus_medals_left;
+    int bonus_pre_points;
+    bool challenge_active;
+    int challenge_games_left;
+    int challenge_points;
     int64_t section_diff, section_min_diff, total_diff, section_count, total_games;
     Role last_role;
     int last_payout;
@@ -94,7 +102,7 @@ static const char* normalName(NormalTable v){switch(v){case NormalA:return"norma
 static const char* tierName(Tier v){switch(v){case Lower:return"lower";case Middle:return"middle";case Upper:return"upper";}return"unknown";}
 static const char* atTableName(ATTable v){switch(v){case ATNormal:return"normal";case ATHeaven:return"heaven";case ATSuperHeaven:return"super_heaven";case Specialized:return"specialized";}return"unknown";}
 static const char* roleName(Role v){switch(v){case Miss:return"miss";case OneMedal:return"one_medal";case Bell9:return"bell9";case Bell15:return"bell15";case Replay:return"replay";case WeakCherry:return"weak_cherry";case StrongCherry:return"strong_cherry";case Watermelon:return"watermelon";case WeakChance:return"weak_chance";case StrongChance:return"strong_chance";case PenguinChance:return"penguin_chance";}return"miss";}
-static const char* evName(EvType v){switch(v){case EvNone:return"none";case CZ:return"cz";case Bonus:return"bonus";case EpisodeBonus:return"episode_bonus";case ATStart:return"at_start";case ATAddGames:return"at_add_games";case SpecialZone:return"special_zone";case UpperSpecialZone:return"upper_special_zone";case StockGain:return"stock_gain";case TierUp:return"tier_up";case TierDown:return"tier_down";case ATEnd:return"at_end";case UpperComeback:return"upper_comeback";case Freeze:return"freeze";case SectionCross:return"section_cross";case HighEnter:return"high_enter";case HighExit:return"high_exit";case Shorten:return"shorten";case ColdEnter:return"cold_enter";case SectionReward:return"section_reward";}return"unknown";}
+static const char* evName(EvType v){switch(v){case EvNone:return"none";case CZ:return"cz";case Bonus:return"bonus";case EpisodeBonus:return"episode_bonus";case ChallengeStart:return"challenge_start";case ChallengePoint:return"challenge_point";case ChallengeJudge:return"challenge_judge";case ATStart:return"at_start";case ATAddGames:return"at_add_games";case SpecialZone:return"special_zone";case UpperSpecialZone:return"upper_special_zone";case StockGain:return"stock_gain";case TierUp:return"tier_up";case TierDown:return"tier_down";case ATEnd:return"at_end";case UpperComeback:return"upper_comeback";case Freeze:return"freeze";case SectionCross:return"section_cross";case HighEnter:return"high_enter";case HighExit:return"high_exit";case Shorten:return"shorten";case ColdEnter:return"cold_enter";case SectionReward:return"section_reward";}return"unknown";}
 
 static int initialGames(){
     static const int g[9]={20,30,40,50,75,100,150,200,300};
@@ -122,19 +130,128 @@ static void sectionDelta(int64_t v,Events& out){s.section_diff+=v;s.total_diff+=
 static void startAT(Tier t,bool stock,Events& out,const char* why,bool allowCold=true){s.in_at=true;s.tier=t;s.at_games_left=initialGames();s.cold_at=allowCold&&chance(.60);if(s.cold_at)out.add(ColdEnter,1,"AT cold segment: growth -30%");if(stock)++s.stocks;rerollAT();out.add(ATStart,s.at_games_left,why);}
 static void playBonus(Events& out);
 static void playCZ(Events& out){bool resolved=false;for(int g=0;g<10&&!resolved;++g){++s.total_games;sectionDelta(-3,out);if(chance(1.0/1000.0)){startAT(Lower,false,out,"CZ direct AT");s.cz_misses=0;resolved=true;}else if(chance(1.0/100.0)){out.add(Bonus,50,"CZ bonus hit");playBonus(out);s.cz_misses=0;resolved=true;}}if(!resolved){++s.cz_misses;if(s.cz_misses>=3){s.cz_misses=0;out.add(Bonus,50,"CZ 3-miss ceiling -> bonus");playBonus(out);}}}
-static void playBonus(Events& out){Profile p=profile();bool was=s.in_at;s.cold_bonus=chance(.60);double growth=s.cold_bonus?.70:1.0;if(s.cold_bonus)out.add(ColdEnter,0,"regular-hit cold segment: growth -30%");sectionDelta(50,out);if(chance(p.stock*growth)){++s.stocks;out.add(StockGain,s.stocks,"bonus stock lottery");}if(chance(.01*growth)){sectionDelta(80,out);out.add(EpisodeBonus,80,"1% post-bonus episode promotion");if(chance(1.0/3.0)){if(was){if(s.tier==Lower){s.tier=Middle;out.add(TierUp,0,"episode 1/3 -> middle AT");}}else{s.cold_bonus=false;startAT(Middle,false,out,"episode 1/3 middle AT");s.bonus_at_misses=0;rerollNormal();return;}}}if(was){s.cold_bonus=false;return;}bool forced=s.bonus_at_misses>=p.bonusMissCeiling-1;if(forced||chance(p.bonusAT*growth)){s.bonus_at_misses=0;s.cold_bonus=false;startAT(Lower,false,out,"bonus performance cleared -> AT");}else{++s.bonus_at_misses;s.cold_bonus=false;}rerollNormal();}
+static double bonusRareRate(Role r){
+    switch(r){
+        case StrongCherry:return 1.00; // 中段チェリー
+        case WeakCherry:return .30;
+        case Watermelon:return .20;
+        case StrongChance:return .80;
+        case WeakChance:return .50;
+        default:return 0.0;
+    }
+}
+static void beginEpisode(bool returnToAT,Events& out,const char* why){
+    s.in_bonus=true;s.episode_bonus=true;s.bonus_return_to_at=returnToAT;
+    s.bonus_medals_left=80;s.bonus_pre_points=0;s.challenge_active=false;s.challenge_games_left=0;s.challenge_points=0;
+    out.add(EpisodeBonus,80,why);
+}
+static void beginRegularBonus(bool returnToAT){
+    s.in_bonus=true;s.episode_bonus=false;s.bonus_return_to_at=returnToAT;
+    s.bonus_medals_left=50;s.bonus_pre_points=0;s.challenge_active=false;s.challenge_games_left=0;s.challenge_points=0;
+}
+static void playBonus(Events& out){
+    bool returnToAT=s.in_at;
+    if(!returnToAT&&(s.normal_table==Heaven||s.normal_table==SuperHeaven)){
+        if(out.n>0&&out.e[out.n-1].type==Bonus)out.e[out.n-1]={EpisodeBonus,80,"heaven/super-heaven direct episode"};
+        beginEpisode(false,out,"heaven/super-heaven direct episode");
+        if(out.n>=2&&out.e[out.n-2].type==EpisodeBonus)--out.n; // keep one episode-start event
+        return;
+    }
+    beginRegularBonus(returnToAT);
+}
+static double challengeBaseRate(int points){
+    if(points<=2)return .10;
+    if(points<=5)return .20;
+    if(points<=7)return .50;
+    if(points<=9)return .80;
+    return 1.00;
+}
+static double challengeJudgeBonus(Role r){
+    switch(r){
+        case WeakChance:return .20;
+        case WeakCherry:return .25;
+        case Watermelon:return .10;
+        case Bell9:case Bell15:case Replay:return .05;
+        default:return 0.0;
+    }
+}
+static Events spinBonus(){
+    Events out;out.clear();if(!s.in_bonus)return out;
+    s.nav_order=-1;++s.total_games;
+    if(forced_role>=0&&forced_role<=PenguinChance){s.last_role=(Role)forced_role;forced_role=-1;}else{s.last_role=drawRole();}
+    s.last_payout=0;
+
+    double rr=bonusRareRate(s.last_role);
+    if(rr>0.0&&chance(rr)){
+        if(s.episode_bonus){
+            ++s.stocks;out.add(StockGain,s.stocks,"episode rare-role stock");
+        }else if(!s.bonus_return_to_at&&s.bonus_pre_points<10){
+            ++s.bonus_pre_points;out.add(ChallengePoint,s.bonus_pre_points,"bonus pre-stage +1 point");
+        }
+    }
+
+    int gain=s.bonus_medals_left>6?6:s.bonus_medals_left;
+    if(gain<0)gain=0;
+    if(gain>0){sectionDelta(gain,out);s.bonus_medals_left-=gain;s.last_payout=gain;}
+
+    if(s.bonus_medals_left<=0){
+        bool wasEpisode=s.episode_bonus;
+        bool returnToAT=s.bonus_return_to_at;
+        s.in_bonus=false;s.episode_bonus=false;s.bonus_return_to_at=false;s.cold_bonus=false;
+
+        if(wasEpisode){
+            if(!returnToAT)rerollNormal();
+        }else if(chance(.01)){
+            beginEpisode(returnToAT,out,"1% post-bonus episode promotion");
+        }else if(!returnToAT){
+            s.challenge_active=true;s.challenge_games_left=10;s.challenge_points=clampi(s.bonus_pre_points,0,10);
+            out.add(ChallengeStart,s.challenge_points,"10G AT challenge start");
+        }
+    }
+    return out;
+}
+static Events spinChallenge(){
+    Events out;out.clear();if(!s.challenge_active)return out;
+    s.nav_order=-1;++s.total_games;
+    if(forced_role>=0&&forced_role<=PenguinChance){s.last_role=(Role)forced_role;forced_role=-1;}else{s.last_role=drawRole();}
+    s.last_payout=0;
+
+    if(s.last_role!=Miss&&s.challenge_points<10){
+        ++s.challenge_points;out.add(ChallengePoint,s.challenge_points,"challenge role +1 point");
+    }
+
+    if(s.challenge_games_left>0)--s.challenge_games_left;
+    if(s.challenge_games_left<=0){
+        int points=clampi(s.challenge_points,0,10);
+        double rate=challengeBaseRate(points);
+        bool dense=(s.last_role==StrongCherry||s.last_role==StrongChance);
+        double bonus=challengeJudgeBonus(s.last_role);
+        if(rate+bonus>1.0)bonus=1.0-rate;
+        double finalRate=rate+bonus;
+        bool forcedByStreak=s.bonus_at_misses>=4;
+        bool win=dense||forcedByStreak||chance(finalRate);
+        s.challenge_active=false;
+        out.add(ChallengeJudge,(int)(finalRate*100.0+0.5),win?"AT challenge success":"AT challenge miss");
+        if(win){
+            s.bonus_at_misses=0;startAT(Lower,false,out,dense?"final judge rare role -> AT":"AT challenge cleared",false);rerollNormal();
+        }else{
+            ++s.bonus_at_misses;rerollNormal();
+        }
+    }
+    return out;
+}
 static void resolveCeiling(Events& out){if(s.normal_table==Special){if(s.normal_ceiling==777){int r=(int)(next64()%3);if(r==0)startAT(Lower,false,out,"special 777 ceiling: AT",false);else if(r==1)startAT(Middle,true,out,"special 777 ceiling: middle AT + stock",false);else startAT(Upper,false,out,"special 777 ceiling: upper AT",false);}else{out.add(Freeze,0,"special 1500 ceiling: freeze-favored");startAT(Upper,true,out,"special 1500 ceiling freeze reward",false);}rerollNormal();return;}double r=u01();if(r<.70){out.add(CZ,0,"normal ceiling -> CZ");playCZ(out);}else if(r<.95){out.add(Bonus,50,"normal ceiling -> bonus");playBonus(out);}else{startAT(Lower,false,out,"normal ceiling -> AT");rerollNormal();}}
-static void specialZoneRun(bool upper,Events& out){if(!upper){for(int g=0;g<5;++g){if(!chance(.5))continue;if(chance(.95)){int x=specialAdd();s.at_games_left+=x;out.add(ATAddGames,x,"special zone chained add");}else{out.add(Bonus,50,"special zone bonus");playBonus(out);}}return;}int chains=upperChains();for(int c=0;c<chains;++c){if(chance(.95)){int x=specialAdd();s.at_games_left+=x;out.add(ATAddGames,x,"upper-special preset add");}else{out.add(Bonus,50,"upper-special preset bonus");playBonus(out);}}}
+static void specialZoneRun(bool upper,Events& out){if(!upper){for(int g=0;g<5;++g){if(!chance(.5))continue;if(chance(.95)){int x=specialAdd();s.at_games_left+=x;out.add(ATAddGames,x,"special zone chained add");}else{out.add(Bonus,50,"special zone bonus");playBonus(out);return;}}return;}int chains=upperChains();for(int c=0;c<chains;++c){if(chance(.95)){int x=specialAdd();s.at_games_left+=x;out.add(ATAddGames,x,"upper-special preset add");}else{out.add(Bonus,50,"upper-special preset bonus");playBonus(out);return;}}}
 static void endAT(Events& out);
-static void resolveATEvent(Events& out){Profile p=profile();double scale=s.tier==Lower?1.0:p.scale;double hit=p.hit*scale,fall=s.tier==Lower?p.fall:(s.tier==Middle?1.0/180.0:1.0/150.0),add=p.add*scale,spec=p.spec*scale,epi=(1.0/1000.0)*scale,up=p.upper*scale;if(s.at_table==ATHeaven){hit*=1.9;epi*=1.4;}else if(s.at_table==ATSuperHeaven){add*=2.4;epi*=1.25;}else if(s.at_table==Specialized){hit*=.55;add*=.55;spec*=2.8;up*=2.5;}static const double pfv[5]={.82,.92,1.0,1.10,1.20};double pf=pfv[clampi(s.at_pattern,0,4)];hit*=pf;add*=pf;spec*=pf;if(s.cold_at){hit*=.70;add*=.70;spec*=.70;epi*=.70;up*=.70;}bool ea=s.at_table==ATHeaven||s.at_table==ATSuperHeaven;bool ua=s.at_table==Specialized;double total=hit+fall+add+spec+(ea?epi:0)+(ua?up:0);double x=u01();if(x>=total)return;if((x-=hit)<0){out.add(Bonus,50,"AT normal hit -> 50 medal bonus");playBonus(out);return;}if((x-=fall)<0){if(s.tier==Middle&&chance(.5)){s.tier=Lower;out.add(TierDown,0,"middle fall -> lower AT");}else if(s.tier==Upper&&chance(.5))endAT(out);return;}if((x-=add)<0){int g=addGames();s.at_games_left+=g;out.add(ATAddGames,g,"one-shot add");return;}if((x-=spec)<0){out.add(SpecialZone,0,"special zone");specialZoneRun(false,out);return;}if(ea&&(x-=epi)<0){sectionDelta(80,out);out.add(EpisodeBonus,80,"direct episode in heaven/super-heaven");if(s.tier==Lower&&chance(1.0/3.0)){s.tier=Middle;out.add(TierUp,0,"episode 1/3 -> middle AT");}return;}if(ua&&(x-=up)<0){out.add(UpperSpecialZone,0,"upper special zone");specialZoneRun(true,out);}}
+static void resolveATEvent(Events& out){Profile p=profile();double scale=s.tier==Lower?1.0:p.scale;double hit=p.hit*scale,fall=s.tier==Lower?p.fall:(s.tier==Middle?1.0/180.0:1.0/150.0),add=p.add*scale,spec=p.spec*scale,epi=(1.0/1000.0)*scale,up=p.upper*scale;if(s.at_table==ATHeaven){hit*=1.9;epi*=1.4;}else if(s.at_table==ATSuperHeaven){add*=2.4;epi*=1.25;}else if(s.at_table==Specialized){hit*=.55;add*=.55;spec*=2.8;up*=2.5;}static const double pfv[5]={.82,.92,1.0,1.10,1.20};double pf=pfv[clampi(s.at_pattern,0,4)];hit*=pf;add*=pf;spec*=pf;if(s.cold_at){hit*=.70;add*=.70;spec*=.70;epi*=.70;up*=.70;}bool ea=s.at_table==ATHeaven||s.at_table==ATSuperHeaven;bool ua=s.at_table==Specialized;double total=hit+fall+add+spec+(ea?epi:0)+(ua?up:0);double x=u01();if(x>=total)return;if((x-=hit)<0){out.add(Bonus,50,"AT normal hit -> 50 medal bonus");playBonus(out);return;}if((x-=fall)<0){if(s.tier==Middle&&chance(.5)){s.tier=Lower;out.add(TierDown,0,"middle fall -> lower AT");}else if(s.tier==Upper&&chance(.5))endAT(out);return;}if((x-=add)<0){int g=addGames();s.at_games_left+=g;out.add(ATAddGames,g,"one-shot add");return;}if((x-=spec)<0){out.add(SpecialZone,0,"special zone");specialZoneRun(false,out);return;}if(ea&&(x-=epi)<0){beginEpisode(true,out,"direct episode in heaven/super-heaven");return;}if(ua&&(x-=up)<0){out.add(UpperSpecialZone,0,"upper special zone");specialZoneRun(true,out);}}
 static void endAT(Events& out){Profile p=profile();if(s.stocks>0){--s.stocks;s.at_games_left=initialGames();s.cold_at=chance(.60);if(s.cold_at)out.add(ColdEnter,1,"stock restart cold segment: growth -30%");rerollAT();out.add(ATStart,s.at_games_left,"stock activated; initial-game lottery; table/pattern re-roll");return;}if(s.tier==Upper){s.in_at=false;double rate=p.comeback*(s.cold_at?.70:1.0);if(chance(rate)){s.in_at=true;s.tier=Upper;s.at_games_left=initialGames();s.cold_at=chance(.60);if(s.cold_at)out.add(ColdEnter,1,"upper comeback cold segment: growth -30%");rerollAT();out.add(UpperComeback,64,"64G comeback success -> upper AT restart");}else{s.cold_at=false;out.add(ATEnd,64,"64G comeback failed");rerollNormal();}return;}s.in_at=false;s.cold_at=false;out.add(ATEnd,0,"AT ended");rerollNormal();}
 
 struct Writer{char* p;int n,cap;Writer(char* b,int c):p(b),n(0),cap(c){if(cap)p[0]=0;}void ch(char c){if(n+1<cap){p[n++]=c;p[n]=0;}}void str(const char* x){while(*x)ch(*x++);}void i64(int64_t v){if(v==0){ch('0');return;}if(v<0){ch('-');v=-v;}char t[32];int k=0;while(v&&k<31){t[k++]=(char)('0'+v%10);v/=10;}while(k)ch(t[--k]);}void q(const char*x){ch('"');while(*x){char c=*x++;if(c=='"'||c=='\\'){ch('\\');ch(c);}else if(c=='\n'){str("\\n");}else ch(c);}ch('"');}};
-static const char* stateJSON(){Writer w(jsonbuf,sizeof(jsonbuf));w.str("{\"setting\":");w.i64(s.setting);w.str(",\"normalMode\":");w.q(normalName(s.normal_table));w.str(",\"normalPattern\":");w.i64(s.normal_pattern+1);w.str(",\"normalGames\":");w.i64(s.normal_display_games);w.str(",\"normalActualGames\":");w.i64(s.normal_actual_games);w.str(",\"normalDisplayGames\":");w.i64(s.normal_display_games);w.str(",\"highProbabilityUnlocked\":");w.str(highUnlocked()?"true":"false");w.str(",\"highProbabilityActive\":");w.str(s.high_active?"true":"false");w.str(",\"highProbabilityGames\":");w.i64(s.high_games);w.str(",\"coldAT\":");w.str(s.cold_at?"true":"false");w.str(",\"coldBonus\":");w.str(s.cold_bonus?"true":"false");w.str(",\"normalCeiling\":");w.i64(s.normal_ceiling);w.str(",\"inAT\":");w.str(s.in_at?"true":"false");w.str(",\"atTier\":");w.q(tierName(s.tier));w.str(",\"atTable\":");w.q(atTableName(s.at_table));w.str(",\"atPattern\":");w.i64(s.at_pattern+1);w.str(",\"atGamesLeft\":");w.i64(s.at_games_left);w.str(",\"stocks\":");w.i64(s.stocks);w.str(",\"sectionDiff\":");w.i64(s.section_diff);w.str(",\"sectionMinDiff\":");w.i64(s.section_min_diff);w.str(",\"sectionCount\":");w.i64(s.section_count);w.str(",\"totalDiff\":");w.i64(s.total_diff);w.str(",\"totalGames\":");w.i64(s.total_games);w.str(",\"lastReelRole\":");w.q(roleName(s.last_role));w.str(",\"lastNavOrder\":");w.i64(s.nav_order);w.str(",\"lastReelPayout\":");w.i64(s.last_payout);w.str(",\"roleRemainderCount\":");w.i64(ROLE_REMAINDER);w.ch('}');return jsonbuf;}
-static const char* eventsJSON(const Events& e){Writer w(jsonbuf,sizeof(jsonbuf));w.str("{\"events\":[");for(int i=0;i<e.n;++i){if(i)w.ch(',');w.str("{\"type\":");w.q(evName(e.e[i].type));w.str(",\"value\":");w.i64(e.e[i].value);w.str(",\"note\":");w.q(e.e[i].note);w.ch('}');}w.str("],\"inAT\":");w.str(s.in_at?"true":"false");w.str(",\"navOrder\":");w.i64(s.nav_order);w.str(",\"gamesLeft\":");w.i64(s.at_games_left);w.str(",\"stocks\":");w.i64(s.stocks);w.str(",\"reelRole\":");w.q(roleName(s.last_role));w.str(",\"reelPayout\":");w.i64(s.last_payout);w.ch('}');return jsonbuf;}
+static const char* stateJSON(){Writer w(jsonbuf,sizeof(jsonbuf));w.str("{\"setting\":");w.i64(s.setting);w.str(",\"normalMode\":");w.q(normalName(s.normal_table));w.str(",\"normalPattern\":");w.i64(s.normal_pattern+1);w.str(",\"normalGames\":");w.i64(s.normal_display_games);w.str(",\"normalActualGames\":");w.i64(s.normal_actual_games);w.str(",\"normalDisplayGames\":");w.i64(s.normal_display_games);w.str(",\"highProbabilityUnlocked\":");w.str(highUnlocked()?"true":"false");w.str(",\"highProbabilityActive\":");w.str(s.high_active?"true":"false");w.str(",\"highProbabilityGames\":");w.i64(s.high_games);w.str(",\"coldAT\":");w.str(s.cold_at?"true":"false");w.str(",\"coldBonus\":");w.str(s.cold_bonus?"true":"false");w.str(",\"normalCeiling\":");w.i64(s.normal_ceiling);w.str(",\"inAT\":");w.str(s.in_at?"true":"false");w.str(",\"atTier\":");w.q(tierName(s.tier));w.str(",\"atTable\":");w.q(atTableName(s.at_table));w.str(",\"atPattern\":");w.i64(s.at_pattern+1);w.str(",\"atGamesLeft\":");w.i64(s.at_games_left);w.str(",\"stocks\":");w.i64(s.stocks);w.str(",\"inBonus\":");w.str(s.in_bonus?"true":"false");w.str(",\"episodeBonus\":");w.str(s.episode_bonus?"true":"false");w.str(",\"bonusMedalsLeft\":");w.i64(s.bonus_medals_left);w.str(",\"challengeActive\":");w.str(s.challenge_active?"true":"false");w.str(",\"challengeGamesLeft\":");w.i64(s.challenge_games_left);w.str(",\"challengePoints\":");w.i64(s.challenge_points);w.str(",\"sectionDiff\":");w.i64(s.section_diff);w.str(",\"sectionMinDiff\":");w.i64(s.section_min_diff);w.str(",\"sectionCount\":");w.i64(s.section_count);w.str(",\"totalDiff\":");w.i64(s.total_diff);w.str(",\"totalGames\":");w.i64(s.total_games);w.str(",\"lastReelRole\":");w.q(roleName(s.last_role));w.str(",\"lastNavOrder\":");w.i64(s.nav_order);w.str(",\"lastReelPayout\":");w.i64(s.last_payout);w.str(",\"roleRemainderCount\":");w.i64(ROLE_REMAINDER);w.ch('}');return jsonbuf;}
+static const char* eventsJSON(const Events& e){Writer w(jsonbuf,sizeof(jsonbuf));w.str("{\"events\":[");for(int i=0;i<e.n;++i){if(i)w.ch(',');w.str("{\"type\":");w.q(evName(e.e[i].type));w.str(",\"value\":");w.i64(e.e[i].value);w.str(",\"note\":");w.q(e.e[i].note);w.ch('}');}w.str("],\"inAT\":");w.str(s.in_at?"true":"false");w.str(",\"navOrder\":");w.i64(s.nav_order);w.str(",\"gamesLeft\":");w.i64(s.at_games_left);w.str(",\"stocks\":");w.i64(s.stocks);w.str(",\"inBonus\":");w.str(s.in_bonus?"true":"false");w.str(",\"episodeBonus\":");w.str(s.episode_bonus?"true":"false");w.str(",\"bonusMedalsLeft\":");w.i64(s.bonus_medals_left);w.str(",\"challengeActive\":");w.str(s.challenge_active?"true":"false");w.str(",\"challengeGamesLeft\":");w.i64(s.challenge_games_left);w.str(",\"challengePoints\":");w.i64(s.challenge_points);w.str(",\"reelRole\":");w.q(roleName(s.last_role));w.str(",\"reelPayout\":");w.i64(s.last_payout);w.ch('}');return jsonbuf;}
 static void resetState(uint64_t seed){int keep=(s.setting>=1&&s.setting<=7)?s.setting:7;memset(&s,0,sizeof(s));s.setting=keep;s.tier=Lower;s.at_table=ATNormal;s.last_role=Miss;s.nav_order=-1;rng=seed?seed:0x5343484154475054ULL;rerollNormal();}
 static Events spinNormal(){
-    Events out;out.clear();if(s.in_at)return out;
+    Events out;out.clear();if(s.in_at||s.in_bonus||s.challenge_active)return out;
     s.nav_order=-1;
     ++s.total_games;++s.normal_actual_games;++s.normal_display_games;
     if(forced_role>=0&&forced_role<=PenguinChance){s.last_role=(Role)forced_role;forced_role=-1;}else{s.last_role=drawRole();}
@@ -199,7 +316,7 @@ static Events spinNormal(){
     if(s.normal_display_games>=s.normal_ceiling)resolveCeiling(out);
     return out;
 }
-static Events spinAT(){Events out;out.clear();if(!s.in_at)return out;s.nav_order=(int)(next64()%6);s.last_role=Bell9;s.last_payout=0;++s.total_games;if(s.at_games_left<=0){endAT(out);return out;}--s.at_games_left;int net=s.tier==Upper?9:6;sectionDelta(net,out);if(chance(1.0/99.0))rerollAT();resolveATEvent(out);if(s.in_at&&s.at_games_left<=0)endAT(out);return out;}
+static Events spinAT(){Events out;out.clear();if(!s.in_at||s.in_bonus||s.challenge_active)return out;s.nav_order=(int)(next64()%6);s.last_role=Bell9;s.last_payout=0;++s.total_games;if(s.at_games_left<=0){endAT(out);return out;}--s.at_games_left;int net=s.tier==Upper?9:6;sectionDelta(net,out);if(chance(1.0/99.0))rerollAT();resolveATEvent(out);if(s.in_at&&s.at_games_left<=0)endAT(out);return out;}
 
 static Events forceOutcome(int code){
     Events out;out.clear();
@@ -207,6 +324,8 @@ static Events forceOutcome(int code){
     // 0..10 are physical normal-game roles. They run through the same normal
     // state machine so rare-role effects, ceilings and payouts stay authentic.
     if(code>=0&&code<=PenguinChance){
+        if(s.in_bonus){forced_role=code;return spinBonus();}
+        if(s.challenge_active){forced_role=code;return spinChallenge();}
         if(s.in_at){
             // AT currently has its own event lottery; preserve AT progression,
             // but expose the requested physical test role without rewriting AT state.
@@ -283,6 +402,8 @@ __attribute__((visibility("default"))) void slot_set_setting(int setting){if(set
 __attribute__((visibility("default"))) const char* slot_state_json(){return slot::stateJSON();}
 __attribute__((visibility("default"))) const char* slot_spin_normal_json(){static slot::Events e;e=slot::spinNormal();return slot::eventsJSON(e);}
 __attribute__((visibility("default"))) const char* slot_spin_at_json(){static slot::Events e;e=slot::spinAT();return slot::eventsJSON(e);}
+__attribute__((visibility("default"))) const char* slot_spin_bonus_json(){static slot::Events e;e=slot::spinBonus();return slot::eventsJSON(e);}
+__attribute__((visibility("default"))) const char* slot_spin_challenge_json(){static slot::Events e;e=slot::spinChallenge();return slot::eventsJSON(e);}
 __attribute__((visibility("default"))) const char* slot_force_outcome_json(int code){static slot::Events e;e=slot::forceOutcome(code);return slot::eventsJSON(e);}
 __attribute__((visibility("default"))) const char* slot_apply_normal_penalty_json(){static slot::Events e;e=slot::applyNormalPenalty();return slot::eventsJSON(e);}
 __attribute__((visibility("default"))) const char* slot_apply_reel_payout_json(int medals){static slot::Events e;e.clear();if(medals>0)slot::sectionDelta(medals,e);return slot::eventsJSON(e);}
