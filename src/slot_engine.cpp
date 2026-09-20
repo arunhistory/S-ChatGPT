@@ -202,18 +202,50 @@ int SlotEngine::weightedGames(const std::vector<WeightedGames>& table) {
 }
 
 int SlotEngine::weightedUpperChains() {
-    const double r = uniform01();
-    double acc = 0.0;
-    for (const auto& e : config_.upper_special_chains) {
-        acc += e.weight;
-        if (r < acc) return e.chains;
+    // レバーON時に継続列を先決めする「デキレ」型。ただし幾何分布なので上限はない。
+    const bool ex = state_.setting == static_cast<int>(SettingId::EX);
+    const double cont = ex ? config_.upper_special_continue_rate_ex
+                           : config_.upper_special_continue_rate_reduced;
+    int chains = 1;
+    while (chance(cont)) ++chains;
+    return chains;
+}
+
+int SlotEngine::weakShortenGames() {
+    static const std::vector<WeightedGames> table{
+        {5,0.20},{10,0.25},{15,0.25},{20,0.15},{25,0.10},{50,0.05}
+    };
+    return weightedGames(table);
+}
+
+int SlotEngine::strongShortenGames() {
+    static const std::vector<WeightedGames> table{
+        {20,0.15},{50,0.25},{75,0.25},{100,0.20},{150,0.10},{200,0.05}
+    };
+    return weightedGames(table);
+}
+
+int SlotEngine::continuousShortenGames() {
+    // 1回5〜100G。10G内に9枚ベル(約1/15)を1回でも引けば継続。
+    // 幾何的に継続するため理論上は上限なし、平均は100G超。
+    static const std::vector<WeightedGames> table{
+        {5,1.0/6.0},{20,1.0/6.0},{40,1.0/6.0},
+        {60,1.0/6.0},{80,1.0/6.0},{100,1.0/6.0}
+    };
+    int total = 0;
+    bool again = true;
+    while (again) {
+        total += weightedGames(table);
+        again = false;
+        for (int g = 0; g < 10; ++g) {
+            if (chance(1.0 / 15.0)) { again = true; break; }
+        }
     }
-    return config_.upper_special_chains.empty() ? 1 : config_.upper_special_chains.back().chains;
+    return total;
 }
 
 ReelRole SlotEngine::drawNormalReelRole() {
     // 2^27マスから1回だけ引く排他的な成立役抽選。
-    // 残り11,744,051マスは今後のチェリー/スイカ/🐧/チャンス目/ハズレ用。
     std::uint32_t draw = static_cast<std::uint32_t>(rng_() & (NORMAL_RNG_SPACE - 1u));
 
     if (draw < ROLE_ONE_MEDAL_COUNT) return ReelRole::OneMedal;
@@ -223,6 +255,18 @@ ReelRole SlotEngine::drawNormalReelRole() {
     if (draw < ROLE_BELL15_COUNT) return ReelRole::Bell15;
     draw -= ROLE_BELL15_COUNT;
     if (draw < ROLE_REPLAY_COUNT) return ReelRole::Replay;
+    draw -= ROLE_REPLAY_COUNT;
+    if (draw < ROLE_WEAK_CHERRY_COUNT) return ReelRole::WeakCherry;
+    draw -= ROLE_WEAK_CHERRY_COUNT;
+    if (draw < ROLE_STRONG_CHERRY_COUNT) return ReelRole::StrongCherry;
+    draw -= ROLE_STRONG_CHERRY_COUNT;
+    if (draw < ROLE_WATERMELON_COUNT) return ReelRole::Watermelon;
+    draw -= ROLE_WATERMELON_COUNT;
+    if (draw < ROLE_WEAK_CHANCE_COUNT) return ReelRole::WeakChance;
+    draw -= ROLE_WEAK_CHANCE_COUNT;
+    if (draw < ROLE_STRONG_CHANCE_COUNT) return ReelRole::StrongChance;
+    draw -= ROLE_STRONG_CHANCE_COUNT;
+    if (draw < ROLE_PENGUIN_COUNT) return ReelRole::PenguinChance;
     return ReelRole::Miss;
 }
 
