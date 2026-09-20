@@ -230,8 +230,9 @@ static Events spinChallenge(){
         double finalRate=rate+bonus;
         bool forcedByStreak=s.bonus_at_misses>=4;
         bool win=dense||forcedByStreak||chance(finalRate);
+        double shownRate=(dense||forcedByStreak)?1.0:finalRate;
         s.challenge_active=false;
-        out.add(ChallengeJudge,(int)(finalRate*100.0+0.5),win?"AT challenge success":"AT challenge miss");
+        out.add(ChallengeJudge,(int)(shownRate*100.0+0.5),win?"AT challenge success":"AT challenge miss");
         if(win){
             s.bonus_at_misses=0;startAT(Lower,false,out,dense?"final judge rare role -> AT":"AT challenge cleared",false);rerollNormal();
         }else{
