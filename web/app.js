@@ -6,6 +6,7 @@
     eventBanner: $('#eventBanner'), eventTitle: $('#eventTitle'), eventNote: $('#eventNote'),
     normalPattern: $('#normalPattern'), ceiling: $('#ceiling'), atPattern: $('#atPattern'),
     netRate: $('#netRate'), totalDiff: $('#totalDiff'), history: $('#history'),
+    diffGraph: $('#diffGraph'), diffCurrent: $('#diffCurrent'), diffRange: $('#diffRange'), diffGames: $('#diffGames'),
     debug: $('#debugState'), statusLamp: $('#statusLamp'), statusText: $('#statusText'),
     lever: $('#lever'), autoToggle: $('#autoToggle'), reset: $('#reset'),
     roleResult: $('#roleResult'), payoutResult: $('#payoutResult'), roleTest: $('#roleTest'),
@@ -134,6 +135,99 @@
   let reelPositions = [0, 0, 0];
   let autoEnabled = false;
   let autoTimers = [];
+
+  const diffHistory = [{ game:0, diff:0 }];
+  let diffLastGame = 0;
+
+  const recordDiffPoint = (s) => {
+    const game = Number(s.totalGames || 0);
+    const diff = Number(s.totalDiff || 0);
+    const last = diffHistory[diffHistory.length - 1];
+    if (!last || game !== last.game || diff !== last.diff) {
+      diffHistory.push({ game, diff });
+      diffLastGame = game;
+      // 長時間プレイでも描画を重くしない。古い点だけ間引いて形状を維持。
+      if (diffHistory.length > 1600) {
+        const compact = [diffHistory[0]];
+        for (let i = 1; i < diffHistory.length - 1; i += 2) compact.push(diffHistory[i]);
+        compact.push(diffHistory[diffHistory.length - 1]);
+        diffHistory.splice(0, diffHistory.length, ...compact);
+      }
+    }
+  };
+
+  const drawDiffGraph = () => {
+    const canvas = els.diffGraph;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const w = Math.max(1, Math.round(rect.width * dpr));
+    const h = Math.max(1, Math.round(rect.height * dpr));
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    const cw = rect.width, ch = rect.height;
+    ctx.clearRect(0,0,cw,ch);
+
+    const points = diffHistory.length ? diffHistory : [{game:0,diff:0}];
+    const rawMin = Math.min(0, ...points.map(p => p.diff));
+    const rawMax = Math.max(0, ...points.map(p => p.diff));
+    const span = Math.max(100, rawMax - rawMin);
+    const pad = Math.max(50, Math.ceil(span * 0.12));
+    const minY = rawMin - pad;
+    const maxY = rawMax + pad;
+    const firstGame = points[0].game;
+    const lastGame = Math.max(firstGame + 1, points[points.length - 1].game);
+
+    const x = g => 7 + ((g - firstGame) / (lastGame - firstGame)) * Math.max(1, cw - 14);
+    const y = v => 6 + ((maxY - v) / (maxY - minY)) * Math.max(1, ch - 12);
+
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(164,178,210,.18)';
+    for (let i = 1; i < 4; i++) {
+      const yy = ch * i / 4;
+      ctx.beginPath(); ctx.moveTo(0,yy); ctx.lineTo(cw,yy); ctx.stroke();
+    }
+
+    const zeroY = y(0);
+    ctx.strokeStyle = 'rgba(255,255,255,.48)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0,zeroY); ctx.lineTo(cw,zeroY); ctx.stroke();
+
+    if (points.length > 1) {
+      const grad = ctx.createLinearGradient(0,0,cw,0);
+      grad.addColorStop(0,'#61d5ff');
+      grad.addColorStop(1,'#ffd45a');
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 2.2;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      points.forEach((p,i) => {
+        const px=x(p.game), py=y(p.diff);
+        if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+      });
+      ctx.stroke();
+    }
+  };
+
+  const updateDiffPanel = (s) => {
+    recordDiffPoint(s);
+    const diff = Number(s.totalDiff || 0);
+    const vals = diffHistory.map(p => p.diff);
+    const max = Math.max(0, ...vals);
+    const min = Math.min(0, ...vals);
+    const signed = n => (n > 0 ? '+' : '') + n.toLocaleString();
+    if (els.diffCurrent) els.diffCurrent.textContent = signed(diff);
+    if (els.diffRange) els.diffRange.textContent = 'MAX ' + signed(max) + ' / MIN ' + signed(min);
+    if (els.diffGames) els.diffGames.textContent = Number(s.totalGames || 0).toLocaleString() + 'G';
+    drawDiffGraph();
+  };
+
+  window.addEventListener('resize', drawDiffGraph);
 
   const mod = (n, m) => ((n % m) + m) % m;
   const stopOrders = [
@@ -746,6 +840,7 @@
       ? '純増 約6枚/G'
       : (s.inAT ? '純増 約' + (s.atTier === 'upper' ? '9' : '6') + '枚/G' : '純増 -');
     els.totalDiff.textContent = (s.totalDiff >= 0 ? '+' : '') + s.totalDiff.toLocaleString();
+    updateDiffPanel(s);
     els.debug.textContent = JSON.stringify(s, null, 2);
     const active = s.inAT || s.inBonus || s.challengeActive;
     els.statusLamp.className = 'status-lamp ' + (active ? 'at' : 'live');
@@ -1126,6 +1221,8 @@
 
     history.length = 0;
     els.history.innerHTML = '';
+    diffHistory.splice(0, diffHistory.length, { game:0, diff:0 });
+    diffLastGame = 0;
     els.roleResult.textContent = '---';
     els.payoutResult.textContent = '0枚';
     els.eventTitle.textContent = 'RESET';
