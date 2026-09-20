@@ -768,30 +768,50 @@
       && pendingControl.navOrder >= 0
       && !pendingNaviOrderValid;
     const payout = pendingPayout;
-    const visibleRole = naviMiss ? physicalPattern : pendingRole;
-    const visiblePayout = naviMiss ? accountingReturnForRole(physicalPattern) : payout;
+    const physicalLinePayoutRole = (
+      physicalPattern === 'bell9'
+      || physicalPattern === 'bell15'
+      || physicalPattern === 'replay'
+    ) ? physicalPattern : null;
+
+    // ベル/リプレイは「内部予約役」より実停止ラインを優先する。
+    // 5ラインのどこかで揃っていれば、その停止役が有効。
+    const visibleRole = naviMiss
+      ? physicalPattern
+      : (physicalLinePayoutRole || pendingRole);
+    const visiblePayout = physicalLinePayoutRole
+      ? accountingReturnForRole(physicalLinePayoutRole)
+      : (naviMiss ? accountingReturnForRole(physicalPattern) : payout);
     let allEvents = [...(result.events || [])];
 
-    if (payout > 0 && !pendingWasBonus) {
-      const payoutResult = callJson('slot_apply_reel_payout_json', ['number'], [payout]);
+    // 通常時は、実停止5ラインで新たに成立したベル/リプレイも差枚へ反映。
+    // AT/BONUSは内部純増会計済みなので二重加算しない。
+    const accountingPayout = (!pendingWasAT && !pendingWasBonus && physicalLinePayoutRole)
+      ? accountingReturnForRole(physicalLinePayoutRole)
+      : payout;
+    if (accountingPayout > 0 && !pendingWasBonus && !pendingWasAT) {
+      const payoutResult = callJson('slot_apply_reel_payout_json', ['number'], [accountingPayout]);
       allEvents = allEvents.concat(payoutResult.events || []);
     }
 
-    // 成立役はC++抽選結果を表示。停止形そのものはactualRoleで内部確認可能。
     els.roleResult.textContent = naviMiss
       ? 'ナビ外し / ' + (roleLabels[physicalPattern] || physicalPattern)
-      : (pendingBellNaviActive
-          ? '🔔 押し順ベル'
-          : (roleLabels[pendingRole] || pendingRole));
+      : (physicalLinePayoutRole
+          ? (roleLabels[physicalLinePayoutRole] || physicalLinePayoutRole)
+          : (pendingBellNaviActive
+              ? '🔔 押し順ベル'
+              : (roleLabels[pendingRole] || pendingRole)));
     els.payoutResult.textContent = pendingWasChallenge
       ? ('POINT ' + Number(result.challengePoints ?? state().challengePoints) + '/10')
-      : (naviMiss
-          ? visiblePayout + '枚'
-          : (pendingWasBonus
-              ? (pendingRole === 'replay' ? 'REPLAY' : '+' + payout + '枚')
-              : (pendingBellNaviActive && pendingWasAT
-                  ? 'AT純増'
-                  : ((pendingRole === 'replay' || pendingEntryReplayRole) ? 'REPLAY' : payout + '枚'))));
+      : (visibleRole === 'replay'
+          ? 'REPLAY'
+          : (naviMiss
+              ? visiblePayout + '枚'
+              : (pendingWasBonus
+                  ? '+' + visiblePayout + '枚'
+                  : (pendingBellNaviActive && pendingWasAT
+                      ? 'AT純増'
+                      : (pendingEntryReplayRole ? 'REPLAY' : visiblePayout + '枚')))));
 
     pushEvents(allEvents);
     showFinalBanner(allEvents, visibleRole, visiblePayout);
@@ -804,7 +824,7 @@
     if (aimAssistUsed) {
       els.eventNote.textContent += ' / 目押しアシスト';
     }
-    if (!naviMiss && physicalPattern !== pendingRole && !assistSubstitute && !aimAssistUsed && pendingRole !== 'one_medal') {
+    if (!naviMiss && !physicalLinePayoutRole && physicalPattern !== pendingRole && !assistSubstitute && !aimAssistUsed && pendingRole !== 'one_medal') {
       els.eventNote.textContent += ' / 取りこぼし停止';
     }
     stageCue(visibleRole, 'result');
