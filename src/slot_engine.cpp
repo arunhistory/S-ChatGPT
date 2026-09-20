@@ -34,7 +34,7 @@ SlotEngine::SlotEngine(std::uint64_t seed, GameConfig config)
 void SlotEngine::reset(std::uint64_t seed) {
     rng_.seed(seed);
     state_ = {};
-    state_.setting = 6;
+    state_.setting = static_cast<int>(SettingId::EX);
     rerollNormalModeAndPattern();
 }
 
