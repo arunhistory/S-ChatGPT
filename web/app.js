@@ -117,6 +117,7 @@
   let pendingWasAT = false;
   let pendingWasBonus = false;
   let pendingWasChallenge = false;
+  let pendingBellNaviActive = false;
   let pendingStopOrder = [0, 1, 2];
   let pendingPressedOrder = [];
   let pendingNaviOrderValid = true;
@@ -358,7 +359,7 @@
   // 青7フリーズのような無条件強制停止とは分け、補正後も0〜4コマ引き込みで停止させる。
   const aimAssistRoles = new Set(['at','hit']);
 
-  const buildSpinControl = (role, result, wasAT) => ({
+  const buildSpinControl = (role, result) => ({
     role,
     // 制御テーブルはレバーON時点で固定。STOP時は押下位置からこの表を参照するだけ。
     targets: [0,1,2].map(index => targetForRole(role, index)),
@@ -366,7 +367,7 @@
     substituteUsed: [false, false, false],
     aimAssist: aimAssistRoles.has(role),
     aimAssistUsed: [false, false, false],
-    navOrder: wasAT ? Number(result.navOrder ?? -1) : -1
+    navOrder: Number(result.navOrder ?? -1)
   });
 
   const chooseAssistSubstitutePosition = (index, base) => {
@@ -513,16 +514,16 @@
       callJson('slot_apply_normal_penalty_json');
     }
 
-    const isATBellNavi = pendingWasAT
+    const isBellNavi = pendingBellNaviActive
       && pendingRole === 'bell9'
       && pendingControl
       && pendingControl.navOrder >= 0
       && pendingControl.navOrder < stopOrders.length;
-    const expectedIndex = isATBellNavi ? pendingStopOrder[pendingPressedOrder.length] : -1;
-    if (isATBellNavi && index !== expectedIndex) pendingNaviOrderValid = false;
+    const expectedIndex = isBellNavi ? pendingStopOrder[pendingPressedOrder.length] : -1;
+    if (isBellNavi && index !== expectedIndex) pendingNaviOrderValid = false;
     pendingPressedOrder.push(index);
-    const navigatedBell = isATBellNavi && pendingNaviOrderValid && index === expectedIndex;
-    const naviMiss = isATBellNavi && !pendingNaviOrderValid;
+    const navigatedBell = isBellNavi && pendingNaviOrderValid && index === expectedIndex;
+    const naviMiss = isBellNavi && !pendingNaviOrderValid;
 
     if (reelTimers[index]) {
       clearInterval(reelTimers[index]);
@@ -619,6 +620,7 @@
     pendingWasBonus = !!s0.inBonus;
     pendingWasChallenge = !!s0.challengeActive;
     pendingWasAT = !!s0.inAT && !pendingWasBonus && !pendingWasChallenge;
+    pendingBellNaviActive = false;
     pendingControl = null;
     clearBellNavi();
 
@@ -643,9 +645,17 @@
           : Number(pendingResult.reelPayout || 0));
 
     // 成立役・停止制御表・押し順をこの時点で固定する。
-    pendingControl = buildSpinControl(pendingRole, pendingResult, pendingWasAT && !forcedRole);
-    if (pendingWasAT && !forcedRole) {
+    pendingControl = buildSpinControl(pendingRole, pendingResult);
+    pendingBellNaviActive = (pendingWasAT || pendingWasBonus)
+      && pendingRole === 'bell9'
+      && Number.isInteger(pendingControl.navOrder)
+      && pendingControl.navOrder >= 0
+      && pendingControl.navOrder < stopOrders.length;
+
+    if (pendingWasAT) {
       pendingPayout = 0; // AT純増はWASM側で既に差枚会計済み。
+    }
+    if (pendingBellNaviActive) {
       setBellNavi(pendingControl.navOrder);
     }
 
@@ -654,7 +664,7 @@
 
     if (autoEnabled) {
       clearAutoTimers();
-      const order = pendingWasAT && !forcedRole ? pendingStopOrder : [0,1,2];
+      const order = pendingBellNaviActive ? pendingStopOrder : [0,1,2];
       order.forEach((reelIndex, i) => {
         autoTimers.push(setTimeout(() => stopReelMotion(reelIndex), 450 + i * 250));
       });
@@ -674,7 +684,7 @@
     const physicalPattern = classifyPattern();
     const assistSubstitute = !!pendingControl?.substituteUsed?.some(Boolean);
     const aimAssistUsed = !!pendingControl?.aimAssistUsed?.some(Boolean);
-    const naviMiss = pendingWasAT
+    const naviMiss = pendingBellNaviActive
       && pendingRole === 'bell9'
       && pendingControl
       && pendingControl.navOrder >= 0
@@ -692,16 +702,16 @@
     // 成立役はC++抽選結果を表示。停止形そのものはactualRoleで内部確認可能。
     els.roleResult.textContent = naviMiss
       ? 'ナビ外し / ' + (roleLabels[physicalPattern] || physicalPattern)
-      : (pendingWasAT && pendingRole === 'bell9'
+      : (pendingBellNaviActive
           ? '🔔 押し順ベル'
           : (roleLabels[pendingRole] || pendingRole));
     els.payoutResult.textContent = pendingWasChallenge
       ? ('POINT ' + Number(result.challengePoints ?? state().challengePoints) + '/10')
-      : (pendingWasBonus
-          ? '+' + payout + '枚'
-          : (naviMiss
-              ? visiblePayout + '枚'
-              : (pendingWasAT && pendingRole === 'bell9'
+      : (naviMiss
+          ? visiblePayout + '枚'
+          : (pendingWasBonus
+              ? '+' + payout + '枚'
+              : (pendingBellNaviActive && pendingWasAT
                   ? 'AT純増'
                   : (pendingRole === 'replay' ? 'REPLAY' : payout + '枚'))));
 
@@ -745,7 +755,7 @@
       autoTimers.push(setTimeout(beginGame, 250));
     } else {
       clearAutoTimers();
-      const order = pendingWasAT ? pendingStopOrder : [0,1,2];
+      const order = pendingBellNaviActive ? pendingStopOrder : [0,1,2];
       let delay = 250;
       for (const reelIndex of order) {
         if (!reelStopped[reelIndex]) {
@@ -778,6 +788,7 @@
     pendingWasAT = false;
     pendingWasBonus = false;
     pendingWasChallenge = false;
+    pendingBellNaviActive = false;
     pendingPressedOrder = [];
     pendingNaviOrderValid = true;
     pendingControl = null;
