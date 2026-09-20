@@ -84,7 +84,9 @@
     cz:'CZ', bonus:'BONUS', episode_bonus:'EPISODE BONUS', at_start:'AT START',
     at_add_games:'G数上乗せ', special_zone:'特化ZONE', upper_special_zone:'上位特化ZONE',
     stock_gain:'STOCK', tier_up:'昇格', tier_down:'転落', at_end:'AT END',
-    upper_comeback:'上位引き戻し', freeze:'FREEZE', section_cross:'有利区間 CROSS'
+    upper_comeback:'上位引き戻し', freeze:'FREEZE', section_cross:'有利区間 CROSS',
+    high_enter:'高確率 移行', high_exit:'高確率 終了', shorten:'G数短縮',
+    cold_enter:'冷遇', section_reward:'有利区間ルーレット'
   };
 
   let gameActive = false;
@@ -228,6 +230,14 @@
     const forced = els.roleTest.value;
     if (forced) return forced;
 
+    const reelRole = result.reelRole || 'miss';
+    const rarePhysical = new Set([
+      'weak_cherry','strong_cherry','watermelon',
+      'weak_chance','strong_chance','penguin_chance'
+    ]);
+    // レア役成立ゲームは、報酬イベントより実際の停止形を優先表示する。
+    if (rarePhysical.has(reelRole)) return reelRole;
+
     const events = result.events || [];
     const types = new Set(events.map(e => e.type));
     if (types.has('freeze')) return 'freeze';
@@ -235,7 +245,7 @@
     if (types.has('tier_up')) return 'tier_up';
     if (types.has('at_start')) return 'at';
 
-    return result.reelRole || 'miss';
+    return reelRole;
   };
 
   const targetForRole = (role, index) => {
@@ -373,7 +383,7 @@
   };
 
   const render = (s) => {
-    els.mode.textContent = labels[s.normalMode] || s.normalMode;
+    els.mode.textContent = s.highProbabilityActive ? '高確率' : (labels[s.normalMode] || s.normalMode);
     els.tier.textContent = s.inAT ? (labels[s.atTier] || s.atTier) : '---';
     els.table.textContent = s.inAT ? (labels[s.atTable] || s.atTable) : '---';
     els.gameCount.textContent = s.totalGames.toLocaleString();
