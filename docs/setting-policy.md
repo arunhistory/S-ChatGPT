@@ -49,17 +49,19 @@ Do not fork the game engine per setting. Keep one state machine and select a set
 
 ## Settings 1-5 calibrated profiles
 
-Current measured long-run means from 5,000,000 games x 5 deterministic seeds:
+Current completed-logic calibration check from 3,000,000 games x 5 deterministic seeds:
 
 | Setting | Target | Measured mean |
 |---:|---:|---:|
-| 1 / L | 85% | 84.91% |
-| 2 | 96% | 95.98% |
-| 3 | 99% | 98.98% |
-| 4 | 103% | 102.86% |
-| 5 | 108% | 108.24% |
+| 1 / L | 85% | 85.01% |
+| 2 | 96% | 95.83% |
+| 3 | 99% | 98.73% |
+| 4 | 103% | 103.03% |
+| 5 | 108% | 108.12% |
+| 6 | 114% | 113.63% |
+| 7 / EX | 150% | 150.80% |
 
-Setting 1/L intentionally uses a very frequent bonus route while suppressing AT conversion, continuation and growth. Settings 2-5 progressively increase AT conversion, stock, comeback and AT-event strength without changing the core state machine.
+Setting 1/L keeps the global five-regular-hit rescue rule. Its 85% target is achieved by suppressing optional AT conversion, continuation and growth rather than disabling that rescue. Settings 2-6 progressively increase AT conversion, stock, comeback and AT-event strength without forking the state machine.
 
 ## Current calibration candidate
 
@@ -79,9 +81,13 @@ Setting 6 and EX share the same core game rules, initial AT-game distribution, o
 | Upper-special base | 1/4000 | 1/3075 |
 | Middle/upper event scale | 2.10x | 2.37x |
 
-Setting 6 keeps the reduced upper-special chain preset to control the long-tail payout risk. EX keeps the full upper-special preset.
+Upper-special continuation is no longer hard-capped. The whole continuation chain is pre-decided at entry (lever-style predetermined result) using an unbounded geometric continuation process. Settings 1-6 use p=0.7543 (about 4.07 chains / about 167G expected add) and EX uses p=0.94055 (about 16.82 chains / about 690G expected add).
 
-The current candidate was tuned against the present engine model. It must be re-calibrated whenever missing normal-state, cold-state, favorable-section reward, or reel-role logic is integrated.
+Implemented core logic now includes the six rare roles, strong-cherry guaranteed reward split, five consecutive 9-medal-bell AT, actual/display game separation, high-probability entry/exit and shortening, segment cold treatment, AT table transition matrix, +2400 favorable-section cut, stock-level section reward handling, CZ/bonus/AT/stock logic, and unbounded upper special.
+
+The section-cut reward rates for stock levels 0/1/3/5 are currently configurable provisional values 0% / 25% / 60% / 100%. The user had fixed the four stock thresholds and reward behavior (tier-up in lower/middle, upper-special in upper) but had not fixed the exact percentage table.
+
+Strong-chance has its fixed 1/180 role frequency and high-probability behavior. A separate 1% direct-reward destination was discussed but never finalized, so no destination is fabricated in the engine.
 
 ### Reproducible payout check
 
@@ -89,5 +95,4 @@ Run:
 
 `tools/check-payout.sh 5000000`
 
-This compiles the native simulator without GitHub Actions and runs settings 6 and EX across five deterministic seeds. The simulator reports both the target payout ratio and measured payout ratio.
-Settings 1-5 remain intentionally untuned except for their locked payout-ratio targets.
+This compiles the native simulator without GitHub Actions and runs all settings across five deterministic seeds. The simulator reports both the target payout ratio and measured payout ratio.
