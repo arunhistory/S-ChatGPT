@@ -47,23 +47,33 @@ Setting 6 is the highest Japanese-target profile. EX is the unconstrained person
 Do not fork the game engine per setting. Keep one state machine and select a setting parameter profile. This allows the same normal-mode, table, omen, CZ, bonus, AT, stock, favorable-section, and reel-control logic to be shared across settings.
 
 
-## Setting 6 first-pass profile
+## Current calibration candidate
 
-Setting 6 is derived from EX while keeping the same game rules.
+Setting 6 and EX share the same core game rules, initial AT-game distribution, ordinary add distribution, and net rates (+6 / +6 / +9). Their probability profiles differ.
 
-| Parameter | EX | Setting 6 first pass |
+| Parameter | Setting 6 | EX |
 |---|---:|---:|
-| CZ aggregate target | ~1/350 | ~1/370 |
-| Hit aggregate target | ~1/400 | ~1/430 |
-| Initial AT target | ~1/500 | ~1/550 |
-| Lower AT net | +6 | +6 |
-| Middle AT net | +6 | +6 |
-| Upper AT net | +9 | +9 |
-| Stock lottery | 10% | 8% |
-| Upper comeback | 20% | 15% |
-| Initial AT games mean | 50G | 49.25G |
-| Ordinary add mean | 31G | 24.4G |
-| Upper-special expected add | ~690G | ~167G |
+| Long-run target | 114% | 150% |
+| Raw CZ route | 1/440 | 1/414 |
+| Raw bonus route | 1/600 | 1/548 |
+| Raw AT route | 1/1200 | 1/1065 |
+| Bonus stock lottery | 12% | 14.5% |
+| Upper comeback | 22% | 25.5% |
+| Lower AT hit base | 1/180 | 1/164 |
+| Lower AT add base | 1/240 | 1/203 |
+| Lower AT special base | 1/600 | 1/502 |
+| Upper-special base | 1/4000 | 1/3075 |
+| Middle/upper event scale | 2.10x | 2.37x |
 
-The Setting 6 raw normal-route values are provisional calibration knobs until the full normal-state lottery model is integrated. Setting 6 must be re-tuned toward the locked 114% long-run target. EX must be tuned toward 150% without weakening its full-spec role.
+Setting 6 keeps the reduced upper-special chain preset to control the long-tail payout risk. EX keeps the full upper-special preset.
+
+The current candidate was tuned against the present engine model. It must be re-calibrated whenever missing normal-state, cold-state, favorable-section reward, or reel-role logic is integrated.
+
+### Reproducible payout check
+
+Run:
+
+`tools/check-payout.sh 5000000`
+
+This compiles the native simulator without GitHub Actions and runs settings 6 and EX across five deterministic seeds. The simulator reports both the target payout ratio and measured payout ratio.
 Settings 1-5 remain intentionally untuned except for their locked payout-ratio targets.
