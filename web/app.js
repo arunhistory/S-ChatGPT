@@ -125,6 +125,8 @@
   let pendingPressedOrder = [];
   let pendingNaviOrderValid = true;
   let pendingControl = null;
+  let deferredEntryReveal = null;
+  let pendingSyntheticEntry = false;
   let reelTimers = [null, null, null];
   let reelStopped = [true, true, true];
   let reelPositions = [0, 0, 0];
@@ -751,21 +753,65 @@
     pendingBellNaviActive = false;
     pendingEntryReplayRole = false;
     pendingControl = null;
+    pendingSyntheticEntry = false;
+    deferredEntryReveal = null;
     clearBellNavi();
 
-    // ここがレバーON抽選。DEBUG強制時もWASM本体へ渡し、
-    // 表示だけでなくAT/ボーナス/フリーズ等の状態遷移まで同じ時点で確定する。
+    // ここがレバーON抽選。直撃予約がある場合は、WASMを進めず
+    // 「次Gの入賞表示」だけを1ゲーム挟む。
     const forcedRole = els.roleTest.value;
-    // DEBUG強制は「次ゲーム」だけ。選択を残すとAT開始を毎G再実行してしまうため即時解除する。
     if (forcedRole) els.roleTest.value = '';
-    pendingResult = forcedRole
-      ? callJson('slot_force_outcome_json', ['number'], [forceOutcomeCodes[forcedRole]])
-      : callJson(s0.inBonus
-          ? 'slot_spin_bonus_json'
-          : (s0.challengeActive
-              ? 'slot_spin_challenge_json'
-              : (s0.inAT ? 'slot_spin_at_json' : 'slot_spin_normal_json')));
-    pendingRole = deriveRoleFromResult(pendingResult, pendingWasChallenge);
+
+    pendingSyntheticEntry = false;
+    if (deferredEntryReveal) {
+      const queued = deferredEntryReveal;
+      deferredEntryReveal = null;
+      pendingSyntheticEntry = true;
+      pendingWasBonus = false;
+      pendingWasAT = false;
+      pendingWasChallenge = false;
+      pendingResult = {
+        events: queued.events,
+        inAT: queued.role === 'at',
+        inBonus: queued.role === 'hit',
+        navOrder: -1,
+        reelRole: 'replay',
+        reelPayout: 3
+      };
+      pendingRole = queued.role;
+    } else {
+      pendingResult = forcedRole
+        ? callJson('slot_force_outcome_json', ['number'], [forceOutcomeCodes[forcedRole]])
+        : callJson(s0.inBonus
+            ? 'slot_spin_bonus_json'
+            : (s0.challengeActive
+                ? 'slot_spin_challenge_json'
+                : (s0.inAT ? 'slot_spin_at_json' : 'slot_spin_normal_json')));
+      pendingRole = deriveRoleFromResult(pendingResult, pendingWasChallenge);
+
+      // 旧WASMは中段チェリー/直撃で同GにAT/BONUS状態へ入ってしまう。
+      // 現在Gは成立役だけで終え、開始イベントだけ次Gの🟥7/BONUS図柄入賞へ繰り越す。
+      const normalTrigger = !pendingWasAT && !pendingWasBonus && !pendingWasChallenge;
+      const immediateTransition = normalTrigger
+        && !['hit','at','tier_up','freeze'].includes(pendingRole)
+        && (pendingResult.inBonus || pendingResult.inAT);
+      if (immediateTransition) {
+        const entryTypes = new Set([
+          'bonus','episode_bonus','at_start','cold_enter','stock_gain','tier_up'
+        ]);
+        const entryEvents = (pendingResult.events || []).filter(e => entryTypes.has(e.type));
+        deferredEntryReveal = {
+          role: pendingResult.inBonus ? 'hit' : 'at',
+          events: entryEvents
+        };
+        pendingResult = {
+          ...pendingResult,
+          events: (pendingResult.events || []).filter(e => !entryTypes.has(e.type)),
+          inAT: false,
+          inBonus: false
+        };
+      }
+    }
 
     // 現行WASMはBONUSの内部差枚を+6/Gで管理する。
     // 画面上の成立役は非レアGを「減らないBONUS専用分布」へ固定する。
@@ -859,7 +905,7 @@
     const accountingPayout = (!pendingWasAT && !pendingWasBonus && physicalLinePayoutRole)
       ? accountingReturnForRole(physicalLinePayoutRole)
       : payout;
-    if (accountingPayout > 0 && !pendingWasBonus && !pendingWasAT) {
+    if (accountingPayout > 0 && !pendingWasBonus && !pendingWasAT && !pendingSyntheticEntry) {
       const payoutResult = callJson('slot_apply_reel_payout_json', ['number'], [accountingPayout]);
       allEvents = allEvents.concat(payoutResult.events || []);
     }
