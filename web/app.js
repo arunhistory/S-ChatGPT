@@ -96,7 +96,7 @@
   let pendingPayout = 0;
   let pendingWasAT = false;
   let pendingStopOrder = [0, 1, 2];
-  let pendingAssistSubstitute = [false, false, false];
+  let pendingControl = null;
   let reelTimers = [null, null, null];
   let reelStopped = [true, true, true];
   let reelPositions = [0, 0, 0];
@@ -119,8 +119,9 @@
     if (els.naviState) els.naviState.textContent = 'NAVI ---';
   };
 
-  const setBellNavi = () => {
-    pendingStopOrder = stopOrders[Math.floor(Math.random() * stopOrders.length)];
+  const setBellNavi = (orderId) => {
+    const safeId = Number.isInteger(orderId) && orderId >= 0 && orderId < stopOrders.length ? orderId : 0;
+    pendingStopOrder = stopOrders[safeId];
     pendingStopOrder.forEach((reelIndex, orderIndex) => {
       const button = stops[reelIndex];
       button.dataset.nav = String(orderIndex + 1);
@@ -319,20 +320,28 @@
     'watermelon','weak_chance','strong_chance','penguin_chance'
   ]);
 
+  const buildSpinControl = (role, result, wasAT) => ({
+    role,
+    // 制御テーブルはレバーON時点で固定。STOP時は押下位置からこの表を参照するだけ。
+    targets: [0,1,2].map(index => targetForRole(role, index)),
+    assistSubstitute: assistSubstituteRoles.has(role),
+    substituteUsed: [false, false, false],
+    navOrder: wasAT ? Number(result.navOrder ?? -1) : -1
+  });
+
   const chooseAssistSubstitutePosition = (index, base) => {
-    // 目押し失敗でも成立役は消さないアシスト用の代用停止。
-    // 別の確定役・レア役を誤表示しにくい中段図柄を優先する。
+    // 成立役はレバーONで既に確定済み。ここでは停止表示だけを代用形へ落とす。
     const safeKinds = ['chance','replay','bar','bell','miss'];
     for (const kind of safeKinds) {
       for (let slip = 0; slip <= 4; slip++) {
         const candidate = mod(base + slip, reelStrips[index].length);
         if (visibleKind(index, candidate, 1) === kind) {
-          pendingAssistSubstitute[index] = true;
+          pendingControl.substituteUsed[index] = true;
           return candidate;
         }
       }
     }
-    pendingAssistSubstitute[index] = true;
+    pendingControl.substituteUsed[index] = true;
     return base;
   };
 
@@ -341,25 +350,27 @@
     const base = mod(reelPositions[index], strip.length);
 
     // 青7フリーズのみ0〜4コマ制御の外。押下位置を無視して中段へ強制揃い。
-    if (pendingRole === 'freeze') {
+    if (!pendingControl) return base;
+
+    if (pendingControl.role === 'freeze') {
       return findExactPosition(index, 'alt-seven', 1);
     }
 
-    const target = targetForRole(pendingRole, index);
+    const target = pendingControl.targets[index];
     if (target) {
       for (let slip = 0; slip <= 4; slip++) {
         const candidate = mod(base + slip, strip.length);
         if (candidateMatchesTarget(index, candidate, target)) return candidate;
       }
       // アシスト対象役は4コマで本来図柄を引き込めなくても代用停止で成立を維持する。
-      if (assistSubstituteRoles.has(pendingRole)) {
+      if (pendingControl.assistSubstitute) {
         return chooseAssistSubstitutePosition(index, base);
       }
       return base;
     }
 
     // 1枚役は専用停止形をまだ持たないので、見た目はハズレ系停止形へ逃がす。
-    const physicalRole = pendingRole === 'one_medal' ? 'miss' : pendingRole;
+    const physicalRole = pendingControl.role === 'one_medal' ? 'miss' : pendingControl.role;
 
     // ハズレ/任意リールは、最後の停止で予約済み停止形を偶然完成させない候補を優先。
     const willAllStop = reelStopped.filter(Boolean).length === 2;
@@ -474,9 +485,10 @@
 
     const s0 = state();
     pendingWasAT = !!s0.inAT;
-    pendingAssistSubstitute = [false, false, false];
+    pendingControl = null;
     clearBellNavi();
 
+    // ここがレバーON抽選。以後STOPでは当落・成立役・押し順を変更しない。
     pendingResult = callJson(s0.inAT ? 'slot_spin_at_json' : 'slot_spin_normal_json');
     pendingRole = deriveRoleFromResult(pendingResult);
 
@@ -485,13 +497,14 @@
       ? accountingReturnForRole(forcedRole)
       : Number(pendingResult.reelPayout || 0);
 
-    // ATは純増をC++側で既に会計済み。Web側は押し順ベルの停止制御だけ担当する。
+    // 成立役・停止制御表・押し順をこの時点で固定する。
+    pendingControl = buildSpinControl(pendingRole, pendingResult, pendingWasAT && !forcedRole);
     if (pendingWasAT && !forcedRole) {
-      pendingRole = 'bell9';
-      pendingPayout = 0;
-      setBellNavi();
+      pendingPayout = 0; // AT純増はWASM側で既に差枚会計済み。
+      setBellNavi(pendingControl.navOrder);
     }
 
+    stageCue(pendingRole, 'spin');
     for (let i = 0; i < 3; i++) startReelMotion(i);
 
     if (autoEnabled) {
@@ -512,9 +525,9 @@
     const result = pendingResult || { events: [] };
     pendingResult = null;
 
+    // 停止形は結果ではなく表示。成立役はレバーON時のpendingRoleが唯一の結果。
     const physicalPattern = classifyPattern();
-    const assistSubstitute = assistSubstituteRoles.has(pendingRole) && pendingAssistSubstitute.some(Boolean);
-    const actualRole = assistSubstitute ? pendingRole : physicalPattern;
+    const assistSubstitute = !!pendingControl?.substituteUsed?.some(Boolean);
     const payout = pendingPayout;
     let allEvents = [...(result.events || [])];
 
@@ -534,8 +547,12 @@
     pushEvents(allEvents);
     showFinalBanner(allEvents, pendingRole, pendingRole === 'replay' ? 0 : payout);
     if (assistSubstitute) {
-      els.eventNote.textContent += ' / ' + (roleLabels[pendingRole] || pendingRole) + '代用停止';
+      els.eventNote.textContent += ' / 代用停止';
     }
+    if (physicalPattern !== pendingRole && !assistSubstitute && pendingRole !== 'one_medal') {
+      els.eventNote.textContent += ' / 取りこぼし停止';
+    }
+    stageCue(pendingRole, 'result');
     render(state());
     if (!autoEnabled) clearBellNavi();
 
@@ -592,7 +609,7 @@
     pendingRole = 'miss';
     pendingPayout = 0;
     pendingWasAT = false;
-    pendingAssistSubstitute = [false, false, false];
+    pendingControl = null;
     clearBellNavi();
     reelStopped = [true, true, true];
     els.lever.disabled = false;
