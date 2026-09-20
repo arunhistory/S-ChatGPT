@@ -41,57 +41,129 @@ GameConfig gameConfigForSetting(SettingId setting) {
         case SettingId::EX: c.target_payout_ratio = 1.50; break;
     }
 
-    // 設定1〜5は目標値のみ固定。性能パラメータは後で個別較正する。
-    if (setting != SettingId::S6 && setting != SettingId::EX) return c;
-
-    if (setting == SettingId::S6) {
-        // 設定6: 日本基準側の最高設定。現行状態機械の長期較正で約114%を狙う。
-        // 純増6/6/9と初期G分布はEXと共通。爆発の尻尾は上位特化で抑える。
-        c.target_cz_rate = 1.0 / 350.0;
-        c.target_bonus_rate = 1.0 / 400.0;
-        c.target_at_rate = 1.0 / 500.0;
-
-        c.raw_cz_rate = 1.0 / 440.0;
-        c.raw_bonus_rate = 1.0 / 600.0;
-        c.raw_at_rate = 1.0 / 1200.0;
-
-        c.bonus_to_stock_rate = 0.12;
-        c.upper_comeback_rate = 0.22;
-
-        c.lower_hit_rate = 1.0 / 180.0;
-        c.lower_fall_rate = 1.0 / 420.0;
-        c.lower_add_rate = 1.0 / 240.0;
-        c.lower_special_rate = 1.0 / 600.0;
-        c.lower_upper_special_rate = 1.0 / 4000.0;
-
-        c.middle_event_scale = 2.10;
-        c.upper_event_scale = 2.10;
-
-        // 上位特化はEXより大幅に抑え、短中期の暴れを削る。
+    // 設定別の性能プロファイル。ゲームルールは共通で、確率ノブだけを変更する。
+    const auto useReducedUpper = [&]() {
         c.upper_special_chains = {
             {1,0.20},{2,0.18},{3,0.16},{4,0.14},{5,0.11},
             {6,0.08},{8,0.06},{12,0.04},{16,0.03}
         };
-        return c;
+    };
+
+    switch (setting) {
+        case SettingId::S1:
+            // L相当: ボーナスは非常に軽いがAT期待を極端に抑え、長期約85%を狙う。
+            c.raw_at_rate = 1.0 / 5000.0;
+            c.raw_bonus_rate = 1.0 / 136.94;
+            c.raw_cz_rate = 1.0 / 700.0;
+            c.bonus_to_stock_rate = 0.01102;
+            c.upper_comeback_rate = 0.02255;
+            c.lower_hit_rate = 1.0 / 873.79;
+            c.lower_fall_rate = 1.0 / 172.51;
+            c.lower_add_rate = 1.0 / 1046.62;
+            c.lower_special_rate = 1.0 / 2494.0;
+            c.lower_upper_special_rate = 1.0 / 16921.27;
+            c.middle_event_scale = c.upper_event_scale = 1.1204;
+            c.bonus_to_at_rate = 0.0851;
+            c.bonus_at_miss_ceiling = 999;
+            useReducedUpper();
+            return c;
+
+        case SettingId::S2:
+            c.raw_at_rate = 1.0 / 1465.08;
+            c.raw_bonus_rate = 1.0 / 697.79;
+            c.raw_cz_rate = 1.0 / 478.97;
+            c.bonus_to_stock_rate = 0.08541;
+            c.upper_comeback_rate = 0.16082;
+            c.lower_hit_rate = 1.0 / 221.63;
+            c.lower_fall_rate = 1.0 / 362.96;
+            c.lower_add_rate = 1.0 / 348.13;
+            c.lower_special_rate = 1.0 / 810.64;
+            c.lower_upper_special_rate = 1.0 / 5860.31;
+            c.middle_event_scale = c.upper_event_scale = 1.72869;
+            c.bonus_to_at_rate = 0.28164;
+            useReducedUpper();
+            return c;
+
+        case SettingId::S3:
+            c.raw_at_rate = 1.0 / 1393.28;
+            c.raw_bonus_rate = 1.0 / 675.52;
+            c.raw_cz_rate = 1.0 / 471.33;
+            c.bonus_to_stock_rate = 0.09285;
+            c.upper_comeback_rate = 0.17570;
+            c.lower_hit_rate = 1.0 / 211.59;
+            c.lower_fall_rate = 1.0 / 373.40;
+            c.lower_add_rate = 1.0 / 327.10;
+            c.lower_special_rate = 1.0 / 764.66;
+            c.lower_upper_special_rate = 1.0 / 5464.91;
+            c.middle_event_scale = c.upper_event_scale = 1.7856;
+            c.bonus_to_at_rate = 0.3014;
+            useReducedUpper();
+            return c;
+
+        case SettingId::S4:
+            c.raw_at_rate = 1.0 / 1331.24;
+            c.raw_bonus_rate = 1.0 / 652.50;
+            c.raw_cz_rate = 1.0 / 461.25;
+            c.bonus_to_stock_rate = 0.09949;
+            c.upper_comeback_rate = 0.18874;
+            c.lower_hit_rate = 1.0 / 201.00;
+            c.lower_fall_rate = 1.0 / 388.72;
+            c.lower_add_rate = 1.0 / 302.47;
+            c.lower_special_rate = 1.0 / 704.95;
+            c.lower_upper_special_rate = 1.0 / 5037.12;
+            c.middle_event_scale = c.upper_event_scale = 1.84988;
+            c.bonus_to_at_rate = 0.31747;
+            useReducedUpper();
+            return c;
+
+        case SettingId::S5:
+            c.raw_at_rate = 1.0 / 1259.57;
+            c.raw_bonus_rate = 1.0 / 620.62;
+            c.raw_cz_rate = 1.0 / 447.82;
+            c.bonus_to_stock_rate = 0.10974;
+            c.upper_comeback_rate = 0.20460;
+            c.lower_hit_rate = 1.0 / 190.24;
+            c.lower_fall_rate = 1.0 / 404.15;
+            c.lower_add_rate = 1.0 / 270.57;
+            c.lower_special_rate = 1.0 / 641.17;
+            c.lower_upper_special_rate = 1.0 / 4433.65;
+            c.middle_event_scale = c.upper_event_scale = 1.97736;
+            c.bonus_to_at_rate = 0.33217;
+            useReducedUpper();
+            return c;
+
+        case SettingId::S6:
+            c.target_cz_rate = 1.0 / 350.0;
+            c.target_bonus_rate = 1.0 / 400.0;
+            c.target_at_rate = 1.0 / 500.0;
+            c.raw_cz_rate = 1.0 / 440.0;
+            c.raw_bonus_rate = 1.0 / 600.0;
+            c.raw_at_rate = 1.0 / 1200.0;
+            c.bonus_to_stock_rate = 0.12;
+            c.upper_comeback_rate = 0.22;
+            c.lower_hit_rate = 1.0 / 180.0;
+            c.lower_fall_rate = 1.0 / 420.0;
+            c.lower_add_rate = 1.0 / 240.0;
+            c.lower_special_rate = 1.0 / 600.0;
+            c.lower_upper_special_rate = 1.0 / 4000.0;
+            c.middle_event_scale = c.upper_event_scale = 2.10;
+            useReducedUpper();
+            return c;
+
+        case SettingId::EX:
+            c.raw_cz_rate = 1.0 / 414.0;
+            c.raw_bonus_rate = 1.0 / 548.0;
+            c.raw_at_rate = 1.0 / 1065.0;
+            c.bonus_to_stock_rate = 0.145;
+            c.upper_comeback_rate = 0.255;
+            c.lower_hit_rate = 1.0 / 164.0;
+            c.lower_fall_rate = 1.0 / 452.0;
+            c.lower_add_rate = 1.0 / 203.0;
+            c.lower_special_rate = 1.0 / 502.0;
+            c.lower_upper_special_rate = 1.0 / 3075.0;
+            c.middle_event_scale = c.upper_event_scale = 2.37;
+            return c;
     }
-
-    // EX: 個人利用・展示用フルスペック。長期較正で約150%を狙う。
-    // 基本ゲーム性は共通のまま、通常当選・AT内イベント・ストック・引戻しを強化。
-    c.raw_cz_rate = 1.0 / 414.0;
-    c.raw_bonus_rate = 1.0 / 548.0;
-    c.raw_at_rate = 1.0 / 1065.0;
-
-    c.bonus_to_stock_rate = 0.145;
-    c.upper_comeback_rate = 0.255;
-
-    c.lower_hit_rate = 1.0 / 164.0;
-    c.lower_fall_rate = 1.0 / 452.0;
-    c.lower_add_rate = 1.0 / 203.0;
-    c.lower_special_rate = 1.0 / 502.0;
-    c.lower_upper_special_rate = 1.0 / 3075.0;
-
-    c.middle_event_scale = 2.37;
-    c.upper_event_scale = 2.37;
 
     return c;
 }
