@@ -784,7 +784,7 @@
       pendingWasChallenge = false;
       pendingResult = {
         events: queued.events,
-        inAT: queued.role === 'at',
+        inAT: queued.role === 'at' || queued.role === 'freeze',
         inBonus: queued.role === 'hit',
         navOrder: -1,
         reelRole: 'replay',
@@ -807,15 +807,15 @@
       const physicalTriggerRole = pendingResult.reelRole || 'miss';
       const naturalTransition = normalTrigger
         && !forcedRole
-        && pendingRole !== 'freeze'
         && (pendingResult.inBonus || pendingResult.inAT);
       if (naturalTransition) {
         const entryTypes = new Set([
           'bonus','episode_bonus','at_start','cold_enter','stock_gain','tier_up'
         ]);
         const entryEvents = (pendingResult.events || []).filter(e => entryTypes.has(e.type));
+        const hasFreezeEntry = entryEvents.some(e => e.type === 'freeze');
         deferredEntryReveal = {
-          role: pendingResult.inBonus ? 'hit' : 'at',
+          role: hasFreezeEntry ? 'freeze' : (pendingResult.inBonus ? 'hit' : 'at'),
           events: entryEvents
         };
 
