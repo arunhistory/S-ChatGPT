@@ -725,3 +725,29 @@ body{height:100dvh;min-height:0;padding:4px;overflow:hidden}
   .machine-cinematic strong{font-size:30px}
   .machine-cinematic small{font-size:9px}
 }
+
+
+/* ===== Normal hit destination judge: BONUS or AT remains hidden until reveal ===== */
+.machine-cinematic.judge{
+  background:
+    linear-gradient(90deg,#05070dee,#2a153eee,#05070dee);
+  border-color:#a96dff88;
+  box-shadow:0 0 30px #9d56ff55,inset 0 0 42px #000c;
+}
+.machine-cinematic.judge strong{color:#e5c8ff}
+.machine-cinematic.judge.versus strong{
+  letter-spacing:.08em;
+  animation:judgeFlicker .16s steps(2,end) infinite;
+}
+.machine-cinematic.judge-result{
+  animation:judgeResultBurst .38s cubic-bezier(.16,.9,.24,1) both;
+}
+@keyframes judgeFlicker{
+  0%{opacity:.62;filter:brightness(.8)}
+  100%{opacity:1;filter:brightness(1.45)}
+}
+@keyframes judgeResultBurst{
+  0%{opacity:0;transform:translate(-50%,0) scale(.7)}
+  72%{opacity:1;transform:translate(-50%,0) scale(1.08)}
+  100%{opacity:1;transform:translate(-50%,0) scale(1)}
+}
