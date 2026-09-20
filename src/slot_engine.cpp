@@ -535,11 +535,10 @@ std::vector<Event> SlotEngine::spinNormal() {
     applySectionDelta(-3, out);
 
     // 9枚ベル5連は下位AT確定。
-    static int bell9Streak = 0;
-    if (state_.last_reel_role == ReelRole::Bell9) ++bell9Streak;
-    else bell9Streak = 0;
-    if (bell9Streak >= 5) {
-        bell9Streak = 0;
+    if (state_.last_reel_role == ReelRole::Bell9) ++state_.bell9_streak;
+    else state_.bell9_streak = 0;
+    if (state_.bell9_streak >= 5) {
+        state_.bell9_streak = 0;
         startAT(ATTier::Lower, false, out, "five consecutive 9-medal bells -> lower AT");
         rerollNormalModeAndPattern();
         return out;
@@ -911,6 +910,12 @@ const char* SlotEngine::reelRoleName(ReelRole v) {
         case ReelRole::Bell9: return "bell9";
         case ReelRole::Bell15: return "bell15";
         case ReelRole::Replay: return "replay";
+        case ReelRole::WeakCherry: return "weak_cherry";
+        case ReelRole::StrongCherry: return "strong_cherry";
+        case ReelRole::Watermelon: return "watermelon";
+        case ReelRole::WeakChance: return "weak_chance";
+        case ReelRole::StrongChance: return "strong_chance";
+        case ReelRole::PenguinChance: return "penguin_chance";
     }
     return "miss";
 }
@@ -932,6 +937,11 @@ const char* SlotEngine::eventName(EventType v) {
         case EventType::UpperComeback: return "upper_comeback";
         case EventType::Freeze: return "freeze";
         case EventType::SectionCross: return "section_cross";
+        case EventType::HighEnter: return "high_enter";
+        case EventType::HighExit: return "high_exit";
+        case EventType::Shorten: return "shorten";
+        case EventType::ColdEnter: return "cold_enter";
+        case EventType::SectionReward: return "section_reward";
     }
     return "unknown";
 }
@@ -947,6 +957,10 @@ std::string SlotEngine::stateJson() const {
       << ",\"normalActualGames\":" << state_.normal_actual_games
       << ",\"normalDisplayGames\":" << state_.normal_display_games
       << ",\"highProbabilityUnlocked\":" << (canEnterHighProbability() ? "true" : "false")
+      << ",\"highProbabilityActive\":" << (state_.high_probability_active ? "true" : "false")
+      << ",\"highProbabilityGames\":" << state_.high_probability_games
+      << ",\"coldAT\":" << (state_.cold_at ? "true" : "false")
+      << ",\"coldBonus\":" << (state_.cold_bonus ? "true" : "false")
       << ",\"normalCeiling\":" << state_.normal_ceiling
       << ",\"inAT\":" << (state_.in_at ? "true" : "false")
       << ",\"atTier\":\"" << atTierName(state_.at_tier) << "\""
