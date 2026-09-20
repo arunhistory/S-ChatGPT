@@ -766,6 +766,55 @@
     return base;
   };
 
+  const missCenterSafe = (index, position) => {
+    const kind = visibleKind(index, position, 1);
+
+    // 通常時ハズレで中段にこれらを見せると、成立していないレア役/チャンス目の煽りになる。
+    // 🍉を左中段に止めないことでスイカ狙いの煽りを開始させず、
+    // 🐧を中段に止めないことで弱/強チャンス目・ペンギン揃いの煽りも作らない。
+    if (kind === 'watermelon' || kind === 'penguin') return false;
+
+    // 中リール中段🍒も、左右🐧との強チャンス目を想起させるためハズレでは避ける。
+    if (index === 1 && kind === 'cherry') return false;
+
+    return true;
+  };
+
+  const chooseNormalMissPosition = (index, base) => {
+    const strip = reelStrips[index];
+
+    // ハズレ成立Gは1停止目から安全目へ制御する。
+    // まず実機的な0〜4コマ範囲で候補を探す。
+    for (let slip = 0; slip <= 4; slip++) {
+      const candidate = mod(base + slip, strip.length);
+      if (!missCenterSafe(index, candidate)) continue;
+
+      const test = [...reelPositions];
+      test[index] = candidate;
+
+      // 最終停止なら成立役っぽい完成形・ベル/REPLAY払出まで完全に排除。
+      const willAllStop = reelStopped.filter(Boolean).length === 2;
+      if (willAllStop && classifyPattern(test) !== 'miss') continue;
+
+      return candidate;
+    }
+
+    // 4コマ内に安全位置が無い場合も、ハズレなのに煽り目を出すより安全目を優先する。
+    for (let advance = 5; advance < strip.length + 5; advance++) {
+      const candidate = mod(base + advance, strip.length);
+      if (!missCenterSafe(index, candidate)) continue;
+
+      const test = [...reelPositions];
+      test[index] = candidate;
+      const willAllStop = reelStopped.filter(Boolean).length === 2;
+      if (willAllStop && classifyPattern(test) !== 'miss') continue;
+
+      return candidate;
+    }
+
+    return base;
+  };
+
   const chooseStopPosition = (index, navigatedBell = false, naviMiss = false) => {
     const strip = reelStrips[index];
     const base = mod(reelPositions[index], strip.length);
@@ -791,6 +840,12 @@
     // レバーONで成立確定しているため、汎用取りこぼし/代用制御を通さない。
     if (pendingControl.role === 'strong_cherry') {
       return chooseMiddleCherryPosition(index, base);
+    }
+
+    // 通常時ハズレ/1枚役の見た目は、最初のSTOPからレア役煽りを作らない。
+    if (!pendingWasAT && !pendingWasBonus && !pendingWasChallenge
+        && (pendingControl.role === 'miss' || pendingControl.role === 'one_medal')) {
+      return chooseNormalMissPosition(index, base);
     }
 
     const target = pendingControl.targets[index];
