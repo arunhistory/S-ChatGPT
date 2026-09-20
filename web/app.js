@@ -318,7 +318,7 @@
 
     const leftBottom = visibleKind(0, positions[0], 2);
     if (leftBottom === 'cherry' && center[1] === 'replay') return 'weak_cherry';
-    if (center[0] === 'cherry' && center[1] !== 'replay') return 'strong_cherry';
+    if (center[0] === 'cherry' && center[1] !== 'replay') return 'strong_cherry'; // 中段チェリー
 
     // スイカなどのレア役はメインライン基準。取りこぼし時だけ代用停止を使う。
     if (center.every(k => k === 'watermelon')) return 'watermelon';
@@ -394,7 +394,6 @@
         return null;
       case 'strong_cherry':
         if (index === 0) return { row:1, kind:'cherry' };
-        if (index === 1) return { row:1, notKind:'replay' };
         return null;
       case 'bell9': return { row:1, kind:'bell' };
       case 'bell15':
@@ -509,6 +508,42 @@
     return base;
   };
 
+  const middleCherryMiddleReelSafe = (position) => {
+    // 中段チェリー成立Gは、中リールの可視3コマすべてからREPLAYを排除する。
+    // 5本の有効払出ラインは必ず中リールの上/中/下のいずれかを通るため、
+    // これでリプレイ揃いそのものを物理的に不可能にする。
+    return [0,1,2].every(row => visibleKind(1, position, row) !== 'replay');
+  };
+
+  const chooseMiddleCherryPosition = (index, base) => {
+    const strip = reelStrips[index];
+
+    if (index === 0) {
+      // レバーON時点で中段チェリー成立済み。左中段🍒は取りこぼさせない。
+      for (let slip = 0; slip <= 4; slip++) {
+        const candidate = mod(base + slip, strip.length);
+        if (visibleKind(0, candidate, 1) === 'cherry') return candidate;
+      }
+      // 4コマ圏外でも成立役制御として中段🍒位置へ収束させる。
+      return findExactPosition(0, 'cherry', 1);
+    }
+
+    if (index === 1) {
+      // 中リールは上中下すべてREPLAY禁止。
+      for (let slip = 0; slip <= 4; slip++) {
+        const candidate = mod(base + slip, strip.length);
+        if (middleCherryMiddleReelSafe(candidate)) return candidate;
+      }
+      // 4コマ圏内に無ければ、成立役制御として最寄りの安全窓へ収束。
+      for (let advance = 1; advance < strip.length; advance++) {
+        const candidate = mod(base + advance, strip.length);
+        if (middleCherryMiddleReelSafe(candidate)) return candidate;
+      }
+    }
+
+    return base;
+  };
+
   const chooseStopPosition = (index, navigatedBell = false, naviMiss = false) => {
     const strip = reelStrips[index];
     const base = mod(reelPositions[index], strip.length);
@@ -528,6 +563,12 @@
 
     if (pendingControl.role === 'freeze') {
       return findExactPosition(index, 'alt-seven', 1);
+    }
+
+    // strong_cherry は現行ゲーム仕様上「中段チェリー」。
+    // レバーONで成立確定しているため、汎用取りこぼし/代用制御を通さない。
+    if (pendingControl.role === 'strong_cherry') {
+      return chooseMiddleCherryPosition(index, base);
     }
 
     const target = pendingControl.targets[index];
