@@ -8,6 +8,7 @@
     netRate: $('#netRate'), totalDiff: $('#totalDiff'), history: $('#history'),
     diffGraph: $('#diffGraph'), diffCurrent: $('#diffCurrent'), diffRange: $('#diffRange'), diffGames: $('#diffGames'),
     debug: $('#debugState'), statusLamp: $('#statusLamp'), statusText: $('#statusText'),
+    machine: $('.machine'), machineCinematic: $('#machineCinematic'), cinematicEyebrow: $('#cinematicEyebrow'), cinematicTitle: $('#cinematicTitle'), cinematicSub: $('#cinematicSub'),
     lever: $('#lever'), autoToggle: $('#autoToggle'), reset: $('#reset'),
     roleResult: $('#roleResult'), payoutResult: $('#payoutResult'), roleTest: $('#roleTest'),
     stageScreen: $('#stageScreen'), characterSprite: $('#characterSprite'),
@@ -130,6 +131,8 @@
   let atOmenFlow = null;
   let pendingSyntheticEntry = false;
   let pendingSyntheticOmen = false;
+  let entryCinematicActive = false;
+  let freezeSequenceActive = false;
   let reelTimers = [null, null, null];
   let reelStopped = [true, true, true];
   let reelPositions = [0, 0, 0];
@@ -848,8 +851,138 @@
     }, 70);
   };
 
+  const startReverseReelMotion = (index) => {
+    reelStopped[index] = false;
+    reels[index].classList.add('spinning','reverse-spinning');
+    stops[index].disabled = true;
+    stops[index].classList.remove('active');
+
+    reelTimers[index] = setInterval(() => {
+      reelPositions[index] = mod(reelPositions[index] - 1, reelStrips[index].length);
+      renderReel(index);
+    }, 55);
+  };
+
+  const stopAllReelTimers = () => {
+    for (let i = 0; i < 3; i++) {
+      if (reelTimers[i]) {
+        clearInterval(reelTimers[i]);
+        reelTimers[i] = null;
+      }
+      reels[i].classList.remove('spinning','reverse-spinning');
+    }
+  };
+
+  const showMachineCinematic = (eyebrow, title, sub, cls = '') => {
+    els.machineCinematic.className = 'machine-cinematic show ' + cls;
+    els.cinematicEyebrow.textContent = eyebrow || '';
+    els.cinematicTitle.textContent = title || '';
+    els.cinematicSub.textContent = sub || '';
+  };
+
+  const hideMachineCinematic = () => {
+    els.machineCinematic.className = 'machine-cinematic';
+    els.cinematicEyebrow.textContent = '';
+    els.cinematicTitle.textContent = '';
+    els.cinematicSub.textContent = '';
+  };
+
+  const unlockEntryStops = () => {
+    for (let i = 0; i < 3; i++) {
+      if (!reelTimers[i]) startReelMotion(i);
+      stops[i].disabled = false;
+      stops[i].classList.add('active');
+    }
+    if (autoEnabled) {
+      clearAutoTimers();
+      [0,1,2].forEach((reelIndex, i) => {
+        autoTimers.push(setTimeout(() => stopReelMotion(reelIndex), 650 + i * 300));
+      });
+    }
+  };
+
+  const runBonusEntryCinematic = (role) => {
+    entryCinematicActive = true;
+    for (let i = 0; i < 3; i++) {
+      startReelMotion(i);
+      stops[i].disabled = true;
+      stops[i].classList.remove('active');
+    }
+
+    const isAT = role === 'at';
+    els.eventTitle.textContent = isAT ? 'AT 確定' : 'BONUS 確定';
+    els.eventNote.textContent = '図柄告知待機';
+    showMachineCinematic(
+      isAT ? 'AT CONFIRMED' : 'BONUS CONFIRMED',
+      isAT ? 'AT 確定' : 'BONUS 確定',
+      '',
+      isAT ? 'gold' : 'red'
+    );
+
+    autoTimers.push(setTimeout(() => {
+      showMachineCinematic(
+        'TARGET',
+        '🟥7を狙え',
+        isAT ? '🟥7 🟥7 🟥7' : '🟥7 🟥7 BAR',
+        isAT ? 'gold target' : 'red target'
+      );
+      els.eventTitle.textContent = '🟥7を狙え';
+      els.eventNote.textContent = 'STOPボタンで図柄を揃えろ';
+      entryCinematicActive = false;
+      unlockEntryStops();
+    }, 900));
+  };
+
+  const runFreezeEntryCinematic = () => {
+    entryCinematicActive = true;
+    freezeSequenceActive = true;
+    els.machine.classList.add('freeze-all-off');
+    els.eventTitle.textContent = '……';
+    els.eventNote.textContent = '';
+    clearStageClasses();
+    hideMachineCinematic();
+
+    // 全灯消灯と同時に3リールが逆回転。STOPはまだ受け付けない。
+    for (let i = 0; i < 3; i++) startReverseReelMotion(i);
+
+    autoTimers.push(setTimeout(() => {
+      els.machine.classList.remove('freeze-all-off');
+      els.machine.classList.add('freeze-return');
+      showMachineCinematic('SYSTEM', 'PREMIUM FREEZE', '異常回転', 'freeze');
+      els.stageScreen.classList.add('freeze-lock','omen-premium');
+      els.effectLayer.className = 'effect-layer stripe flash';
+    }, 700));
+
+    autoTimers.push(setTimeout(() => {
+      stopAllReelTimers();
+      for (let i = 0; i < 3; i++) startReelMotion(i);
+      for (let i = 0; i < 3; i++) {
+        stops[i].disabled = true;
+        stops[i].classList.remove('active');
+      }
+      showMachineCinematic('TARGET', '🟦7を狙え', '🟦7 🟦7 🟦7', 'freeze target');
+      els.eventTitle.textContent = '🟦7を狙え';
+      els.eventNote.textContent = '3停止でFREEZE確定';
+    }, 1500));
+
+    autoTimers.push(setTimeout(() => {
+      els.machine.classList.remove('freeze-return');
+      entryCinematicActive = false;
+      for (let i = 0; i < 3; i++) {
+        stops[i].disabled = false;
+        stops[i].classList.add('active');
+      }
+      if (autoEnabled) {
+        clearAutoTimers();
+        [0,1,2].forEach((reelIndex, i) => {
+          autoTimers.push(setTimeout(() => stopReelMotion(reelIndex), 650 + i * 350));
+        });
+      }
+    }, 2250));
+  };
+
   const stopReelMotion = (index) => {
-    if (!gameActive || reelStopped[index]) return;
+    if (!gameActive || reelStopped[index] || entryCinematicActive) return;
 
     const isFirstStop = pendingPressedOrder.length === 0;
     if (isFirstStop && !pendingWasAT && !pendingWasBonus && !pendingWasChallenge && index !== 0) {
@@ -1181,6 +1314,19 @@
     }
 
     stageCue(pendingRole, 'spin');
+
+    if (pendingSyntheticEntry && pendingRole === 'freeze') {
+      clearAutoTimers();
+      runFreezeEntryCinematic();
+      return;
+    }
+
+    if (pendingSyntheticEntry && (pendingRole === 'hit' || pendingRole === 'at')) {
+      clearAutoTimers();
+      runBonusEntryCinematic(pendingRole);
+      return;
+    }
+
     for (let i = 0; i < 3; i++) startReelMotion(i);
 
     if (autoEnabled) {
@@ -1196,6 +1342,12 @@
     if (!gameActive) return;
 
     gameActive = false;
+    entryCinematicActive = false;
+    if (freezeSequenceActive) {
+      freezeSequenceActive = false;
+      els.machine.classList.remove('freeze-all-off','freeze-return');
+    }
+    hideMachineCinematic();
     els.lever.disabled = false;
 
     const result = pendingResult || { events: [] };
@@ -1272,6 +1424,10 @@
       els.eventNote.textContent += ' / 取りこぼし停止';
     }
     stageCue(visibleRole, 'result');
+    if (visibleRole === 'freeze') {
+      showMachineCinematic('PREMIUM', 'FREEZE 確定', '🟦7 🟦7 🟦7', 'freeze confirmed');
+      autoTimers.push(setTimeout(hideMachineCinematic, 900));
+    }
     render(displayState(state()));
     if (!autoEnabled) clearBellNavi();
 
@@ -1337,8 +1493,12 @@
     pendingControl = null;
     pendingSyntheticEntry = false;
     pendingSyntheticOmen = false;
+    entryCinematicActive = false;
+    freezeSequenceActive = false;
     deferredEntryReveal = null;
     atOmenFlow = null;
+    els.machine.classList.remove('freeze-all-off','freeze-return');
+    hideMachineCinematic();
     clearBellNavi();
     reelStopped = [true, true, true];
     els.lever.disabled = false;
