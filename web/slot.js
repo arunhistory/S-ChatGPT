@@ -7,30 +7,42 @@ var createSlotModule = (function () {
 
   return async function createSlotModule() {
     var baseUrl = new URL('.', scriptUrl);
-    var manifestUrl = new URL('slot.wasm.b64.manifest', baseUrl);
-    var manifestResponse = await fetch(manifestUrl, { credentials: 'same-origin' });
-    if (!manifestResponse.ok) throw new Error('WASM manifest load failed: ' + manifestResponse.status);
+    var bytes;
 
-    var chunkCount = Number((await manifestResponse.text()).trim());
-    if (!Number.isInteger(chunkCount) || chunkCount < 1 || chunkCount > 128) {
-      throw new Error('Invalid WASM chunk manifest');
+    // Primary path: always execute the committed slot.wasm itself.
+    // The old split-base64 files may lag behind the actual WASM and must never
+    // override a newer binary.
+    var wasmUrl = new URL('slot.wasm', baseUrl);
+    var wasmResponse = await fetch(wasmUrl, { credentials: 'same-origin', cache: 'no-store' });
+    if (wasmResponse.ok) {
+      bytes = new Uint8Array(await wasmResponse.arrayBuffer());
+    } else {
+      // Fallback only for hosts that cannot serve .wasm directly.
+      var manifestUrl = new URL('slot.wasm.b64.manifest', baseUrl);
+      var manifestResponse = await fetch(manifestUrl, { credentials: 'same-origin', cache: 'no-store' });
+      if (!manifestResponse.ok) throw new Error('WASM load failed: ' + wasmResponse.status + ' / manifest ' + manifestResponse.status);
+
+      var chunkCount = Number((await manifestResponse.text()).trim());
+      if (!Number.isInteger(chunkCount) || chunkCount < 1 || chunkCount > 128) {
+        throw new Error('Invalid WASM chunk manifest');
+      }
+
+      var chunkRequests = [];
+      for (var n = 1; n <= chunkCount; n++) {
+        (function (chunkIndex) {
+          var chunkUrl = new URL('slot.wasm.b64.' + chunkIndex, baseUrl);
+          chunkRequests.push(fetch(chunkUrl, { credentials: 'same-origin', cache: 'no-store' }).then(async function (response) {
+            if (!response.ok) throw new Error('WASM chunk ' + chunkIndex + ' load failed: ' + response.status);
+            return (await response.text()).trim();
+          }));
+        })(n);
+      }
+
+      var encoded = (await Promise.all(chunkRequests)).join('');
+      var binary = atob(encoded);
+      bytes = new Uint8Array(binary.length);
+      for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
     }
-
-    var chunkRequests = [];
-    for (var n = 1; n <= chunkCount; n++) {
-      (function (chunkIndex) {
-        var chunkUrl = new URL('slot.wasm.b64.' + chunkIndex, baseUrl);
-        chunkRequests.push(fetch(chunkUrl, { credentials: 'same-origin' }).then(async function (response) {
-          if (!response.ok) throw new Error('WASM chunk ' + chunkIndex + ' load failed: ' + response.status);
-          return (await response.text()).trim();
-        }));
-      })(n);
-    }
-
-    var encoded = (await Promise.all(chunkRequests)).join('');
-    var binary = atob(encoded);
-    var bytes = new Uint8Array(binary.length);
-    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
 
     var result = await WebAssembly.instantiate(bytes, {});
     var instance = result.instance;
