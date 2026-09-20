@@ -26,6 +26,59 @@ std::string escapeJson(const std::string& s) {
 
 } // namespace
 
+GameConfig gameConfigForSetting(SettingId setting) {
+    GameConfig c;
+    c.setting = static_cast<int>(setting);
+
+    // 設定7 / EX は現行フルスペック原型をそのまま使う。
+    if (setting != SettingId::S6) return c;
+
+    // 設定6 第一次案:
+    // EXのゲーム性・純増(6/6/9)は維持し、長い出玉の尻尾を中心に削る。
+    c.target_cz_rate = 1.0 / 370.0;
+    c.target_bonus_rate = 1.0 / 430.0;
+    c.target_at_rate = 1.0 / 550.0;
+
+    // 現行エンジン用の暫定rawノブ。通常時の全経路統合後に再較正する。
+    c.raw_cz_rate = 1.0 / 480.0;
+    c.raw_bonus_rate = 1.0 / 700.0;
+    c.raw_at_rate = 1.0 / 1400.0;
+
+    c.bonus_to_stock_rate = 0.08;
+    c.upper_comeback_rate = 0.15;
+
+    // 平均49.25G。EXの50G感をほぼ維持しつつ300G初期を外す。
+    c.initial_games = {
+        {20, 0.20}, {30, 0.25}, {40, 0.20}, {50, 0.15},
+        {75, 0.08}, {100, 0.06}, {150, 0.035}, {200, 0.025}
+    };
+
+    // 平均24.4G。大きい上乗せの裾だけ強く削る。
+    c.add_games = {
+        {10, 0.40}, {20, 0.30}, {30, 0.18},
+        {50, 0.08}, {100, 0.03}, {200, 0.01}
+    };
+
+    // 下位基礎抽選をEXから約10%弱化。
+    c.lower_hit_rate = 1.0 / 220.0;
+    c.lower_fall_rate = 1.0 / 380.0;
+    c.lower_add_rate = 1.0 / 330.0;
+    c.lower_special_rate = 1.0 / 770.0;
+    c.lower_upper_special_rate = 1.0 / 5500.0;
+
+    // 中位・上位も同じゲーム性のまま、EXより約10%重くする。
+    c.middle_event_scale = 1.65;
+    c.upper_event_scale = 1.65;
+
+    // 上位特化: 1回あたり上乗せ平均41Gを前提に平均約167G。
+    c.upper_special_chains = {
+        {1,0.20},{2,0.18},{3,0.16},{4,0.14},{5,0.11},
+        {6,0.08},{8,0.06},{12,0.04},{16,0.03}
+    };
+
+    return c;
+}
+
 SlotEngine::SlotEngine(std::uint64_t seed, GameConfig config)
     : config_(std::move(config)), rng_(seed) {
     rerollNormalModeAndPattern();
@@ -34,7 +87,7 @@ SlotEngine::SlotEngine(std::uint64_t seed, GameConfig config)
 void SlotEngine::reset(std::uint64_t seed) {
     rng_.seed(seed);
     state_ = {};
-    state_.setting = static_cast<int>(SettingId::EX);
+    state_.setting = config_.setting;
     rerollNormalModeAndPattern();
 }
 
