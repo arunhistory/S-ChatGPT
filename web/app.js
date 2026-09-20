@@ -43,6 +43,24 @@
     ['replay','miss','bell','penguin','replay','bar','miss','replay','watermelon','chance','alt-seven','seven','bar','replay','miss','bell','replay','bar','miss','replay','miss']
   ];
 
+  const forceOutcomeCodes = {
+    miss:0,
+    one_medal:1,
+    bell9:2,
+    bell15:3,
+    replay:4,
+    weak_cherry:5,
+    strong_cherry:6,
+    watermelon:7,
+    weak_chance:8,
+    strong_chance:9,
+    penguin_chance:10,
+    hit:11,
+    at:12,
+    tier_up:13,
+    freeze:14
+  };
+
   const roleLabels = {
     miss:'ハズレ',
     one_medal:'1枚役',
@@ -519,11 +537,14 @@
     pendingControl = null;
     clearBellNavi();
 
-    // ここがレバーON抽選。以後STOPでは当落・成立役・押し順を変更しない。
-    pendingResult = callJson(s0.inAT ? 'slot_spin_at_json' : 'slot_spin_normal_json');
+    // ここがレバーON抽選。DEBUG強制時もWASM本体へ渡し、
+    // 表示だけでなくAT/ボーナス/フリーズ等の状態遷移まで同じ時点で確定する。
+    const forcedRole = els.roleTest.value;
+    pendingResult = forcedRole
+      ? callJson('slot_force_outcome_json', ['number'], [forceOutcomeCodes[forcedRole]])
+      : callJson(s0.inAT ? 'slot_spin_at_json' : 'slot_spin_normal_json');
     pendingRole = deriveRoleFromResult(pendingResult);
 
-    const forcedRole = els.roleTest.value;
     pendingPayout = forcedRole
       ? accountingReturnForRole(forcedRole)
       : Number(pendingResult.reelPayout || 0);
