@@ -33,12 +33,19 @@ GameConfig gameConfigForSetting(SettingId setting) {
     // 長期目標機械割。シミュレータはこの値との差を較正対象にする。
     switch (setting) {
         case SettingId::S1: c.target_payout_ratio = 0.85; break;
+            c.performance_calibration = 0.83;
         case SettingId::S2: c.target_payout_ratio = 0.96; break;
+            c.performance_calibration = 0.89;
         case SettingId::S3: c.target_payout_ratio = 0.99; break;
+            c.performance_calibration = 0.905;
         case SettingId::S4: c.target_payout_ratio = 1.03; break;
+            c.performance_calibration = 0.98;
         case SettingId::S5: c.target_payout_ratio = 1.08; break;
+            c.performance_calibration = 0.92;
         case SettingId::S6: c.target_payout_ratio = 1.14; break;
+            c.performance_calibration = 0.973;
         case SettingId::EX: c.target_payout_ratio = 1.50; break;
+            c.performance_calibration = 1.03;
     }
 
     // 設定別の性能プロファイル。ゲームルールは共通で、確率ノブだけを変更する。
@@ -443,7 +450,7 @@ std::vector<Event> SlotEngine::playBonus() {
 
     applySectionDelta(config_.bonus_medals, out);
 
-    if (chance(config_.bonus_to_stock_rate * growth)) {
+    if (chance(config_.bonus_to_stock_rate * growth * config_.performance_calibration)) {
         ++state_.stocks;
         out.push_back({EventType::StockGain, state_.stocks, "bonus stock lottery"});
     }
@@ -473,7 +480,7 @@ std::vector<Event> SlotEngine::playBonus() {
     }
 
     const bool forcedByMissCeiling = state_.bonus_at_misses >= config_.bonus_at_miss_ceiling - 1;
-    if (forcedByMissCeiling || chance(config_.bonus_to_at_rate * growth)) {
+    if (forcedByMissCeiling || chance(config_.bonus_to_at_rate * growth * config_.performance_calibration)) {
         state_.bonus_at_misses = 0;
         state_.cold_bonus = false;
         startAT(ATTier::Lower, false, out, "bonus performance cleared -> AT");
@@ -649,12 +656,12 @@ std::vector<Event> SlotEngine::spinNormal() {
         out.push_back({EventType::HighEnter, 0, "normal -> high probability"});
     }
 
-    if (chance(config_.raw_at_rate)) {
+    if (chance(config_.raw_at_rate * config_.performance_calibration)) {
         startAT(ATTier::Lower, false, out, "raw AT route");
         rerollNormalModeAndPattern();
         return out;
     }
-    if (chance(config_.raw_bonus_rate)) {
+    if (chance(config_.raw_bonus_rate * config_.performance_calibration)) {
         out.push_back({EventType::Bonus, config_.bonus_medals, "raw bonus"});
         auto b = playBonus(); out.insert(out.end(), b.begin(), b.end());
         return out;
@@ -742,6 +749,10 @@ std::vector<Event> SlotEngine::resolveATEvent() {
     static constexpr double patternFactor[5]{0.82, 0.92, 1.00, 1.10, 1.20};
     const double pf = patternFactor[clampv(state_.at_pattern, 0, 4)];
     hit *= pf; add *= pf; special *= pf;
+    hit *= config_.performance_calibration;
+    add *= config_.performance_calibration;
+    special *= config_.performance_calibration;
+    upperSpecial *= config_.performance_calibration;
 
     if (state_.cold_at) {
         hit *= config_.cold_growth_factor;
@@ -809,7 +820,7 @@ std::vector<Event> SlotEngine::resolveATEvent() {
 
 std::vector<Event> SlotEngine::resolveUpperComeback() {
     std::vector<Event> out;
-    const double rate = config_.upper_comeback_rate * (state_.cold_at ? config_.cold_growth_factor : 1.0);
+    const double rate = config_.upper_comeback_rate * config_.performance_calibration * (state_.cold_at ? config_.cold_growth_factor : 1.0);
     if (chance(rate)) {
         state_.in_at = true;
         state_.at_tier = ATTier::Upper;
