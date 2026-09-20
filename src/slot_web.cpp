@@ -31,7 +31,7 @@ enum NormalTable : uint8_t { NormalA, NormalB, Heaven, SuperHeaven, Special };
 enum Tier : uint8_t { Lower, Middle, Upper };
 enum ATTable : uint8_t { ATNormal, ATHeaven, ATSuperHeaven, Specialized };
 enum Role : uint8_t { Miss, OneMedal, Bell9, Bell15, Replay, WeakCherry, StrongCherry, Watermelon, WeakChance, StrongChance, PenguinChance, ThreeMedal=15 };
-enum PendingEntry : uint8_t { EntryNone, EntryBonus, EntryLowerAT, EntryMiddleAT, EntryUpperAT };
+enum PendingEntry : uint8_t { EntryNone, EntryBonus, EntryLowerAT, EntryMiddleAT, EntryUpperAT, EntryFreeze };
 enum EvType : uint8_t { EvNone, CZ, Bonus, EpisodeBonus, ChallengeStart, ChallengePoint, ChallengeJudge, ATStart, ATAddGames, SpecialZone, UpperSpecialZone, StockGain, TierUp, TierDown, ATEnd, UpperComeback, Freeze, SectionCross, HighEnter, HighExit, Shorten, ColdEnter, SectionReward };
 struct Event { EvType type; int value; const char* note; };
 struct Events { Event e[256]; int n; void clear(){n=0;} void add(EvType t,int v,const char* s){if(n<256)e[n++]={t,v,s};} };
@@ -130,9 +130,10 @@ static Role drawRole(){uint32_t d=(uint32_t)(next64()&(RNG_SPACE-1u));if(d<ROLE_
 static int prefLevel(){return s.stocks>=5?3:s.stocks>=3?2:s.stocks>=1?1:0;}
 static void specialZoneRun(bool upper,Events& out);
 static void sectionDelta(int64_t v,Events& out){s.section_diff+=v;s.total_diff+=v;if(s.section_diff<s.section_min_diff)s.section_min_diff=s.section_diff;if(s.section_diff>=2400){int p=prefLevel();s.stocks=0;++s.section_count;s.section_diff=0;s.section_min_diff=0;out.add(SectionCross,p,"6.5 section cut; stocks collapsed to next-section preference level");static const double tierUp[4]={.005,.10,.25,.50};static const double upperSpec[4]={0,.10,.50,.75};int idx=clampi(p,0,3);if(s.in_at){if(s.tier==Upper){if(chance(upperSpec[idx])){if(chance(1.0/3.0)){out.add(UpperSpecialZone,p,"section roulette -> upper special (1/3)");specialZoneRun(true,out);}else{out.add(SpecialZone,p,"section roulette -> special");specialZoneRun(false,out);}}}else if(chance(tierUp[idx])){s.tier=s.tier==Lower?Middle:Upper;out.add(TierUp,p,"section roulette -> AT tier up");}}rerollAT();}}
+static void queueEntry(PendingEntry entry,bool stock=false);
 static void startAT(Tier t,bool stock,Events& out,const char* why,bool allowCold=true){s.in_at=true;s.tier=t;s.at_games_left=initialGames();s.cold_at=allowCold&&chance(.60);if(s.cold_at)out.add(ColdEnter,1,"AT cold segment: growth -30%");if(stock)++s.stocks;rerollAT();out.add(ATStart,s.at_games_left,why);}
 static void playBonus(Events& out);
-static void playCZ(Events& out){bool resolved=false;for(int g=0;g<10&&!resolved;++g){++s.total_games;sectionDelta(-3,out);if(chance(1.0/1000.0)){startAT(Lower,false,out,"CZ direct AT");s.cz_misses=0;resolved=true;}else if(chance(1.0/100.0)){out.add(Bonus,0,"CZ bonus hit");playBonus(out);s.cz_misses=0;resolved=true;}}if(!resolved){++s.cz_misses;if(s.cz_misses>=3){s.cz_misses=0;out.add(Bonus,0,"CZ 3-miss ceiling -> bonus");playBonus(out);}}}
+static void playCZ(Events& out){bool resolved=false;for(int g=0;g<10&&!resolved;++g){++s.total_games;sectionDelta(-3,out);if(chance(1.0/1000.0)){queueEntry(EntryLowerAT,false);s.cz_misses=0;resolved=true;}else if(chance(1.0/100.0)){queueEntry(EntryBonus,false);s.cz_misses=0;resolved=true;}}if(!resolved){++s.cz_misses;if(s.cz_misses>=3){s.cz_misses=0;queueEntry(EntryBonus,false);}}}
 static Role drawBonusSafeRole(){
     uint32_t d=(uint32_t)(next64()&7u);
     // 0..3: 9枚(50%), 4..5: 15枚(25%), 6: REPLAY(12.5%), 7: 3枚役(12.5%)
@@ -275,7 +276,7 @@ static Events spinChallenge(){
     }
     return out;
 }
-static void resolveCeiling(Events& out){if(s.normal_table==Special){if(s.normal_ceiling==777){int r=(int)(next64()%3);if(r==0)startAT(Lower,false,out,"special 777 ceiling: AT",false);else if(r==1)startAT(Middle,true,out,"special 777 ceiling: middle AT + stock",false);else startAT(Upper,false,out,"special 777 ceiling: upper AT",false);}else{out.add(Freeze,0,"special 1500 ceiling: freeze-favored");startAT(Upper,true,out,"special 1500 ceiling freeze reward",false);}rerollNormal();return;}double r=u01();if(r<.70){out.add(CZ,0,"normal ceiling -> CZ");playCZ(out);}else if(r<.95){out.add(Bonus,0,"normal ceiling -> bonus");playBonus(out);}else{startAT(Lower,false,out,"normal ceiling -> AT");rerollNormal();}}
+static void resolveCeiling(Events& out){if(s.normal_table==Special){if(s.normal_ceiling==777){int r=(int)(next64()%3);if(r==0)queueEntry(EntryLowerAT,false);else if(r==1)queueEntry(EntryMiddleAT,true);else queueEntry(EntryUpperAT,false);}else{queueEntry(EntryFreeze,true);}return;}double r=u01();if(r<.70){out.add(CZ,0,"normal ceiling -> CZ");playCZ(out);}else if(r<.95){queueEntry(EntryBonus,false);}else{queueEntry(EntryLowerAT,false);}}
 static void specialZoneRun(bool upper,Events& out){if(!upper){for(int g=0;g<5;++g){if(!chance(.5))continue;if(chance(.95)){int x=specialAdd();s.at_games_left+=x;out.add(ATAddGames,x,"special zone chained add");}else{out.add(Bonus,0,"special zone bonus");playBonus(out);return;}}return;}int chains=upperChains();for(int c=0;c<chains;++c){if(chance(.95)){int x=specialAdd();s.at_games_left+=x;out.add(ATAddGames,x,"upper-special preset add");}else{out.add(Bonus,0,"upper-special preset bonus");playBonus(out);return;}}}
 static void endAT(Events& out);
 static void resolveATEvent(Events& out){Profile p=profile();double scale=s.tier==Lower?1.0:p.scale;double hit=p.hit*scale,fall=s.tier==Lower?p.fall:(s.tier==Middle?1.0/180.0:1.0/150.0),add=p.add*scale,spec=p.spec*scale,epi=(1.0/1000.0)*scale,up=p.upper*scale;if(s.at_table==ATHeaven){hit*=1.9;epi*=1.4;}else if(s.at_table==ATSuperHeaven){add*=2.4;epi*=1.25;}else if(s.at_table==Specialized){hit*=.55;add*=.55;spec*=2.8;up*=2.5;}static const double pfv[5]={.82,.92,1.0,1.10,1.20};double pf=pfv[clampi(s.at_pattern,0,4)];hit*=pf;add*=pf;spec*=pf;if(s.cold_at){hit*=.70;add*=.70;spec*=.70;epi*=.70;up*=.70;}bool ea=s.at_table==ATHeaven||s.at_table==ATSuperHeaven;bool ua=s.at_table==Specialized;double total=hit+fall+add+spec+(ea?epi:0)+(ua?up:0);double x=u01();if(x>=total)return;if((x-=hit)<0){out.add(Bonus,0,"AT normal hit -> 50 medal bonus");playBonus(out);return;}if((x-=fall)<0){if(s.tier==Middle&&chance(.5)){s.tier=Lower;out.add(TierDown,0,"middle fall -> lower AT");}else if(s.tier==Upper&&chance(.5))endAT(out);return;}if((x-=add)<0){int g=addGames();s.at_games_left+=g;out.add(ATAddGames,g,"one-shot add");return;}if((x-=spec)<0){out.add(SpecialZone,0,"special zone");specialZoneRun(false,out);return;}if(ea&&(x-=epi)<0){beginEpisode(true,out,"direct episode in heaven/super-heaven");return;}if(ua&&(x-=up)<0){out.add(UpperSpecialZone,0,"upper special zone");specialZoneRun(true,out);}}
@@ -305,6 +306,12 @@ static Events resolvePendingEntry(){
     if(entry==EntryBonus){
         out.add(Bonus,0,"queued bonus entry");
         playBonus(out);
+    }else if(entry==EntryFreeze){
+        s.last_role=Replay;
+        s.last_payout=3;
+        out.add(Freeze,0,"queued blue-7 freeze entry");
+        startAT(Upper,true,out,"queued freeze -> upper AT + stock",false);
+        rerollNormal();
     }else{
         Tier t=entry==EntryMiddleAT?Middle:(entry==EntryUpperAT?Upper:Lower);
         startAT(t,stock,out,"queued red-7 AT entry",false);
@@ -324,7 +331,7 @@ static Events spinNormal(){
     sectionDelta(-3,out);
 
     if(s.bell9_streak>=5){
-        s.bell9_streak=0;startAT(Lower,false,out,"five consecutive 9-medal bells -> lower AT");rerollNormal();return out;
+        s.bell9_streak=0;queueEntry(EntryLowerAT,false);return out;
     }
 
     if(s.normal_table==SuperHeaven&&!s.special_window_checked&&s.normal_actual_games>=20){
@@ -333,7 +340,7 @@ static Events spinNormal(){
     }
 
     uint32_t d=(uint32_t)(next64()&(RNG_SPACE-1));
-    if(d==0){out.add(Freeze,0,"1/134217728 freeze");startAT(Upper,true,out,"freeze -> upper AT + stock",false);rerollNormal();return out;}
+    if(d==0){queueEntry(EntryFreeze,true);return out;}
     if(d<(RNG_SPACE/32768u)+1u){queueEntry(EntryUpperAT,false);return out;}
     if(d<(RNG_SPACE/8192u)+(RNG_SPACE/32768u)+1u){queueEntry(EntryMiddleAT,true);return out;}
 
@@ -365,7 +372,7 @@ static Events spinNormal(){
             }else if(rr<.995){
                 s.high_active=false;out.add(CZ,0,"high probability -> CZ");playCZ(out);return out;
             }else{
-                s.high_active=false;out.add(Bonus,0,"high probability -> regular hit");playBonus(out);return out;
+                s.high_active=false;queueEntry(EntryBonus,false);return out;
             }
         }
         if(s.high_games>=5&&chance(.10)){s.high_active=false;s.high_games=0;out.add(HighExit,0,"high probability -> normal");}
@@ -375,7 +382,7 @@ static Events spinNormal(){
 
     Profile p=profile();
     if(chance(p.rawAT)){queueEntry(EntryLowerAT,false);return out;}
-    if(chance(p.rawBonus)){out.add(Bonus,0,"raw bonus");playBonus(out);return out;}
+    if(chance(p.rawBonus)){queueEntry(EntryBonus,false);return out;}
     if(chance(p.rawCZ)){out.add(CZ,0,"raw CZ");playCZ(out);return out;}
     if(s.normal_display_games>=s.normal_ceiling)resolveCeiling(out);
     return out;
