@@ -8,6 +8,7 @@ CLANGXX="${CLANGXX:-clang++}"
   -nostdlib -ffreestanding -fno-exceptions -fno-rtti \
   -Wl,--no-entry -Wl,--export-memory \
   -Wl,--export=slot_reset \
+  -Wl,--export=slot_set_setting \
   -Wl,--export=slot_state_json \
   -Wl,--export=slot_spin_normal_json \
   -Wl,--export=slot_spin_at_json \
