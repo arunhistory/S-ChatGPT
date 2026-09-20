@@ -417,12 +417,18 @@
     return base;
   };
 
-  const chooseStopPosition = (index, navigatedBell = false) => {
+  const chooseStopPosition = (index, navigatedBell = false, naviMiss = false) => {
     const strip = reelStrips[index];
     const base = mod(reelPositions[index], strip.length);
 
     if (navigatedBell) {
       return chooseNavigatedBellPosition(index, base);
+    }
+
+    // AT押し順を外した後は、内部成立ベルの引き込み制御を使わない。
+    // 実際に押したタイミングの停止形をそのまま「外した役」として扱う。
+    if (naviMiss) {
+      return base;
     }
 
     // 青7フリーズのみ0〜4コマ制御の外。押下位置を無視して中段へ強制揃い。
@@ -489,6 +495,12 @@
   const stopReelMotion = (index) => {
     if (!gameActive || reelStopped[index]) return;
 
+    const isFirstStop = pendingPressedOrder.length === 0;
+    if (isFirstStop && !pendingWasAT && index !== 0) {
+      // 通常時の変則押しペナルティ: 1回につき天井+1G。
+      callJson('slot_apply_normal_penalty_json');
+    }
+
     const isATBellNavi = pendingWasAT
       && pendingRole === 'bell9'
       && pendingControl
@@ -498,13 +510,14 @@
     if (isATBellNavi && index !== expectedIndex) pendingNaviOrderValid = false;
     pendingPressedOrder.push(index);
     const navigatedBell = isATBellNavi && pendingNaviOrderValid && index === expectedIndex;
+    const naviMiss = isATBellNavi && !pendingNaviOrderValid;
 
     if (reelTimers[index]) {
       clearInterval(reelTimers[index]);
       reelTimers[index] = null;
     }
 
-    reelPositions[index] = chooseStopPosition(index, navigatedBell);
+    reelPositions[index] = chooseStopPosition(index, navigatedBell, naviMiss);
     renderReel(index);
     reelStopped[index] = true;
 
@@ -628,7 +641,14 @@
     const physicalPattern = classifyPattern();
     const assistSubstitute = !!pendingControl?.substituteUsed?.some(Boolean);
     const aimAssistUsed = !!pendingControl?.aimAssistUsed?.some(Boolean);
+    const naviMiss = pendingWasAT
+      && pendingRole === 'bell9'
+      && pendingControl
+      && pendingControl.navOrder >= 0
+      && !pendingNaviOrderValid;
     const payout = pendingPayout;
+    const visibleRole = naviMiss ? physicalPattern : pendingRole;
+    const visiblePayout = naviMiss ? accountingReturnForRole(physicalPattern) : payout;
     let allEvents = [...(result.events || [])];
 
     if (payout > 0) {
@@ -637,15 +657,22 @@
     }
 
     // 成立役はC++抽選結果を表示。停止形そのものはactualRoleで内部確認可能。
-    els.roleResult.textContent = pendingWasAT && pendingRole === 'bell9'
-      ? '🔔 押し順ベル'
-      : (roleLabels[pendingRole] || pendingRole);
-    els.payoutResult.textContent = pendingWasAT && pendingRole === 'bell9'
-      ? 'AT純増'
-      : (pendingRole === 'replay' ? 'REPLAY' : payout + '枚');
+    els.roleResult.textContent = naviMiss
+      ? 'ナビ外し / ' + (roleLabels[physicalPattern] || physicalPattern)
+      : (pendingWasAT && pendingRole === 'bell9'
+          ? '🔔 押し順ベル'
+          : (roleLabels[pendingRole] || pendingRole));
+    els.payoutResult.textContent = naviMiss
+      ? visiblePayout + '枚'
+      : (pendingWasAT && pendingRole === 'bell9'
+          ? 'AT純増'
+          : (pendingRole === 'replay' ? 'REPLAY' : payout + '枚'));
 
     pushEvents(allEvents);
-    showFinalBanner(allEvents, pendingRole, pendingRole === 'replay' ? 0 : payout);
+    showFinalBanner(allEvents, visibleRole, visibleRole === 'replay' ? visiblePayout : visiblePayout);
+    if (naviMiss) {
+      els.eventNote.textContent += ' / ナビ外し（内部成立: 押し順ベル）';
+    }
     if (assistSubstitute) {
       els.eventNote.textContent += ' / 代用停止';
     }
@@ -655,7 +682,7 @@
     if (physicalPattern !== pendingRole && !assistSubstitute && !aimAssistUsed && pendingRole !== 'one_medal') {
       els.eventNote.textContent += ' / 取りこぼし停止';
     }
-    stageCue(pendingRole, 'result');
+    stageCue(visibleRole, 'result');
     render(state());
     if (!autoEnabled) clearBellNavi();
 
