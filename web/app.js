@@ -452,7 +452,7 @@
 
   const chooseAssistSubstitutePosition = (index, base) => {
     // 成立役はレバーONで既に確定済み。ここでは停止表示だけを代用形へ落とす。
-    const safeKinds = ['chance','replay','bar','bell','miss'];
+    const safeKinds = ['chance','replay','bar','miss'];
     for (const kind of safeKinds) {
       for (let slip = 0; slip <= 4; slip++) {
         const candidate = mod(base + slip, reelStrips[index].length);
@@ -699,6 +699,19 @@
     }
   };
 
+  const displayState = (raw) => {
+    if (!deferredEntryReveal || pendingSyntheticEntry) return raw;
+    return {
+      ...raw,
+      inAT: false,
+      inBonus: false,
+      episodeBonus: false,
+      challengeActive: false,
+      atGamesLeft: 0,
+      bonusMedalsLeft: 0
+    };
+  };
+
   const render = (s) => {
     const modeText = s.inBonus
       ? (s.episodeBonus ? 'EPISODE' : 'BONUS')
@@ -754,7 +767,6 @@
     pendingEntryReplayRole = false;
     pendingControl = null;
     pendingSyntheticEntry = false;
-    deferredEntryReveal = null;
     clearBellNavi();
 
     // ここがレバーON抽選。直撃予約がある場合は、WASMを進めず
@@ -792,10 +804,12 @@
       // 旧WASMは中段チェリー/直撃で同GにAT/BONUS状態へ入ってしまう。
       // 現在Gは成立役だけで終え、開始イベントだけ次Gの🟥7/BONUS図柄入賞へ繰り越す。
       const normalTrigger = !pendingWasAT && !pendingWasBonus && !pendingWasChallenge;
-      const immediateTransition = normalTrigger
-        && !['hit','at','tier_up','freeze'].includes(pendingRole)
+      const physicalTriggerRole = pendingResult.reelRole || 'miss';
+      const naturalTransition = normalTrigger
+        && !forcedRole
+        && pendingRole !== 'freeze'
         && (pendingResult.inBonus || pendingResult.inAT);
-      if (immediateTransition) {
+      if (naturalTransition) {
         const entryTypes = new Set([
           'bonus','episode_bonus','at_start','cold_enter','stock_gain','tier_up'
         ]);
@@ -804,8 +818,13 @@
           role: pendingResult.inBonus ? 'hit' : 'at',
           events: entryEvents
         };
+
+        // 現在Gは実際に成立した役だけを表示する。
+        // AT/BONUS図柄は次Gの入賞ゲームまで出さない。
+        pendingRole = physicalTriggerRole;
         pendingResult = {
           ...pendingResult,
+          reelRole: physicalTriggerRole,
           events: (pendingResult.events || []).filter(e => !entryTypes.has(e.type)),
           inAT: false,
           inBonus: false
@@ -944,7 +963,7 @@
       els.eventNote.textContent += ' / 取りこぼし停止';
     }
     stageCue(visibleRole, 'result');
-    render(state());
+    render(displayState(state()));
     if (!autoEnabled) clearBellNavi();
 
     if (autoEnabled) {
@@ -1007,6 +1026,8 @@
     pendingPressedOrder = [];
     pendingNaviOrderValid = true;
     pendingControl = null;
+    pendingSyntheticEntry = false;
+    deferredEntryReveal = null;
     clearBellNavi();
     reelStopped = [true, true, true];
     els.lever.disabled = false;
