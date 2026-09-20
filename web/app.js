@@ -10,6 +10,7 @@
     lever: $('#lever'), autoToggle: $('#autoToggle'), reset: $('#reset'),
     roleResult: $('#roleResult'), payoutResult: $('#payoutResult'), roleTest: $('#roleTest'),
     stageScreen: $('#stageScreen'), characterSprite: $('#characterSprite'),
+    naviState: $('#naviState'),
     effectLayer: $('#effectLayer'), cutinLayer: $('#cutinLayer'),
     cutinEyebrow: $('#cutinEyebrow'), cutinTitle: $('#cutinTitle'),
     cutinSub: $('#cutinSub'), stageCaption: $('#stageCaption')
@@ -93,6 +94,9 @@
   let pendingResult = null;
   let pendingRole = 'miss';
   let pendingPayout = 0;
+  let pendingWasAT = false;
+  let pendingStopOrder = [0, 1, 2];
+  let pendingWatermelonSubstitute = [false, false, false];
   let reelTimers = [null, null, null];
   let reelStopped = [true, true, true];
   let reelPositions = [0, 0, 0];
@@ -100,6 +104,36 @@
   let autoTimers = [];
 
   const mod = (n, m) => ((n % m) + m) % m;
+  const stopOrders = [
+    [0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]
+  ];
+
+  const clearBellNavi = () => {
+    pendingStopOrder = [0,1,2];
+    stops.forEach((button) => {
+      button.dataset.nav = '';
+      button.classList.remove('nav-first','nav-active');
+      const n = button.querySelector('.nav-order');
+      if (n) n.textContent = '–';
+    });
+    if (els.naviState) els.naviState.textContent = 'NAVI ---';
+  };
+
+  const setBellNavi = () => {
+    pendingStopOrder = stopOrders[Math.floor(Math.random() * stopOrders.length)];
+    pendingStopOrder.forEach((reelIndex, orderIndex) => {
+      const button = stops[reelIndex];
+      button.dataset.nav = String(orderIndex + 1);
+      button.classList.add('nav-active');
+      if (orderIndex === 0) button.classList.add('nav-first');
+      const n = button.querySelector('.nav-order');
+      if (n) n.textContent = String(orderIndex + 1);
+    });
+    if (els.naviState) {
+      const names = ['左','中','右'];
+      els.naviState.textContent = '🔔 ' + pendingStopOrder.map(i => names[i]).join('→');
+    }
+  };
 
   const clearStageClasses = () => {
     els.effectLayer.className = 'effect-layer';
@@ -281,6 +315,21 @@
     return true;
   };
 
+  const chooseWatermelonSubstitutePosition = (index, base) => {
+    const safeKinds = ['replay','bell','bar','chance','miss'];
+    for (const kind of safeKinds) {
+      for (let slip = 0; slip <= 4; slip++) {
+        const candidate = mod(base + slip, reelStrips[index].length);
+        if (visibleKind(index, candidate, 1) === kind) {
+          pendingWatermelonSubstitute[index] = true;
+          return candidate;
+        }
+      }
+    }
+    pendingWatermelonSubstitute[index] = true;
+    return base;
+  };
+
   const chooseStopPosition = (index) => {
     const strip = reelStrips[index];
     const base = mod(reelPositions[index], strip.length);
@@ -296,7 +345,11 @@
         const candidate = mod(base + slip, strip.length);
         if (candidateMatchesTarget(index, candidate, target)) return candidate;
       }
-      // 引き込めない押し位置では取りこぼし。5コマ以上は滑らせない。
+      // スイカは4コマで図柄を引き込めない場合、代用停止で成立を維持する。
+      // それ以外の目押し役は従来通り取りこぼし。
+      if (pendingRole === 'watermelon') {
+        return chooseWatermelonSubstitutePosition(index, base);
+      }
       return base;
     }
 
@@ -348,7 +401,7 @@
     reelStopped[index] = true;
 
     reels[index].classList.remove('spinning');
-    stops[index].classList.remove('active');
+    stops[index].classList.remove('active','nav-first');
     stops[index].disabled = true;
 
     if (reelStopped.every(Boolean)) finishGame();
@@ -415,6 +468,10 @@
     els.eventBanner.className = 'event-banner';
 
     const s0 = state();
+    pendingWasAT = !!s0.inAT;
+    pendingWatermelonSubstitute = [false, false, false];
+    clearBellNavi();
+
     pendingResult = callJson(s0.inAT ? 'slot_spin_at_json' : 'slot_spin_normal_json');
     pendingRole = deriveRoleFromResult(pendingResult);
 
@@ -423,13 +480,21 @@
       ? accountingReturnForRole(forcedRole)
       : Number(pendingResult.reelPayout || 0);
 
+    // ATは純増をC++側で既に会計済み。Web側は押し順ベルの停止制御だけ担当する。
+    if (pendingWasAT && !forcedRole) {
+      pendingRole = 'bell9';
+      pendingPayout = 0;
+      setBellNavi();
+    }
+
     for (let i = 0; i < 3; i++) startReelMotion(i);
 
     if (autoEnabled) {
       clearAutoTimers();
-      autoTimers.push(setTimeout(() => stopReelMotion(0), 450));
-      autoTimers.push(setTimeout(() => stopReelMotion(1), 700));
-      autoTimers.push(setTimeout(() => stopReelMotion(2), 950));
+      const order = pendingWasAT && !forcedRole ? pendingStopOrder : [0,1,2];
+      order.forEach((reelIndex, i) => {
+        autoTimers.push(setTimeout(() => stopReelMotion(reelIndex), 450 + i * 250));
+      });
     }
   };
 
@@ -442,7 +507,9 @@
     const result = pendingResult || { events: [] };
     pendingResult = null;
 
-    const actualRole = classifyPattern();
+    const physicalPattern = classifyPattern();
+    const watermelonAssist = pendingRole === 'watermelon' && pendingWatermelonSubstitute.some(Boolean);
+    const actualRole = watermelonAssist ? 'watermelon' : physicalPattern;
     const payout = pendingPayout;
     let allEvents = [...(result.events || [])];
 
@@ -452,12 +519,20 @@
     }
 
     // 成立役はC++抽選結果を表示。停止形そのものはactualRoleで内部確認可能。
-    els.roleResult.textContent = roleLabels[pendingRole] || pendingRole;
-    els.payoutResult.textContent = pendingRole === 'replay' ? 'REPLAY' : payout + '枚';
+    els.roleResult.textContent = pendingWasAT && pendingRole === 'bell9'
+      ? '🔔 押し順ベル'
+      : (roleLabels[pendingRole] || pendingRole);
+    els.payoutResult.textContent = pendingWasAT && pendingRole === 'bell9'
+      ? 'AT純増'
+      : (pendingRole === 'replay' ? 'REPLAY' : payout + '枚');
 
     pushEvents(allEvents);
     showFinalBanner(allEvents, pendingRole, pendingRole === 'replay' ? 0 : payout);
+    if (watermelonAssist) {
+      els.eventNote.textContent += ' / スイカ代用停止';
+    }
     render(state());
+    if (!autoEnabled) clearBellNavi();
 
     if (autoEnabled) {
       clearAutoTimers();
@@ -481,9 +556,14 @@
       autoTimers.push(setTimeout(beginGame, 250));
     } else {
       clearAutoTimers();
-      if (!reelStopped[0]) autoTimers.push(setTimeout(() => stopReelMotion(0), 250));
-      if (!reelStopped[1]) autoTimers.push(setTimeout(() => stopReelMotion(1), 500));
-      if (!reelStopped[2]) autoTimers.push(setTimeout(() => stopReelMotion(2), 750));
+      const order = pendingWasAT ? pendingStopOrder : [0,1,2];
+      let delay = 250;
+      for (const reelIndex of order) {
+        if (!reelStopped[reelIndex]) {
+          autoTimers.push(setTimeout(() => stopReelMotion(reelIndex), delay));
+          delay += 250;
+        }
+      }
     }
   };
 
@@ -506,6 +586,9 @@
     pendingResult = null;
     pendingRole = 'miss';
     pendingPayout = 0;
+    pendingWasAT = false;
+    pendingWatermelonSubstitute = [false, false, false];
+    clearBellNavi();
     reelStopped = [true, true, true];
     els.lever.disabled = false;
 
