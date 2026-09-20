@@ -267,11 +267,84 @@
   const clearStageClasses = () => {
     els.effectLayer.className = 'effect-layer';
     els.cutinLayer.className = 'cutin-layer';
-    els.stageScreen.classList.remove('role-penguin','role-strong','role-hit','freeze-lock');
+    els.stageScreen.classList.remove(
+      'role-penguin','role-strong','role-hit','freeze-lock',
+      'omen-white','omen-blue','omen-yellow','omen-green','omen-purple',
+      'omen-red','omen-gold','omen-premium','screen-blackout','screen-shock'
+    );
+    if (els.omenText) {
+      els.omenText.className = 'omen-text';
+      els.omenText.textContent = '';
+    }
+  };
+
+  const choosePresentation = (role, phase, result = pendingResult) => {
+    const events = result?.events || [];
+    const types = new Set(events.map(e => e.type));
+
+    // プレミア系は確定時だけ。フェイク虹/フェイクストライプは禁止。
+    if (role === 'freeze') return { cls:'omen-premium screen-blackout', fx:'stripe flash rainbow', text:'……', premium:true };
+    if (role === 'at' || role === 'tier_up') return { cls:'omen-gold screen-shock', fx:'gold flash', text:'激熱' };
+    if (role === 'hit') return { cls:'omen-red screen-shock', fx:'red flash slash', text:'好機' };
+
+    if (types.has('at_omen')) {
+      return { cls:'omen-purple', fx:'purple', text:'ざわ…' };
+    }
+
+    // 強役は赤以上、弱役は役色を中心に複数パターン。
+    if (role === 'strong_cherry' || role === 'strong_chance') {
+      return Math.random() < .25
+        ? { cls:'omen-gold screen-shock', fx:'gold slash', text:'激熱' }
+        : { cls:'omen-red screen-shock', fx:'red slash', text:'チャンス' };
+    }
+    if (role === 'penguin_chance') {
+      // 青×水色ストライプはこの確定級役だけ。
+      return { cls:'omen-premium', fx:'stripe flash', text:'PENGUIN' };
+    }
+    if (role === 'weak_chance') {
+      const r=Math.random();
+      return r<.15 ? {cls:'omen-red',fx:'red',text:'チャンス'}
+        : r<.55 ? {cls:'omen-purple',fx:'purple',text:'気配'}
+        : {cls:'omen-blue',fx:'blue',text:''};
+    }
+    if (role === 'weak_cherry') {
+      return Math.random()<.20
+        ? {cls:'omen-yellow',fx:'yellow',text:'気配'}
+        : {cls:'omen-green',fx:'green',text:''};
+    }
+    if (role === 'watermelon') {
+      return Math.random()<.18
+        ? {cls:'omen-yellow',fx:'yellow',text:'気配'}
+        : {cls:'omen-green',fx:'green',text:''};
+    }
+    if (role === 'bell15') {
+      return Math.random()<.12 ? {cls:'omen-yellow',fx:'yellow',text:''} : {cls:'',fx:'',text:''};
+    }
+    if (role === 'replay') {
+      return Math.random()<.035 ? {cls:'omen-white',fx:'flash',text:'…'} : {cls:'',fx:'',text:''};
+    }
+
+    // 通常役はごく薄い違和感だけ。期待度を過剰に上げない。
+    if (phase === 'spin' && Math.random()<.018) {
+      return {cls:'omen-white',fx:'',text:'…'};
+    }
+    return {cls:'',fx:'',text:''};
+  };
+
+  const applyPresentation = (presentation) => {
+    if (!presentation) return;
+    if (presentation.cls) els.stageScreen.classList.add(...presentation.cls.split(' '));
+    if (presentation.fx) els.effectLayer.className = 'effect-layer ' + presentation.fx;
+    if (els.omenText && presentation.text) {
+      els.omenText.textContent = presentation.text;
+      els.omenText.classList.add('show');
+    }
   };
 
   const stageCue = (role, phase = 'result') => {
     clearStageClasses();
+    const presentation = choosePresentation(role, phase);
+    applyPresentation(presentation);
 
     const cue = {
       one_medal: { fx:'', title:'1枚役', sub:'静かな払い出し', eyebrow:'NORMAL' },
@@ -292,13 +365,16 @@
       miss: { fx:'', title:'', sub:'', eyebrow:'' }
     }[role] || { fx:'', title:'', sub:'', eyebrow:'' };
 
-    if (cue.cls) els.stageScreen.classList.add(...cue.cls.split(' '));
-    if (cue.fx) els.effectLayer.className = 'effect-layer ' + cue.fx;
+    if (phase === 'result') {
+      if (cue.cls) els.stageScreen.classList.add(...cue.cls.split(' '));
+      if (cue.fx && !presentation.fx) els.effectLayer.className = 'effect-layer ' + cue.fx;
+    }
 
     if (phase === 'spin') {
-      if (['strong_cherry','strong_chance','penguin_chance','hit','at','tier_up','freeze'].includes(role)) {
-        els.stageCaption.textContent = role === 'freeze' ? '……' : '気配がする…';
-        if (role === 'freeze') els.effectLayer.className = 'effect-layer stripe';
+      if (role === 'freeze') {
+        els.stageCaption.textContent = '……';
+      } else if (['strong_cherry','strong_chance','penguin_chance','hit','at','tier_up'].includes(role)) {
+        els.stageCaption.textContent = '気配がする…';
       }
       return;
     }
