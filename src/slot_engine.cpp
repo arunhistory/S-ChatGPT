@@ -34,31 +34,31 @@ GameConfig gameConfigForSetting(SettingId setting) {
     switch (setting) {
         case SettingId::S1:
             c.target_payout_ratio = 0.85;
-            c.performance_calibration = 0.452;
+            c.performance_calibration = 0.433;
             break;
         case SettingId::S2:
             c.target_payout_ratio = 0.96;
-            c.performance_calibration = 0.89;
+            c.performance_calibration = 0.859;
             break;
         case SettingId::S3:
             c.target_payout_ratio = 0.99;
-            c.performance_calibration = 0.905;
+            c.performance_calibration = 0.8955;
             break;
         case SettingId::S4:
             c.target_payout_ratio = 1.03;
-            c.performance_calibration = 0.94;
+            c.performance_calibration = 0.9262;
             break;
         case SettingId::S5:
             c.target_payout_ratio = 1.08;
-            c.performance_calibration = 0.96;
+            c.performance_calibration = 0.9457;
             break;
         case SettingId::S6:
             c.target_payout_ratio = 1.14;
-            c.performance_calibration = 0.973;
+            c.performance_calibration = 0.968;
             break;
         case SettingId::EX:
             c.target_payout_ratio = 1.50;
-            c.performance_calibration = 1.065;
+            c.performance_calibration = 1.052;
             break;
     }
 
@@ -397,14 +397,21 @@ void SlotEngine::applySectionDelta(long long medals, std::vector<Event>& out) {
              << "; one next-section preference lottery level=" << pref;
         out.push_back({EventType::SectionCross, pref, note.str()});
 
-        // 0/1/3/5段階。具体率は未固定だったためGameConfigの較正ノブを使用。
-        const double rewardRate = config_.section_reward_rate[clampv(pref, 0, 3)];
-        if (state_.in_at && chance(rewardRate)) {
+        const int idx = clampv(pref, 0, 3);
+        if (state_.in_at) {
             if (state_.at_tier == ATTier::Upper) {
-                out.push_back({EventType::SectionReward, pref, "section roulette -> upper special"});
-                auto z = playSpecialZone(true);
-                out.insert(out.end(), z.begin(), z.end());
-            } else {
+                if (chance(config_.section_upper_special_entry_rate[idx])) {
+                    if (chance(config_.section_upper_special_upgrade_rate)) {
+                        out.push_back({EventType::UpperSpecialZone, pref, "section roulette -> upper special (1/3)"});
+                        auto z = playSpecialZone(true);
+                        out.insert(out.end(), z.begin(), z.end());
+                    } else {
+                        out.push_back({EventType::SpecialZone, pref, "section roulette -> special"});
+                        auto z = playSpecialZone(false);
+                        out.insert(out.end(), z.begin(), z.end());
+                    }
+                }
+            } else if (chance(config_.section_tier_up_rate[idx])) {
                 state_.at_tier = state_.at_tier == ATTier::Lower ? ATTier::Middle : ATTier::Upper;
                 out.push_back({EventType::TierUp, pref, "section roulette -> AT tier up"});
             }
@@ -603,6 +610,13 @@ std::vector<Event> SlotEngine::spinNormal() {
             startAT(tier, false, out, "strong cherry -> AT", false);
             rerollNormalModeAndPattern();
         }
+        return out;
+    }
+
+    if (state_.last_reel_role == ReelRole::StrongChance &&
+        chance(config_.strong_chance_direct_at_rate)) {
+        startAT(ATTier::Lower, false, out, "strong chance 1% -> direct AT");
+        rerollNormalModeAndPattern();
         return out;
     }
 
