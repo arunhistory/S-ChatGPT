@@ -81,6 +81,7 @@ GameConfig gameConfigForSetting(SettingId setting) {
 
 SlotEngine::SlotEngine(std::uint64_t seed, GameConfig config)
     : config_(std::move(config)), rng_(seed) {
+    state_.setting = config_.setting;
     rerollNormalModeAndPattern();
 }
 
@@ -282,7 +283,10 @@ std::vector<Event> SlotEngine::playBonus() {
 
     if (chance(config_.bonus_to_stock_rate)) {
         ++state_.stocks;
-        out.push_back({EventType::StockGain, state_.stocks, "bonus 10% stock lottery"});
+        out.push_back({EventType::StockGain, state_.stocks,
+                       state_.setting == static_cast<int>(SettingId::S6)
+                           ? "bonus 8% stock lottery (S6)"
+                           : "bonus 10% stock lottery"});
     }
 
     if (chance(config_.bonus_to_episode_rate)) {
