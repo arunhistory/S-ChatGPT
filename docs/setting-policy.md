@@ -29,3 +29,25 @@
 ## Implementation note
 
 Do not fork the game engine per setting. Keep one state machine and select a setting parameter profile. This allows the same normal-mode, table, omen, CZ, bonus, AT, stock, favorable-section, and reel-control logic to be shared across settings.
+
+
+## Setting 6 first-pass profile
+
+Setting 6 is derived from EX while keeping the same game rules.
+
+| Parameter | EX | Setting 6 first pass |
+|---|---:|---:|
+| CZ aggregate target | ~1/350 | ~1/370 |
+| Hit aggregate target | ~1/400 | ~1/430 |
+| Initial AT target | ~1/500 | ~1/550 |
+| Lower AT net | +6 | +6 |
+| Middle AT net | +6 | +6 |
+| Upper AT net | +9 | +9 |
+| Stock lottery | 10% | 8% |
+| Upper comeback | 20% | 15% |
+| Initial AT games mean | 50G | 49.25G |
+| Ordinary add mean | 31G | 24.4G |
+| Upper-special expected add | ~690G | ~167G |
+
+The Setting 6 raw normal-route values are provisional calibration knobs until the full normal-state lottery model is integrated.
+Settings 1-5 remain intentionally untuned.
