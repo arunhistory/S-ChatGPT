@@ -684,6 +684,7 @@ const char* SlotEngine::eventName(EventType v) {
 std::string SlotEngine::stateJson() const {
     std::ostringstream o;
     o << "{\"setting\":" << state_.setting
+      << ",\"targetPayoutRatio\":" << config_.target_payout_ratio
       << ",\"normalMode\":\"" << normalModeName(state_.normal_mode) << "\""
       << ",\"normalPattern\":" << state_.normal_pattern + 1
       // normalGames は既存UI互換のため表示回転数を返す。
