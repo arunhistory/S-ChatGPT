@@ -669,7 +669,7 @@
           : (pendingRole === 'replay' ? 'REPLAY' : payout + '枚'));
 
     pushEvents(allEvents);
-    showFinalBanner(allEvents, visibleRole, visibleRole === 'replay' ? visiblePayout : visiblePayout);
+    showFinalBanner(allEvents, visibleRole, visiblePayout);
     if (naviMiss) {
       els.eventNote.textContent += ' / ナビ外し（内部成立: 押し順ベル）';
     }
@@ -679,7 +679,7 @@
     if (aimAssistUsed) {
       els.eventNote.textContent += ' / 目押しアシスト';
     }
-    if (physicalPattern !== pendingRole && !assistSubstitute && !aimAssistUsed && pendingRole !== 'one_medal') {
+    if (!naviMiss && physicalPattern !== pendingRole && !assistSubstitute && !aimAssistUsed && pendingRole !== 'one_medal') {
       els.eventNote.textContent += ' / 取りこぼし停止';
     }
     stageCue(visibleRole, 'result');
