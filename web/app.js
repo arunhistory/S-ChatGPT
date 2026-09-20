@@ -262,23 +262,38 @@
     return reelPositions[index];
   };
 
-  const classifyPattern = (positions = reelPositions) => {
+  const payoutLinesForPositions = (positions = reelPositions) => {
     const rowLine = (row) => [0,1,2].map(i => visibleKind(i, positions[i], row));
-    const top = rowLine(0);
-    const center = rowLine(1);
-    const bottom = rowLine(2);
-    const diagUp = [
-      visibleKind(0, positions[0], 2),
-      visibleKind(1, positions[1], 1),
-      visibleKind(2, positions[2], 0)
-    ];
-    const diagDown = [
-      visibleKind(0, positions[0], 0),
-      visibleKind(1, positions[1], 1),
-      visibleKind(2, positions[2], 2)
-    ];
-    const payoutLines = [top, center, bottom, diagUp, diagDown];
-    const hasLine = (kind) => payoutLines.some(line => line.every(k => k === kind));
+    return {
+      top: rowLine(0),
+      center: rowLine(1),
+      bottom: rowLine(2),
+      diagUp: [
+        visibleKind(0, positions[0], 2),
+        visibleKind(1, positions[1], 1),
+        visibleKind(2, positions[2], 0)
+      ],
+      diagDown: [
+        visibleKind(0, positions[0], 0),
+        visibleKind(1, positions[1], 1),
+        visibleKind(2, positions[2], 2)
+      ]
+    };
+  };
+
+  const classifyPhysicalLinePayout = (positions = reelPositions) => {
+    const lines = payoutLinesForPositions(positions);
+    const all = [lines.top, lines.center, lines.bottom, lines.diagUp, lines.diagDown];
+    // 既存15枚役の右上がり停止形を最優先。
+    if (lines.diagUp.every(k => k === 'bell')) return 'bell15';
+    if (all.some(line => line.every(k => k === 'bell'))) return 'bell9';
+    if (all.some(line => line.every(k => k === 'replay'))) return 'replay';
+    return null;
+  };
+
+  const classifyPattern = (positions = reelPositions) => {
+    const lines = payoutLinesForPositions(positions);
+    const center = lines.center;
 
     // 7/ボーナス図柄、レア役、チャンス目は中段メインライン基準。
     if (center.every(k => k === 'alt-seven')) return 'freeze';
@@ -298,14 +313,8 @@
     if (center.every(k => k === 'watermelon')) return 'watermelon';
     if (center.every(k => k === 'chance')) return 'three_medal';
 
-    // ベル／リプレイはメインライン限定ではない。
-    // 上段・中段・下段・右上がり・右下がりのどこか1ラインで揃えば有効。
-    // 15枚ベルの既存停止形（右上がり）は優先して15枚役として認識する。
-    if (diagUp.every(k => k === 'bell')) return 'bell15';
-    if (hasLine('bell')) return 'bell9';
-    if (hasLine('replay')) return 'replay';
-
-    return 'miss';
+    // ベル／リプレイの払出ライン判定はメイン役とは独立。
+    return classifyPhysicalLinePayout(positions) || 'miss';
   };
 
   const accountingReturnForRole = (role) => {
@@ -768,11 +777,7 @@
       && pendingControl.navOrder >= 0
       && !pendingNaviOrderValid;
     const payout = pendingPayout;
-    const physicalLinePayoutRole = (
-      physicalPattern === 'bell9'
-      || physicalPattern === 'bell15'
-      || physicalPattern === 'replay'
-    ) ? physicalPattern : null;
+    const physicalLinePayoutRole = classifyPhysicalLinePayout();
 
     // ベル/リプレイは「内部予約役」より実停止ラインを優先する。
     // 5ラインのどこかで揃っていれば、その停止役が有効。
