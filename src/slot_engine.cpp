@@ -85,7 +85,7 @@ GameConfig gameConfigForSetting(SettingId setting) {
             c.lower_upper_special_rate = 1.0 / 16921.27;
             c.middle_event_scale = c.upper_event_scale = 1.1204;
             c.bonus_to_at_rate = 0.0851;
-            c.bonus_at_miss_ceiling = 999;
+            c.bonus_at_miss_ceiling = 5;
             useReducedUpper();
             return c;
 
@@ -511,12 +511,12 @@ std::vector<Event> SlotEngine::resolveNormalCeiling() {
     if (state_.normal_mode == NormalMode::Special) {
         if (state_.normal_ceiling == 777) {
             const int result = static_cast<int>(rng_() % 3ULL);
-            if (result == 0) startAT(ATTier::Lower, false, out, "special 777 ceiling: AT");
-            else if (result == 1) startAT(ATTier::Middle, true, out, "special 777 ceiling: 1/8192-equivalent reward");
-            else startAT(ATTier::Upper, false, out, "special 777 ceiling: 1/32768-equivalent reward");
+            if (result == 0) startAT(ATTier::Lower, false, out, "special 777 ceiling: AT", false);
+            else if (result == 1) startAT(ATTier::Middle, true, out, "special 777 ceiling: 1/8192-equivalent reward", false);
+            else startAT(ATTier::Upper, false, out, "special 777 ceiling: 1/32768-equivalent reward", false);
         } else {
             out.push_back({EventType::Freeze, 0, "special 1500 ceiling: freeze-favored"});
-            startAT(ATTier::Upper, true, out, "special 1500 ceiling freeze reward");
+            startAT(ATTier::Upper, true, out, "special 1500 ceiling freeze reward", false);
         }
         rerollNormalModeAndPattern();
         return out;
