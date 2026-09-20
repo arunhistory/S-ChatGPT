@@ -562,6 +562,28 @@
     return base;
   };
 
+  const guaranteedPayoutRoles = new Set(['bell9','bell15','three_medal','replay']);
+
+  const chooseGuaranteedPayoutPosition = (index, target, base) => {
+    const strip = reelStrips[index];
+
+    // ベル/REPLAY成立時は代用停止なし。
+    // まず実機同様に0〜4コマで引き込み、それで届かなければ
+    // 成立役制御として正規図柄位置まで収束させる。
+    for (let slip = 0; slip <= 4; slip++) {
+      const candidate = mod(base + slip, strip.length);
+      if (candidateMatchesTarget(index, candidate, target)) return candidate;
+    }
+
+    for (let advance = 5; advance < strip.length + 5; advance++) {
+      const candidate = mod(base + advance, strip.length);
+      if (candidateMatchesTarget(index, candidate, target)) return candidate;
+    }
+
+    // リール配列破損時だけ現在位置を維持。正常配列では到達しない。
+    return base;
+  };
+
   const chooseAimAssistedPosition = (index, target, base) => {
     const strip = reelStrips[index];
 
@@ -671,6 +693,10 @@
 
     const target = pendingControl.targets[index];
     if (target) {
+      if (guaranteedPayoutRoles.has(pendingControl.role)) {
+        return chooseGuaranteedPayoutPosition(index, target, base);
+      }
+
       for (let slip = 0; slip <= 4; slip++) {
         const candidate = mod(base + slip, strip.length);
         if (candidateMatchesTarget(index, candidate, target)) return candidate;
@@ -1090,12 +1116,17 @@
 
     // ベル/リプレイは「内部予約役」より実停止ラインを優先する。
     // 5ラインのどこかで揃っていれば、その停止役が有効。
+    const guaranteedPhysicalRole = guaranteedPayoutRoles.has(pendingRole)
+      ? physicalLinePayoutRole
+      : null;
     const visibleRole = naviMiss
       ? physicalPattern
-      : (physicalLinePayoutRole || pendingRole);
-    const visiblePayout = physicalLinePayoutRole
-      ? accountingReturnForRole(physicalLinePayoutRole)
-      : (naviMiss ? accountingReturnForRole(physicalPattern) : payout);
+      : (guaranteedPhysicalRole || physicalLinePayoutRole || pendingRole);
+    const visiblePayout = guaranteedPhysicalRole
+      ? accountingReturnForRole(guaranteedPhysicalRole)
+      : (physicalLinePayoutRole
+          ? accountingReturnForRole(physicalLinePayoutRole)
+          : (naviMiss ? accountingReturnForRole(physicalPattern) : payout));
     let allEvents = [...(result.events || [])];
 
     // 通常時は、実停止5ラインで新たに成立したベル/リプレイも差枚へ反映。
