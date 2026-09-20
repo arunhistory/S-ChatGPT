@@ -540,6 +540,8 @@
     // ここがレバーON抽選。DEBUG強制時もWASM本体へ渡し、
     // 表示だけでなくAT/ボーナス/フリーズ等の状態遷移まで同じ時点で確定する。
     const forcedRole = els.roleTest.value;
+    // DEBUG強制は「次ゲーム」だけ。選択を残すとAT開始を毎G再実行してしまうため即時解除する。
+    if (forcedRole) els.roleTest.value = '';
     pendingResult = forcedRole
       ? callJson('slot_force_outcome_json', ['number'], [forceOutcomeCodes[forcedRole]])
       : callJson(s0.inAT ? 'slot_spin_at_json' : 'slot_spin_normal_json');
