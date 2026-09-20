@@ -284,9 +284,20 @@
   const classifyPhysicalLinePayout = (positions = reelPositions) => {
     const lines = payoutLinesForPositions(positions);
     const all = [lines.top, lines.center, lines.bottom, lines.diagUp, lines.diagDown];
-    // 既存15枚役の右上がり停止形を最優先。
+
+    // ベルは停止ラインごとに払い出しを固定。
+    // 右上がり（左下→中中→右上）=15枚
+    // 中段=9枚
+    // 右下がり（左上→中中→右下）/上段/下段=3枚
     if (lines.diagUp.every(k => k === 'bell')) return 'bell15';
-    if (all.some(line => line.every(k => k === 'bell'))) return 'bell9';
+    if (lines.center.every(k => k === 'bell')) return 'bell9';
+    if (
+      lines.diagDown.every(k => k === 'bell')
+      || lines.top.every(k => k === 'bell')
+      || lines.bottom.every(k => k === 'bell')
+    ) return 'three_medal';
+
+    // リプレイは5ラインのどこで揃っても有効。
     if (all.some(line => line.every(k => k === 'replay'))) return 'replay';
     return null;
   };
@@ -309,9 +320,8 @@
     if (leftBottom === 'cherry' && center[1] === 'replay') return 'weak_cherry';
     if (center[0] === 'cherry' && center[1] !== 'replay') return 'strong_cherry';
 
-    // スイカ・3枚役などはメインライン基準。取りこぼし時だけ代用停止を使う。
+    // スイカなどのレア役はメインライン基準。取りこぼし時だけ代用停止を使う。
     if (center.every(k => k === 'watermelon')) return 'watermelon';
-    if (center.every(k => k === 'chance')) return 'three_medal';
 
     // ベル／リプレイの払出ライン判定はメイン役とは独立。
     return classifyPhysicalLinePayout(positions) || 'miss';
@@ -370,7 +380,7 @@
     return reelRole;
   };
 
-  const targetForRole = (role, index) => {
+  const targetForRole = (role, index, threeMedalLine = null) => {
     switch (role) {
       case 'at': return { row:1, kind:'seven' };
       case 'tier_up': return { row:1, kind:'bar' };
@@ -391,7 +401,11 @@
         return { row:index === 0 ? 2 : index === 1 ? 1 : 0, kind:'bell' };
       case 'watermelon': return { row:1, kind:'watermelon' };
       case 'replay': return { row:1, kind:'replay' };
-      case 'three_medal': return { row:1, kind:'chance' };
+      case 'three_medal':
+        if (threeMedalLine === 'top') return { row:0, kind:'bell' };
+        if (threeMedalLine === 'bottom') return { row:2, kind:'bell' };
+        // 15枚役と反対の斜め：左上→中中→右下
+        return { row:index === 0 ? 0 : index === 1 ? 1 : 2, kind:'bell' };
       default: return null;
     }
   };
@@ -414,16 +428,26 @@
   // 青7フリーズのような無条件強制停止とは分け、補正後も0〜4コマ引き込みで停止させる。
   const aimAssistRoles = new Set(['at','hit']);
 
-  const buildSpinControl = (role, result) => ({
-    role,
-    // 制御テーブルはレバーON時点で固定。STOP時は押下位置からこの表を参照するだけ。
-    targets: [0,1,2].map(index => targetForRole(role, index)),
-    assistSubstitute: assistSubstituteRoles.has(role),
-    substituteUsed: [false, false, false],
-    aimAssist: aimAssistRoles.has(role),
-    aimAssistUsed: [false, false, false],
-    navOrder: Number(result.navOrder ?? -1)
-  });
+  const buildSpinControl = (role, result) => {
+    // 3枚役は「反対斜め / 上段 / 下段」の3停止形のいずれか。
+    // 成立GのレバーON時に停止形を1つ固定し、STOP中には変更しない。
+    const threeMedalLines = ['diagDown','top','bottom'];
+    const threeMedalLine = role === 'three_medal'
+      ? threeMedalLines[Math.floor(Math.random() * threeMedalLines.length)]
+      : null;
+
+    return {
+      role,
+      // 制御テーブルはレバーON時点で固定。STOP時は押下位置からこの表を参照するだけ。
+      targets: [0,1,2].map(index => targetForRole(role, index, threeMedalLine)),
+      threeMedalLine,
+      assistSubstitute: assistSubstituteRoles.has(role),
+      substituteUsed: [false, false, false],
+      aimAssist: aimAssistRoles.has(role),
+      aimAssistUsed: [false, false, false],
+      navOrder: Number(result.navOrder ?? -1)
+    };
+  };
 
   const chooseAssistSubstitutePosition = (index, base) => {
     // 成立役はレバーONで既に確定済み。ここでは停止表示だけを代用形へ落とす。
