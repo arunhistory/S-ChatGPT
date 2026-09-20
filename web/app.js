@@ -548,7 +548,7 @@
 
   const chooseAssistSubstitutePosition = (index, base) => {
     // 成立役はレバーONで既に確定済み。ここでは停止表示だけを代用形へ落とす。
-    const safeKinds = ['chance','replay','bar','miss'];
+    const safeKinds = ['chance','bar','miss'];
     for (const kind of safeKinds) {
       for (let slip = 0; slip <= 4; slip++) {
         const candidate = mod(base + slip, reelStrips[index].length);
