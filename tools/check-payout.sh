@@ -10,7 +10,7 @@ OUT="${TMPDIR:-/tmp}/s-chatgpt-payout-sim"
   "$ROOT/src/slot_engine.cpp" "$ROOT/src/sim_main.cpp" \
   -o "$OUT"
 
-for setting in 6 7; do
+for setting in 1 2 3 4 5 6 7; do
   echo "=== setting $setting ==="
   for seed in 0x1001 0x1002 0x1003 0x1004 0x1005; do
     "$OUT" "$GAMES" "$setting" "$seed" \
