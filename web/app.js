@@ -100,7 +100,9 @@
     lower:'下位', middle:'中位', upper:'上位', normal:'通常', specialized:'特化'
   };
   const eventLabels = {
-    cz:'CZ', bonus:'BONUS', episode_bonus:'EPISODE BONUS', at_start:'AT START',
+    cz:'CZ', bonus:'BONUS', episode_bonus:'EPISODE BONUS',
+    challenge_start:'AT CHALLENGE', challenge_point:'POINT', challenge_judge:'FINAL JUDGE',
+    at_start:'AT START',
     at_add_games:'G数上乗せ', special_zone:'特化ZONE', upper_special_zone:'上位特化ZONE',
     stock_gain:'STOCK', tier_up:'昇格', tier_down:'転落', at_end:'AT END',
     upper_comeback:'上位引き戻し', freeze:'FREEZE', section_cross:'有利区間 CROSS',
@@ -113,6 +115,8 @@
   let pendingRole = 'miss';
   let pendingPayout = 0;
   let pendingWasAT = false;
+  let pendingWasBonus = false;
+  let pendingWasChallenge = false;
   let pendingStopOrder = [0, 1, 2];
   let pendingPressedOrder = [];
   let pendingNaviOrderValid = true;
@@ -216,6 +220,13 @@
       scene = s.atTier === 'upper' ? 'upper' : 'at';
       caption = s.atTier === 'upper' ? '上位AT' : 'AT';
     }
+    if (s.inBonus) {
+      scene = 'at';
+      caption = s.episodeBonus ? 'EPISODE BONUS' : 'BONUS';
+    } else if (s.challengeActive) {
+      scene = 'normal';
+      caption = 'AT当選チャレンジ';
+    }
     els.stageScreen.dataset.scene = scene;
     els.stageCaption.textContent = caption;
   };
@@ -283,11 +294,12 @@
     return 0;
   };
 
-  const deriveRoleFromResult = (result) => {
+  const deriveRoleFromResult = (result, physicalFirst = false) => {
     const forced = els.roleTest.value;
     if (forced) return forced;
 
     const reelRole = result.reelRole || 'miss';
+    if (physicalFirst) return reelRole;
     const rarePhysical = new Set([
       'weak_cherry','strong_cherry','watermelon',
       'weak_chance','strong_chance','penguin_chance'
@@ -496,7 +508,7 @@
     if (!gameActive || reelStopped[index]) return;
 
     const isFirstStop = pendingPressedOrder.length === 0;
-    if (isFirstStop && !pendingWasAT && index !== 0) {
+    if (isFirstStop && !pendingWasAT && !pendingWasBonus && !pendingWasChallenge && index !== 0) {
       // 通常時の変則押しペナルティ: 1回につき天井+1G。
       callJson('slot_apply_normal_penalty_json');
     }
@@ -557,20 +569,33 @@
   };
 
   const render = (s) => {
-    els.mode.textContent = s.highProbabilityActive ? '高確率' : (labels[s.normalMode] || s.normalMode);
+    const modeText = s.inBonus
+      ? (s.episodeBonus ? 'EPISODE' : 'BONUS')
+      : (s.challengeActive ? 'AT CHALLENGE'
+          : (s.highProbabilityActive ? '高確率' : (labels[s.normalMode] || s.normalMode)));
+    els.mode.textContent = modeText;
     els.tier.textContent = s.inAT ? (labels[s.atTier] || s.atTier) : '---';
     els.table.textContent = s.inAT ? (labels[s.atTable] || s.atTable) : '---';
     els.gameCount.textContent = s.totalGames.toLocaleString();
-    els.atLeft.textContent = s.inAT ? s.atGamesLeft + 'G' : '0G';
+    els.atLeft.textContent = s.inBonus
+      ? s.bonusMedalsLeft + '枚'
+      : (s.challengeActive ? s.challengeGamesLeft + 'G' : (s.inAT ? s.atGamesLeft + 'G' : '0G'));
     els.stocks.textContent = s.stocks;
     els.normalPattern.textContent = 'P' + s.normalPattern;
-    els.ceiling.textContent = '天井 ' + s.normalCeiling + 'G / 表示 ' + s.normalDisplayGames + 'G / 実 ' + s.normalActualGames + 'G';
+    els.ceiling.textContent = s.challengeActive
+      ? 'POINT ' + s.challengePoints + '/10 / 残り ' + s.challengeGamesLeft + 'G'
+      : ('天井 ' + s.normalCeiling + 'G / 表示 ' + s.normalDisplayGames + 'G / 実 ' + s.normalActualGames + 'G');
     els.atPattern.textContent = s.inAT ? 'P' + s.atPattern : '-';
-    els.netRate.textContent = s.inAT ? '純増 約' + (s.atTier === 'upper' ? '9' : '6') + '枚/G' : '純増 -';
+    els.netRate.textContent = s.inBonus
+      ? '純増 約6枚/G'
+      : (s.inAT ? '純増 約' + (s.atTier === 'upper' ? '9' : '6') + '枚/G' : '純増 -');
     els.totalDiff.textContent = (s.totalDiff >= 0 ? '+' : '') + s.totalDiff.toLocaleString();
     els.debug.textContent = JSON.stringify(s, null, 2);
-    els.statusLamp.className = 'status-lamp ' + (s.inAT ? 'at' : 'live');
-    els.statusText.textContent = s.inAT ? 'AT' : 'NORMAL';
+    const active = s.inAT || s.inBonus || s.challengeActive;
+    els.statusLamp.className = 'status-lamp ' + (active ? 'at' : 'live');
+    els.statusText.textContent = s.inBonus
+      ? (s.episodeBonus ? 'EPISODE' : 'BONUS')
+      : (s.challengeActive ? 'CHALLENGE' : (s.inAT ? 'AT' : 'NORMAL'));
     updateStageScene(s);
   };
 
@@ -591,7 +616,9 @@
     els.eventBanner.className = 'event-banner';
 
     const s0 = state();
-    pendingWasAT = !!s0.inAT;
+    pendingWasBonus = !!s0.inBonus;
+    pendingWasChallenge = !!s0.challengeActive;
+    pendingWasAT = !!s0.inAT && !pendingWasBonus && !pendingWasChallenge;
     pendingControl = null;
     clearBellNavi();
 
@@ -602,12 +629,18 @@
     if (forcedRole) els.roleTest.value = '';
     pendingResult = forcedRole
       ? callJson('slot_force_outcome_json', ['number'], [forceOutcomeCodes[forcedRole]])
-      : callJson(s0.inAT ? 'slot_spin_at_json' : 'slot_spin_normal_json');
-    pendingRole = deriveRoleFromResult(pendingResult);
+      : callJson(s0.inBonus
+          ? 'slot_spin_bonus_json'
+          : (s0.challengeActive
+              ? 'slot_spin_challenge_json'
+              : (s0.inAT ? 'slot_spin_at_json' : 'slot_spin_normal_json')));
+    pendingRole = deriveRoleFromResult(pendingResult, pendingWasChallenge);
 
-    pendingPayout = forcedRole
-      ? accountingReturnForRole(forcedRole)
-      : Number(pendingResult.reelPayout || 0);
+    pendingPayout = pendingWasChallenge
+      ? 0
+      : (forcedRole && !pendingWasBonus
+          ? accountingReturnForRole(forcedRole)
+          : Number(pendingResult.reelPayout || 0));
 
     // 成立役・停止制御表・押し順をこの時点で固定する。
     pendingControl = buildSpinControl(pendingRole, pendingResult, pendingWasAT && !forcedRole);
@@ -651,7 +684,7 @@
     const visiblePayout = naviMiss ? accountingReturnForRole(physicalPattern) : payout;
     let allEvents = [...(result.events || [])];
 
-    if (payout > 0) {
+    if (payout > 0 && !pendingWasBonus) {
       const payoutResult = callJson('slot_apply_reel_payout_json', ['number'], [payout]);
       allEvents = allEvents.concat(payoutResult.events || []);
     }
@@ -662,11 +695,15 @@
       : (pendingWasAT && pendingRole === 'bell9'
           ? '🔔 押し順ベル'
           : (roleLabels[pendingRole] || pendingRole));
-    els.payoutResult.textContent = naviMiss
-      ? visiblePayout + '枚'
-      : (pendingWasAT && pendingRole === 'bell9'
-          ? 'AT純増'
-          : (pendingRole === 'replay' ? 'REPLAY' : payout + '枚'));
+    els.payoutResult.textContent = pendingWasChallenge
+      ? ('POINT ' + Number(result.challengePoints ?? state().challengePoints) + '/10')
+      : (pendingWasBonus
+          ? '+' + payout + '枚'
+          : (naviMiss
+              ? visiblePayout + '枚'
+              : (pendingWasAT && pendingRole === 'bell9'
+                  ? 'AT純増'
+                  : (pendingRole === 'replay' ? 'REPLAY' : payout + '枚'))));
 
     pushEvents(allEvents);
     showFinalBanner(allEvents, visibleRole, visiblePayout);
@@ -739,6 +776,8 @@
     pendingRole = 'miss';
     pendingPayout = 0;
     pendingWasAT = false;
+    pendingWasBonus = false;
+    pendingWasChallenge = false;
     pendingPressedOrder = [];
     pendingNaviOrderValid = true;
     pendingControl = null;
