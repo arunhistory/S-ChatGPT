@@ -118,6 +118,7 @@
   let pendingWasBonus = false;
   let pendingWasChallenge = false;
   let pendingBellNaviActive = false;
+  let pendingEntryReplayRole = false;
   let pendingStopOrder = [0, 1, 2];
   let pendingPressedOrder = [];
   let pendingNaviOrderValid = true;
@@ -630,6 +631,7 @@
     pendingWasChallenge = !!s0.challengeActive;
     pendingWasAT = !!s0.inAT && !pendingWasBonus && !pendingWasChallenge;
     pendingBellNaviActive = false;
+    pendingEntryReplayRole = false;
     pendingControl = null;
     clearBellNavi();
 
@@ -647,13 +649,13 @@
               : (s0.inAT ? 'slot_spin_at_json' : 'slot_spin_normal_json')));
     pendingRole = deriveRoleFromResult(pendingResult, pendingWasChallenge);
 
-    const entryReplayRole = pendingRole === 'hit'
+    pendingEntryReplayRole = pendingRole === 'hit'
       || pendingRole === 'at'
       || pendingRole === 'tier_up'
       || pendingRole === 'freeze';
     pendingPayout = pendingWasChallenge
       ? 0
-      : (entryReplayRole
+      : (pendingEntryReplayRole
           ? 3
           : (forcedRole && !pendingWasBonus
               ? accountingReturnForRole(forcedRole)
@@ -728,7 +730,7 @@
               ? '+' + payout + '枚'
               : (pendingBellNaviActive && pendingWasAT
                   ? 'AT純増'
-                  : ((pendingRole === 'replay' || entryReplayRole) ? 'REPLAY' : payout + '枚'))));
+                  : ((pendingRole === 'replay' || pendingEntryReplayRole) ? 'REPLAY' : payout + '枚'))));
 
     pushEvents(allEvents);
     showFinalBanner(allEvents, visibleRole, visiblePayout);
@@ -804,6 +806,7 @@
     pendingWasBonus = false;
     pendingWasChallenge = false;
     pendingBellNaviActive = false;
+    pendingEntryReplayRole = false;
     pendingPressedOrder = [];
     pendingNaviOrderValid = true;
     pendingControl = null;
