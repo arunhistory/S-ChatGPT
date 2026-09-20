@@ -302,6 +302,26 @@
     return 0;
   };
 
+  const bonusRareRoles = new Set([
+    'weak_cherry','watermelon','weak_chance','strong_chance'
+  ]);
+
+  // BONUS / EPISODE の非レアG専用分布。
+  // 3枚BETに対する平均払出は 9枚 = 平均純増+6枚。
+  // 1枚役・ハズレはBONUS中には出さない。
+  const chooseBonusSafeRole = () => {
+    const r = Math.random();
+    if (r < 0.50) return 'bell9';
+    if (r < 0.75) return 'bell15';
+    if (r < 0.875) return 'replay';
+    return 'three_medal';
+  };
+
+  const bonusVisibleReturnForRole = (role) => {
+    if (bonusRareRoles.has(role)) return 3; // レア役Gも減らさない
+    return accountingReturnForRole(role);
+  };
+
   const deriveRoleFromResult = (result, physicalFirst = false) => {
     const forced = els.roleTest.value;
     if (forced) return forced;
@@ -655,17 +675,34 @@
               : (s0.inAT ? 'slot_spin_at_json' : 'slot_spin_normal_json')));
     pendingRole = deriveRoleFromResult(pendingResult, pendingWasChallenge);
 
+    // 現行WASMはBONUSの内部差枚を+6/Gで管理する。
+    // 画面上の成立役は非レアGを「減らないBONUS専用分布」へ固定する。
+    if (pendingWasBonus && !forcedRole && !bonusRareRoles.has(pendingRole)) {
+      pendingRole = chooseBonusSafeRole();
+      pendingResult = {
+        ...pendingResult,
+        reelRole: pendingRole,
+        navOrder: pendingRole === 'bell9'
+          ? (Number.isInteger(Number(pendingResult.navOrder)) && Number(pendingResult.navOrder) >= 0
+              ? Number(pendingResult.navOrder)
+              : Math.floor(Math.random() * 6))
+          : -1
+      };
+    }
+
     pendingEntryReplayRole = pendingRole === 'hit'
       || pendingRole === 'at'
       || pendingRole === 'tier_up'
       || pendingRole === 'freeze';
     pendingPayout = pendingWasChallenge
       ? 0
-      : (pendingEntryReplayRole
-          ? 3
-          : (forcedRole && !pendingWasBonus
-              ? accountingReturnForRole(forcedRole)
-              : Number(pendingResult.reelPayout || 0)));
+      : (pendingWasBonus
+          ? bonusVisibleReturnForRole(pendingRole)
+          : (pendingEntryReplayRole
+              ? 3
+              : (forcedRole
+                  ? accountingReturnForRole(forcedRole)
+                  : Number(pendingResult.reelPayout || 0))));
 
     // 成立役・停止制御表・押し順をこの時点で固定する。
     pendingControl = buildSpinControl(pendingRole, pendingResult);
