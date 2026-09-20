@@ -129,7 +129,7 @@ static void specialZoneRun(bool upper,Events& out);
 static void sectionDelta(int64_t v,Events& out){s.section_diff+=v;s.total_diff+=v;if(s.section_diff<s.section_min_diff)s.section_min_diff=s.section_diff;if(s.section_diff>=2400){int p=prefLevel();s.stocks=0;++s.section_count;s.section_diff=0;s.section_min_diff=0;out.add(SectionCross,p,"6.5 section cut; stocks collapsed to next-section preference level");static const double tierUp[4]={.005,.10,.25,.50};static const double upperSpec[4]={0,.10,.50,.75};int idx=clampi(p,0,3);if(s.in_at){if(s.tier==Upper){if(chance(upperSpec[idx])){if(chance(1.0/3.0)){out.add(UpperSpecialZone,p,"section roulette -> upper special (1/3)");specialZoneRun(true,out);}else{out.add(SpecialZone,p,"section roulette -> special");specialZoneRun(false,out);}}}else if(chance(tierUp[idx])){s.tier=s.tier==Lower?Middle:Upper;out.add(TierUp,p,"section roulette -> AT tier up");}}rerollAT();}}
 static void startAT(Tier t,bool stock,Events& out,const char* why,bool allowCold=true){s.in_at=true;s.tier=t;s.at_games_left=initialGames();s.cold_at=allowCold&&chance(.60);if(s.cold_at)out.add(ColdEnter,1,"AT cold segment: growth -30%");if(stock)++s.stocks;rerollAT();out.add(ATStart,s.at_games_left,why);}
 static void playBonus(Events& out);
-static void playCZ(Events& out){bool resolved=false;for(int g=0;g<10&&!resolved;++g){++s.total_games;sectionDelta(-3,out);if(chance(1.0/1000.0)){startAT(Lower,false,out,"CZ direct AT");s.cz_misses=0;resolved=true;}else if(chance(1.0/100.0)){out.add(Bonus,50,"CZ bonus hit");playBonus(out);s.cz_misses=0;resolved=true;}}if(!resolved){++s.cz_misses;if(s.cz_misses>=3){s.cz_misses=0;out.add(Bonus,50,"CZ 3-miss ceiling -> bonus");playBonus(out);}}}
+static void playCZ(Events& out){bool resolved=false;for(int g=0;g<10&&!resolved;++g){++s.total_games;sectionDelta(-3,out);if(chance(1.0/1000.0)){startAT(Lower,false,out,"CZ direct AT");s.cz_misses=0;resolved=true;}else if(chance(1.0/100.0)){out.add(Bonus,0,"CZ bonus hit");playBonus(out);s.cz_misses=0;resolved=true;}}if(!resolved){++s.cz_misses;if(s.cz_misses>=3){s.cz_misses=0;out.add(Bonus,0,"CZ 3-miss ceiling -> bonus");playBonus(out);}}}
 static double bonusRareRate(Role r){
     switch(r){
         case StrongCherry:return 1.00; // 中段チェリー
@@ -143,7 +143,7 @@ static double bonusRareRate(Role r){
 static void beginEpisode(bool returnToAT,Events& out,const char* why){
     s.in_bonus=true;s.episode_bonus=true;s.bonus_return_to_at=returnToAT;
     s.bonus_medals_left=80;s.bonus_pre_points=0;s.challenge_active=false;s.challenge_games_left=0;s.challenge_points=0;
-    out.add(EpisodeBonus,80,why);
+    out.add(EpisodeBonus,0,why);
 }
 static void beginRegularBonus(bool returnToAT){
     s.in_bonus=true;s.episode_bonus=false;s.bonus_return_to_at=returnToAT;
@@ -152,7 +152,7 @@ static void beginRegularBonus(bool returnToAT){
 static void playBonus(Events& out){
     bool returnToAT=s.in_at;
     if(!returnToAT&&(s.normal_table==Heaven||s.normal_table==SuperHeaven)){
-        if(out.n>0&&out.e[out.n-1].type==Bonus)out.e[out.n-1]={EpisodeBonus,80,"heaven/super-heaven direct episode"};
+        if(out.n>0&&out.e[out.n-1].type==Bonus)out.e[out.n-1]={EpisodeBonus,0,"heaven/super-heaven direct episode"};
         beginEpisode(false,out,"heaven/super-heaven direct episode");
         if(out.n>=2&&out.e[out.n-2].type==EpisodeBonus)--out.n; // keep one episode-start event
         return;
@@ -255,10 +255,10 @@ static Events spinChallenge(){
     }
     return out;
 }
-static void resolveCeiling(Events& out){if(s.normal_table==Special){if(s.normal_ceiling==777){int r=(int)(next64()%3);if(r==0)startAT(Lower,false,out,"special 777 ceiling: AT",false);else if(r==1)startAT(Middle,true,out,"special 777 ceiling: middle AT + stock",false);else startAT(Upper,false,out,"special 777 ceiling: upper AT",false);}else{out.add(Freeze,0,"special 1500 ceiling: freeze-favored");startAT(Upper,true,out,"special 1500 ceiling freeze reward",false);}rerollNormal();return;}double r=u01();if(r<.70){out.add(CZ,0,"normal ceiling -> CZ");playCZ(out);}else if(r<.95){out.add(Bonus,50,"normal ceiling -> bonus");playBonus(out);}else{startAT(Lower,false,out,"normal ceiling -> AT");rerollNormal();}}
-static void specialZoneRun(bool upper,Events& out){if(!upper){for(int g=0;g<5;++g){if(!chance(.5))continue;if(chance(.95)){int x=specialAdd();s.at_games_left+=x;out.add(ATAddGames,x,"special zone chained add");}else{out.add(Bonus,50,"special zone bonus");playBonus(out);return;}}return;}int chains=upperChains();for(int c=0;c<chains;++c){if(chance(.95)){int x=specialAdd();s.at_games_left+=x;out.add(ATAddGames,x,"upper-special preset add");}else{out.add(Bonus,50,"upper-special preset bonus");playBonus(out);return;}}}
+static void resolveCeiling(Events& out){if(s.normal_table==Special){if(s.normal_ceiling==777){int r=(int)(next64()%3);if(r==0)startAT(Lower,false,out,"special 777 ceiling: AT",false);else if(r==1)startAT(Middle,true,out,"special 777 ceiling: middle AT + stock",false);else startAT(Upper,false,out,"special 777 ceiling: upper AT",false);}else{out.add(Freeze,0,"special 1500 ceiling: freeze-favored");startAT(Upper,true,out,"special 1500 ceiling freeze reward",false);}rerollNormal();return;}double r=u01();if(r<.70){out.add(CZ,0,"normal ceiling -> CZ");playCZ(out);}else if(r<.95){out.add(Bonus,0,"normal ceiling -> bonus");playBonus(out);}else{startAT(Lower,false,out,"normal ceiling -> AT");rerollNormal();}}
+static void specialZoneRun(bool upper,Events& out){if(!upper){for(int g=0;g<5;++g){if(!chance(.5))continue;if(chance(.95)){int x=specialAdd();s.at_games_left+=x;out.add(ATAddGames,x,"special zone chained add");}else{out.add(Bonus,0,"special zone bonus");playBonus(out);return;}}return;}int chains=upperChains();for(int c=0;c<chains;++c){if(chance(.95)){int x=specialAdd();s.at_games_left+=x;out.add(ATAddGames,x,"upper-special preset add");}else{out.add(Bonus,0,"upper-special preset bonus");playBonus(out);return;}}}
 static void endAT(Events& out);
-static void resolveATEvent(Events& out){Profile p=profile();double scale=s.tier==Lower?1.0:p.scale;double hit=p.hit*scale,fall=s.tier==Lower?p.fall:(s.tier==Middle?1.0/180.0:1.0/150.0),add=p.add*scale,spec=p.spec*scale,epi=(1.0/1000.0)*scale,up=p.upper*scale;if(s.at_table==ATHeaven){hit*=1.9;epi*=1.4;}else if(s.at_table==ATSuperHeaven){add*=2.4;epi*=1.25;}else if(s.at_table==Specialized){hit*=.55;add*=.55;spec*=2.8;up*=2.5;}static const double pfv[5]={.82,.92,1.0,1.10,1.20};double pf=pfv[clampi(s.at_pattern,0,4)];hit*=pf;add*=pf;spec*=pf;if(s.cold_at){hit*=.70;add*=.70;spec*=.70;epi*=.70;up*=.70;}bool ea=s.at_table==ATHeaven||s.at_table==ATSuperHeaven;bool ua=s.at_table==Specialized;double total=hit+fall+add+spec+(ea?epi:0)+(ua?up:0);double x=u01();if(x>=total)return;if((x-=hit)<0){out.add(Bonus,50,"AT normal hit -> 50 medal bonus");playBonus(out);return;}if((x-=fall)<0){if(s.tier==Middle&&chance(.5)){s.tier=Lower;out.add(TierDown,0,"middle fall -> lower AT");}else if(s.tier==Upper&&chance(.5))endAT(out);return;}if((x-=add)<0){int g=addGames();s.at_games_left+=g;out.add(ATAddGames,g,"one-shot add");return;}if((x-=spec)<0){out.add(SpecialZone,0,"special zone");specialZoneRun(false,out);return;}if(ea&&(x-=epi)<0){beginEpisode(true,out,"direct episode in heaven/super-heaven");return;}if(ua&&(x-=up)<0){out.add(UpperSpecialZone,0,"upper special zone");specialZoneRun(true,out);}}
+static void resolveATEvent(Events& out){Profile p=profile();double scale=s.tier==Lower?1.0:p.scale;double hit=p.hit*scale,fall=s.tier==Lower?p.fall:(s.tier==Middle?1.0/180.0:1.0/150.0),add=p.add*scale,spec=p.spec*scale,epi=(1.0/1000.0)*scale,up=p.upper*scale;if(s.at_table==ATHeaven){hit*=1.9;epi*=1.4;}else if(s.at_table==ATSuperHeaven){add*=2.4;epi*=1.25;}else if(s.at_table==Specialized){hit*=.55;add*=.55;spec*=2.8;up*=2.5;}static const double pfv[5]={.82,.92,1.0,1.10,1.20};double pf=pfv[clampi(s.at_pattern,0,4)];hit*=pf;add*=pf;spec*=pf;if(s.cold_at){hit*=.70;add*=.70;spec*=.70;epi*=.70;up*=.70;}bool ea=s.at_table==ATHeaven||s.at_table==ATSuperHeaven;bool ua=s.at_table==Specialized;double total=hit+fall+add+spec+(ea?epi:0)+(ua?up:0);double x=u01();if(x>=total)return;if((x-=hit)<0){out.add(Bonus,0,"AT normal hit -> 50 medal bonus");playBonus(out);return;}if((x-=fall)<0){if(s.tier==Middle&&chance(.5)){s.tier=Lower;out.add(TierDown,0,"middle fall -> lower AT");}else if(s.tier==Upper&&chance(.5))endAT(out);return;}if((x-=add)<0){int g=addGames();s.at_games_left+=g;out.add(ATAddGames,g,"one-shot add");return;}if((x-=spec)<0){out.add(SpecialZone,0,"special zone");specialZoneRun(false,out);return;}if(ea&&(x-=epi)<0){beginEpisode(true,out,"direct episode in heaven/super-heaven");return;}if(ua&&(x-=up)<0){out.add(UpperSpecialZone,0,"upper special zone");specialZoneRun(true,out);}}
 static void endAT(Events& out){Profile p=profile();if(s.stocks>0){--s.stocks;s.at_games_left=initialGames();s.cold_at=chance(.60);if(s.cold_at)out.add(ColdEnter,1,"stock restart cold segment: growth -30%");rerollAT();out.add(ATStart,s.at_games_left,"stock activated; initial-game lottery; table/pattern re-roll");return;}if(s.tier==Upper){s.in_at=false;double rate=p.comeback*(s.cold_at?.70:1.0);if(chance(rate)){s.in_at=true;s.tier=Upper;s.at_games_left=initialGames();s.cold_at=chance(.60);if(s.cold_at)out.add(ColdEnter,1,"upper comeback cold segment: growth -30%");rerollAT();out.add(UpperComeback,64,"64G comeback success -> upper AT restart");}else{s.cold_at=false;out.add(ATEnd,64,"64G comeback failed");rerollNormal();}return;}s.in_at=false;s.cold_at=false;out.add(ATEnd,0,"AT ended");rerollNormal();}
 
 struct Writer{char* p;int n,cap;Writer(char* b,int c):p(b),n(0),cap(c){if(cap)p[0]=0;}void ch(char c){if(n+1<cap){p[n++]=c;p[n]=0;}}void str(const char* x){while(*x)ch(*x++);}void i64(int64_t v){if(v==0){ch('0');return;}if(v<0){ch('-');v=-v;}char t[32];int k=0;while(v&&k<31){t[k++]=(char)('0'+v%10);v/=10;}while(k)ch(t[--k]);}void q(const char*x){ch('"');while(*x){char c=*x++;if(c=='"'||c=='\\'){ch('\\');ch(c);}else if(c=='\n'){str("\\n");}else ch(c);}ch('"');}};
@@ -289,7 +289,7 @@ static Events spinNormal(){
     if(d<(RNG_SPACE/8192u)+(RNG_SPACE/32768u)+1u){startAT(Middle,true,out,"1/8192 middle AT + stock",false);rerollNormal();return out;}
 
     if(s.last_role==StrongCherry){
-        if(chance(.50)){out.add(Bonus,50,"strong cherry -> regular hit");playBonus(out);}
+        if(chance(.50)){out.add(Bonus,0,"strong cherry -> regular hit");playBonus(out);}
         else{Tier t=chance(2.0/3.0)?Lower:Middle;startAT(t,false,out,"strong cherry -> AT",false);rerollNormal();}
         return out;
     }
@@ -316,7 +316,7 @@ static Events spinNormal(){
             }else if(rr<.995){
                 s.high_active=false;out.add(CZ,0,"high probability -> CZ");playCZ(out);return out;
             }else{
-                s.high_active=false;out.add(Bonus,50,"high probability -> regular hit");playBonus(out);return out;
+                s.high_active=false;out.add(Bonus,0,"high probability -> regular hit");playBonus(out);return out;
             }
         }
         if(s.high_games>=5&&chance(.10)){s.high_active=false;s.high_games=0;out.add(HighExit,0,"high probability -> normal");}
@@ -326,7 +326,7 @@ static Events spinNormal(){
 
     Profile p=profile();
     if(chance(p.rawAT)){startAT(Lower,false,out,"raw AT route");rerollNormal();return out;}
-    if(chance(p.rawBonus)){out.add(Bonus,50,"raw bonus");playBonus(out);return out;}
+    if(chance(p.rawBonus)){out.add(Bonus,0,"raw bonus");playBonus(out);return out;}
     if(chance(p.rawCZ)){out.add(CZ,0,"raw CZ");playCZ(out);return out;}
     if(s.normal_display_games>=s.normal_ceiling)resolveCeiling(out);
     return out;
@@ -369,15 +369,18 @@ static Events forceOutcome(int code){
     }
 
     switch(code){
-        case 11: // red 7 / red 7 / BAR -> regular hit
-            out.add(Bonus,50,"debug forced regular hit");
+        case 11: // red 7 / red 7 / BAR -> regular hit (replay-equivalent entry)
+            s.last_payout=3;
+            out.add(Bonus,0,"debug forced regular hit");
             playBonus(out);
             break;
-        case 12: // red 7 x3 -> lower AT
+        case 12: // red 7 x3 -> lower AT (replay-equivalent entry)
+            s.last_payout=3;
             startAT(Lower,false,out,"debug forced red-7 AT",false);
             rerollNormal();
             break;
-        case 13: // BAR x3 -> tier up
+        case 13: // BAR x3 -> tier up (replay-equivalent entry)
+            s.last_payout=3;
             if(!s.in_at){
                 startAT(Middle,false,out,"debug forced tier-up -> middle AT",false);
                 rerollNormal();
@@ -389,7 +392,8 @@ static Events forceOutcome(int code){
                 out.add(TierUp,0,"debug forced tier-up: already upper");
             }
             break;
-        case 14: // blue 7 x3 -> freeze / upper AT + stock
+        case 14: // blue 7 x3 -> freeze / upper AT + stock (replay-equivalent entry)
+            s.last_payout=3;
             out.add(Freeze,0,"debug forced freeze");
             startAT(Upper,true,out,"debug forced freeze -> upper AT + stock",false);
             rerollNormal();
