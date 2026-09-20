@@ -78,13 +78,13 @@ static Profile tune(Profile p,double m){
 }
 static Profile profile(){
     switch(s.setting){
-        case 1:return tune({1.0/5000.0,1.0/136.94,1.0/700.0,.01102,.02255,1.0/873.79,1.0/172.51,1.0/1046.62,1.0/2494.0,1.0/16921.27,1.1204,.0851,5,false},0.45200000);
-        case 2:return tune({1.0/1465.08,1.0/697.79,1.0/478.97,.08541,.16082,1.0/221.63,1.0/362.96,1.0/348.13,1.0/810.64,1.0/5860.31,1.72869,.28164,5,false},0.89000000);
-        case 3:return tune({1.0/1393.28,1.0/675.52,1.0/471.33,.09285,.17570,1.0/211.59,1.0/373.40,1.0/327.10,1.0/764.66,1.0/5464.91,1.7856,.3014,5,false},0.90500000);
-        case 4:return tune({1.0/1331.24,1.0/652.50,1.0/461.25,.09949,.18874,1.0/201.00,1.0/388.72,1.0/302.47,1.0/704.95,1.0/5037.12,1.84988,.31747,5,false},0.94000000);
-        case 5:return tune({1.0/1259.57,1.0/620.62,1.0/447.82,.10974,.20460,1.0/190.24,1.0/404.15,1.0/270.57,1.0/641.17,1.0/4433.65,1.97736,.33217,5,false},0.96000000);
-        case 6:return tune({1.0/1200.0,1.0/600.0,1.0/440.0,.12,.22,1.0/180.0,1.0/420.0,1.0/240.0,1.0/600.0,1.0/4000.0,2.10,.34,5,false},0.97300000);
-        default:return tune({1.0/1065.0,1.0/548.0,1.0/414.0,.145,.255,1.0/164.0,1.0/452.0,1.0/203.0,1.0/502.0,1.0/3075.0,2.37,.34,5,true},1.06500000);
+        case 1:return tune({1.0/5000.0,1.0/136.94,1.0/700.0,.01102,.02255,1.0/873.79,1.0/172.51,1.0/1046.62,1.0/2494.0,1.0/16921.27,1.1204,.0851,5,false},0.43300000);
+        case 2:return tune({1.0/1465.08,1.0/697.79,1.0/478.97,.08541,.16082,1.0/221.63,1.0/362.96,1.0/348.13,1.0/810.64,1.0/5860.31,1.72869,.28164,5,false},0.85900000);
+        case 3:return tune({1.0/1393.28,1.0/675.52,1.0/471.33,.09285,.17570,1.0/211.59,1.0/373.40,1.0/327.10,1.0/764.66,1.0/5464.91,1.7856,.3014,5,false},0.89550000);
+        case 4:return tune({1.0/1331.24,1.0/652.50,1.0/461.25,.09949,.18874,1.0/201.00,1.0/388.72,1.0/302.47,1.0/704.95,1.0/5037.12,1.84988,.31747,5,false},0.92620000);
+        case 5:return tune({1.0/1259.57,1.0/620.62,1.0/447.82,.10974,.20460,1.0/190.24,1.0/404.15,1.0/270.57,1.0/641.17,1.0/4433.65,1.97736,.33217,5,false},0.94570000);
+        case 6:return tune({1.0/1200.0,1.0/600.0,1.0/440.0,.12,.22,1.0/180.0,1.0/420.0,1.0/240.0,1.0/600.0,1.0/4000.0,2.10,.34,5,false},0.96800000);
+        default:return tune({1.0/1065.0,1.0/548.0,1.0/414.0,.145,.255,1.0/164.0,1.0/452.0,1.0/203.0,1.0/502.0,1.0/3075.0,2.37,.34,5,true},1.05200000);
     }
 }
 
@@ -116,7 +116,7 @@ static bool highUnlocked(){return s.normal_actual_games>50;}
 static Role drawRole(){uint32_t d=(uint32_t)(next64()&(RNG_SPACE-1u));if(d<ROLE_ONE)return OneMedal;d-=ROLE_ONE;if(d<ROLE_BELL9)return Bell9;d-=ROLE_BELL9;if(d<ROLE_BELL15)return Bell15;d-=ROLE_BELL15;if(d<ROLE_REPLAY)return Replay;d-=ROLE_REPLAY;if(d<ROLE_WEAK_CHERRY)return WeakCherry;d-=ROLE_WEAK_CHERRY;if(d<ROLE_STRONG_CHERRY)return StrongCherry;d-=ROLE_STRONG_CHERRY;if(d<ROLE_WATERMELON)return Watermelon;d-=ROLE_WATERMELON;if(d<ROLE_WEAK_CHANCE)return WeakChance;d-=ROLE_WEAK_CHANCE;if(d<ROLE_STRONG_CHANCE)return StrongChance;d-=ROLE_STRONG_CHANCE;if(d<ROLE_PENGUIN)return PenguinChance;return Miss;}
 static int prefLevel(){return s.stocks>=5?3:s.stocks>=3?2:s.stocks>=1?1:0;}
 static void specialZoneRun(bool upper,Events& out);
-static void sectionDelta(int64_t v,Events& out){s.section_diff+=v;s.total_diff+=v;if(s.section_diff<s.section_min_diff)s.section_min_diff=s.section_diff;if(s.section_diff>=2400){int p=prefLevel();s.stocks=0;++s.section_count;s.section_diff=0;s.section_min_diff=0;out.add(SectionCross,p,"6.5 section cut; stocks collapsed to next-section preference level");static const double rr[4]={0,.25,.60,1.0};if(s.in_at&&chance(rr[clampi(p,0,3)])){if(s.tier==Upper){out.add(SectionReward,p,"section roulette -> upper special");specialZoneRun(true,out);}else{s.tier=s.tier==Lower?Middle:Upper;out.add(TierUp,p,"section roulette -> AT tier up");}}rerollAT();}}
+static void sectionDelta(int64_t v,Events& out){s.section_diff+=v;s.total_diff+=v;if(s.section_diff<s.section_min_diff)s.section_min_diff=s.section_diff;if(s.section_diff>=2400){int p=prefLevel();s.stocks=0;++s.section_count;s.section_diff=0;s.section_min_diff=0;out.add(SectionCross,p,"6.5 section cut; stocks collapsed to next-section preference level");static const double tierUp[4]={.005,.10,.25,.50};static const double upperSpec[4]={0,.10,.50,.75};int idx=clampi(p,0,3);if(s.in_at){if(s.tier==Upper){if(chance(upperSpec[idx])){if(chance(1.0/3.0)){out.add(UpperSpecialZone,p,"section roulette -> upper special (1/3)");specialZoneRun(true,out);}else{out.add(SpecialZone,p,"section roulette -> special");specialZoneRun(false,out);}}}else if(chance(tierUp[idx])){s.tier=s.tier==Lower?Middle:Upper;out.add(TierUp,p,"section roulette -> AT tier up");}}rerollAT();}}
 static void startAT(Tier t,bool stock,Events& out,const char* why,bool allowCold=true){s.in_at=true;s.tier=t;s.at_games_left=initialGames();s.cold_at=allowCold&&chance(.60);if(s.cold_at)out.add(ColdEnter,1,"AT cold segment: growth -30%");if(stock)++s.stocks;rerollAT();out.add(ATStart,s.at_games_left,why);}
 static void playBonus(Events& out);
 static void playCZ(Events& out){bool resolved=false;for(int g=0;g<10&&!resolved;++g){++s.total_games;sectionDelta(-3,out);if(chance(1.0/1000.0)){startAT(Lower,false,out,"CZ direct AT");s.cz_misses=0;resolved=true;}else if(chance(1.0/100.0)){out.add(Bonus,50,"CZ bonus hit");playBonus(out);s.cz_misses=0;resolved=true;}}if(!resolved){++s.cz_misses;if(s.cz_misses>=3){s.cz_misses=0;out.add(Bonus,50,"CZ 3-miss ceiling -> bonus");playBonus(out);}}}
@@ -157,6 +157,10 @@ static Events spinNormal(){
         if(chance(.50)){out.add(Bonus,50,"strong cherry -> regular hit");playBonus(out);}
         else{Tier t=chance(2.0/3.0)?Lower:Middle;startAT(t,false,out,"strong cherry -> AT",false);rerollNormal();}
         return out;
+    }
+
+    if(s.last_role==StrongChance&&chance(.01)){
+        startAT(Lower,false,out,"strong chance 1% -> direct AT");rerollNormal();return out;
     }
 
     auto highEntry=[](Role r)->double{
