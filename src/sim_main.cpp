@@ -9,8 +9,11 @@ int main(int argc, char** argv) {
     int setting = 7;
     if (argc > 2) setting = std::atoi(argv[2]);
     if (setting < 1 || setting > 7) setting = 7;
+    std::uint64_t seed = 0x5343484154475054ULL;
+    if (argc > 3) seed = std::strtoull(argv[3], nullptr, 0);
+
     auto config = schatgpt::gameConfigForSetting(static_cast<schatgpt::SettingId>(setting));
-    schatgpt::SlotEngine engine(0x5343484154475054ULL, config);
+    schatgpt::SlotEngine engine(seed, config);
 
     long long cz = 0, bonus = 0, episode = 0, at = 0, freeze = 0;
     while (engine.state().total_games < spins) {
@@ -46,6 +49,7 @@ int main(int argc, char** argv) {
     };
 
     std::cout << "setting=" << setting << '\n'
+              << "seed=" << seed << '\n'
               << "target_payout_ratio=" << (engine.config().target_payout_ratio * 100.0) << "%\n"
               << "target_games=" << spins << '\n'
               << "actual_games=" << actual_games << '\n'
