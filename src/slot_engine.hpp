@@ -172,6 +172,7 @@ struct MachineState {
     bool special_window_checked = false;
     bool high_probability_active = false;
     int high_probability_games = 0;
+    int bell9_streak = 0;
     bool cold_at = false;
     bool cold_bonus = false;
     int cz_misses = 0;
