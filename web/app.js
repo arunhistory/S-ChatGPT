@@ -114,6 +114,8 @@
   let pendingPayout = 0;
   let pendingWasAT = false;
   let pendingStopOrder = [0, 1, 2];
+  let pendingPressedOrder = [];
+  let pendingNaviOrderValid = true;
   let pendingControl = null;
   let reelTimers = [null, null, null];
   let reelStopped = [true, true, true];
@@ -128,6 +130,8 @@
 
   const clearBellNavi = () => {
     pendingStopOrder = [0,1,2];
+    pendingPressedOrder = [];
+    pendingNaviOrderValid = true;
     stops.forEach((button) => {
       button.dataset.nav = '';
       button.classList.remove('nav-first','nav-active');
@@ -388,9 +392,38 @@
     return base;
   };
 
-  const chooseStopPosition = (index) => {
+  const chooseNavigatedBellPosition = (index, base) => {
+    const target = { row:1, kind:'bell' };
+    const strip = reelStrips[index];
+
+    // AT押し順ナビに正しく従った停止は取りこぼし不可。
+    // まず通常の0〜4コマ引き込み、それで届かなければ有効位相を補正して
+    // 必ず中段ベルへ着地させる。成立/純増はWASM側でレバーON時に確定済み。
+    for (let slip = 0; slip <= 4; slip++) {
+      const candidate = mod(base + slip, strip.length);
+      if (candidateMatchesTarget(index, candidate, target)) return candidate;
+    }
+
+    for (let advance = 1; advance < strip.length; advance++) {
+      const assistedBase = mod(base + advance, strip.length);
+      for (let slip = 0; slip <= 4; slip++) {
+        const candidate = mod(assistedBase + slip, strip.length);
+        if (candidateMatchesTarget(index, candidate, target)) return candidate;
+      }
+    }
+
+    // リール配列にベルが存在する限りここには来ないが、壊れた配列でも
+    // 他役へ誤停止させず現在位置を維持する。
+    return base;
+  };
+
+  const chooseStopPosition = (index, navigatedBell = false) => {
     const strip = reelStrips[index];
     const base = mod(reelPositions[index], strip.length);
+
+    if (navigatedBell) {
+      return chooseNavigatedBellPosition(index, base);
+    }
 
     // 青7フリーズのみ0〜4コマ制御の外。押下位置を無視して中段へ強制揃い。
     if (!pendingControl) return base;
@@ -456,12 +489,22 @@
   const stopReelMotion = (index) => {
     if (!gameActive || reelStopped[index]) return;
 
+    const isATBellNavi = pendingWasAT
+      && pendingRole === 'bell9'
+      && pendingControl
+      && pendingControl.navOrder >= 0
+      && pendingControl.navOrder < stopOrders.length;
+    const expectedIndex = isATBellNavi ? pendingStopOrder[pendingPressedOrder.length] : -1;
+    if (isATBellNavi && index !== expectedIndex) pendingNaviOrderValid = false;
+    pendingPressedOrder.push(index);
+    const navigatedBell = isATBellNavi && pendingNaviOrderValid && index === expectedIndex;
+
     if (reelTimers[index]) {
       clearInterval(reelTimers[index]);
       reelTimers[index] = null;
     }
 
-    reelPositions[index] = chooseStopPosition(index);
+    reelPositions[index] = chooseStopPosition(index, navigatedBell);
     renderReel(index);
     reelStopped[index] = true;
 
@@ -524,6 +567,8 @@
     gameActive = true;
     pendingResult = null;
     reelStopped = [false, false, false];
+    pendingPressedOrder = [];
+    pendingNaviOrderValid = true;
 
     els.lever.disabled = true;
     els.roleResult.textContent = '回転中';
@@ -667,6 +712,8 @@
     pendingRole = 'miss';
     pendingPayout = 0;
     pendingWasAT = false;
+    pendingPressedOrder = [];
+    pendingNaviOrderValid = true;
     pendingControl = null;
     clearBellNavi();
     reelStopped = [true, true, true];
