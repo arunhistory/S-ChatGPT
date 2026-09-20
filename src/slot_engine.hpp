@@ -82,8 +82,14 @@ struct GameConfig {
     double cold_entry_rate = 0.60;
     double cold_growth_factor = 0.70;
 
-    // 有利区間切断後の0/1/3/5ストック段階。具体率は未固定だったため較正ノブとして保持。
-    std::array<double,4> section_reward_rate{0.0, 0.25, 0.60, 1.0};
+    // 有利区間切断後。indexはストック段階0/1/3/5。
+    // 下位/中位: AT昇格。上位: 特化突入、そのうち1/3で上位特化。
+    std::array<double,4> section_tier_up_rate{0.005, 0.10, 0.25, 0.50};
+    std::array<double,4> section_upper_special_entry_rate{0.0, 0.10, 0.50, 0.75};
+    double section_upper_special_upgrade_rate = 1.0 / 3.0;
+
+    // 強チャンス目成立時の直撃AT。
+    double strong_chance_direct_at_rate = 0.01;
 
     // 上位特化はレバーON時に継続列を先決めするが、理論上は無限継続可能。
     double upper_special_continue_rate_reduced = 0.7543; // E[ch]=約4.07 -> 約167G
