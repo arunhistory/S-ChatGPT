@@ -23,6 +23,8 @@ static_assert(ROLE_BASE_TOTAL <= NORMAL_RNG_SPACE);
 
 enum class NormalMode : std::uint8_t { NormalA, NormalB, Heaven, SuperHeaven, Special };
 enum class ATTier : std::uint8_t { Lower, Middle, Upper };
+// 1-6: 日本基準を意識した正式設定 / 7: 個人用EX（現行フルスペック原型）
+enum class SettingId : std::uint8_t { S1=1, S2=2, S3=3, S4=4, S5=5, S6=6, EX=7 };
 enum class ATTable : std::uint8_t { Normal, Heaven, SuperHeaven, Specialized };
 enum class ReelRole : std::uint8_t { Miss, OneMedal, Bell9, Bell15, Replay };
 
@@ -107,7 +109,7 @@ struct GameConfig {
 
     int lower_net_per_game = 6;
     int middle_net_per_game = 6;
-    int upper_net_per_game = 12;
+    int upper_net_per_game = 9;
 
     int upper_comeback_games = 64;
     double upper_comeback_rate = 0.20;
@@ -130,7 +132,7 @@ struct GameConfig {
 };
 
 struct MachineState {
-    int setting = 6;
+    int setting = static_cast<int>(SettingId::EX);
     NormalMode normal_mode = NormalMode::NormalA;
     int normal_pattern = 0;
     // 通常エリアの実回転数と表示回転数は別管理。
