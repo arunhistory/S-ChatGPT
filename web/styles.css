@@ -584,3 +584,46 @@ body{height:100dvh;min-height:0;padding:4px;overflow:hidden}
 @media(max-width:600px){
   .omen-text{font-size:22px}
 }
+
+
+/* ===== Mode-stage atmosphere: morning / day / evening / night / special ===== */
+.stage-screen[data-scene="morning"] .stage-bg{
+  background:
+    radial-gradient(circle at 78% 22%,#ffe7a255 0 7%,transparent 23%),
+    linear-gradient(180deg,#6d8fb1 0 38%,#c79c73 39% 62%,#27364b 63%);
+}
+.stage-screen[data-scene="day"] .stage-bg{
+  background:
+    radial-gradient(circle at 74% 20%,#dff6ff55 0 7%,transparent 24%),
+    linear-gradient(180deg,#3973a8 0 43%,#244f7c 44% 65%,#122038 66%);
+}
+.stage-screen[data-scene="evening"] .stage-bg{
+  background:
+    radial-gradient(circle at 78% 28%,#ffb45d66 0 8%,transparent 26%),
+    linear-gradient(180deg,#7a3c62 0 34%,#d06b53 35% 57%,#2b2444 58%);
+}
+.stage-screen[data-scene="night"] .stage-bg{
+  background:
+    radial-gradient(circle at 76% 24%,#c8d8ff33 0 5%,transparent 19%),
+    linear-gradient(180deg,#101b43 0 45%,#15275b 46% 68%,#070b19 69%);
+}
+.stage-screen[data-scene="deep-night"] .stage-bg{
+  background:
+    radial-gradient(circle at 50% 28%,#8f78ff38,transparent 30%),
+    repeating-linear-gradient(135deg,#0c1538 0 28px,#111d4c 28px 56px);
+}
+.stage-screen[data-scene="bonus"] .stage-bg{
+  background:
+    radial-gradient(circle at 50% 30%,#ffcb4d55,transparent 31%),
+    linear-gradient(180deg,#6b2419,#2c0e0a 65%,#0b0504);
+}
+.stage-screen[data-scene="episode"] .stage-bg{
+  background:
+    radial-gradient(circle at 50% 28%,#b982ff55,transparent 34%),
+    linear-gradient(180deg,#3b195f,#180b2d 68%,#07040d);
+}
+.stage-screen[data-scene="challenge"] .stage-bg{
+  background:
+    radial-gradient(circle at 50% 32%,#ff5f5950,transparent 30%),
+    linear-gradient(180deg,#32121d,#17101c 66%,#08070c);
+}
