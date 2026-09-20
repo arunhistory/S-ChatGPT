@@ -292,6 +292,7 @@
     if (role === 'bell9') return 9;
     if (role === 'bell15') return 15;
     if (role === 'replay') return 3; // 3枚BETを差枚会計上相殺
+    if (role === 'hit' || role === 'at' || role === 'tier_up' || role === 'freeze') return 3; // 7/BONUS図柄はリプレイ
     return 0;
   };
 
@@ -638,11 +639,17 @@
               : (s0.inAT ? 'slot_spin_at_json' : 'slot_spin_normal_json')));
     pendingRole = deriveRoleFromResult(pendingResult, pendingWasChallenge);
 
+    const entryReplayRole = pendingRole === 'hit'
+      || pendingRole === 'at'
+      || pendingRole === 'tier_up'
+      || pendingRole === 'freeze';
     pendingPayout = pendingWasChallenge
       ? 0
-      : (forcedRole && !pendingWasBonus
-          ? accountingReturnForRole(forcedRole)
-          : Number(pendingResult.reelPayout || 0));
+      : (entryReplayRole
+          ? 3
+          : (forcedRole && !pendingWasBonus
+              ? accountingReturnForRole(forcedRole)
+              : Number(pendingResult.reelPayout || 0)));
 
     // 成立役・停止制御表・押し順をこの時点で固定する。
     pendingControl = buildSpinControl(pendingRole, pendingResult);
@@ -713,7 +720,7 @@
               ? '+' + payout + '枚'
               : (pendingBellNaviActive && pendingWasAT
                   ? 'AT純増'
-                  : (pendingRole === 'replay' ? 'REPLAY' : payout + '枚'))));
+                  : ((pendingRole === 'replay' || entryReplayRole) ? 'REPLAY' : payout + '枚'))));
 
     pushEvents(allEvents);
     showFinalBanner(allEvents, visibleRole, visiblePayout);
