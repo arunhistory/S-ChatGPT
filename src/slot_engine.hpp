@@ -60,6 +60,7 @@ struct WeightedGames {
 struct GameConfig {
     int setting = static_cast<int>(SettingId::EX);
     double target_payout_ratio = 1.50; // 設定ごとの長期目標機械割。EX=150%
+    double performance_calibration = 1.0; // 完成ロジック後の機械割較正係数
 
     double target_cz_rate = 1.0 / 350.0;
     double target_bonus_rate = 1.0 / 400.0;
