@@ -61,6 +61,7 @@ struct State {
     int last_payout;
 };
 static State s;
+static int forced_role=-1;
 static uint64_t rng=0x5343484154475054ULL;
 static char jsonbuf[65536];
 
@@ -136,7 +137,7 @@ static Events spinNormal(){
     Events out;out.clear();if(s.in_at)return out;
     s.nav_order=-1;
     ++s.total_games;++s.normal_actual_games;++s.normal_display_games;
-    s.last_role=drawRole();
+    if(forced_role>=0&&forced_role<=PenguinChance){s.last_role=(Role)forced_role;forced_role=-1;}else{s.last_role=drawRole();}
     s.last_payout=s.last_role==OneMedal?1:s.last_role==Bell9?9:s.last_role==Bell15?15:s.last_role==Replay?3:0;
     if(s.last_role==Bell9)++s.bell9_streak;else s.bell9_streak=0;
     sectionDelta(-3,out);
@@ -199,6 +200,71 @@ static Events spinNormal(){
     return out;
 }
 static Events spinAT(){Events out;out.clear();if(!s.in_at)return out;s.nav_order=(int)(next64()%6);s.last_role=Bell9;s.last_payout=0;++s.total_games;if(s.at_games_left<=0){endAT(out);return out;}--s.at_games_left;int net=s.tier==Upper?9:6;sectionDelta(net,out);if(chance(1.0/99.0))rerollAT();resolveATEvent(out);if(s.in_at&&s.at_games_left<=0)endAT(out);return out;}
+
+static Events forceOutcome(int code){
+    Events out;out.clear();
+
+    // 0..10 are physical normal-game roles. They run through the same normal
+    // state machine so rare-role effects, ceilings and payouts stay authentic.
+    if(code>=0&&code<=PenguinChance){
+        if(s.in_at){
+            // AT currently has its own event lottery; preserve AT progression,
+            // but expose the requested physical test role without rewriting AT state.
+            out=spinAT();
+            s.last_role=(Role)code;
+            s.last_payout=code==OneMedal?1:code==Bell9?9:code==Bell15?15:code==Replay?3:0;
+            return out;
+        }
+        forced_role=code;
+        return spinNormal();
+    }
+
+    s.nav_order=-1;
+    s.last_role=Miss;
+    s.last_payout=0;
+
+    // Synthetic debug outcomes consume exactly one lever game without running
+    // unrelated normal random routes before applying the requested result.
+    if(!s.in_at){
+        ++s.total_games;++s.normal_actual_games;++s.normal_display_games;
+        sectionDelta(-3,out);
+    }else{
+        ++s.total_games;
+        if(s.at_games_left>0)--s.at_games_left;
+        sectionDelta(s.tier==Upper?9:6,out);
+    }
+
+    switch(code){
+        case 11: // red 7 / red 7 / BAR -> regular hit
+            out.add(Bonus,50,"debug forced regular hit");
+            playBonus(out);
+            break;
+        case 12: // red 7 x3 -> lower AT
+            startAT(Lower,false,out,"debug forced red-7 AT",false);
+            rerollNormal();
+            break;
+        case 13: // BAR x3 -> tier up
+            if(!s.in_at){
+                startAT(Middle,false,out,"debug forced tier-up -> middle AT",false);
+                rerollNormal();
+            }else if(s.tier==Lower){
+                s.tier=Middle;out.add(TierUp,0,"debug forced lower -> middle");
+            }else if(s.tier==Middle){
+                s.tier=Upper;out.add(TierUp,0,"debug forced middle -> upper");
+            }else{
+                out.add(TierUp,0,"debug forced tier-up: already upper");
+            }
+            break;
+        case 14: // blue 7 x3 -> freeze / upper AT + stock
+            out.add(Freeze,0,"debug forced freeze");
+            startAT(Upper,true,out,"debug forced freeze -> upper AT + stock",false);
+            rerollNormal();
+            break;
+        default:
+            break;
+    }
+    return out;
+}
 }
 
 extern "C" {
@@ -207,5 +273,6 @@ __attribute__((visibility("default"))) void slot_set_setting(int setting){if(set
 __attribute__((visibility("default"))) const char* slot_state_json(){return slot::stateJSON();}
 __attribute__((visibility("default"))) const char* slot_spin_normal_json(){static slot::Events e;e=slot::spinNormal();return slot::eventsJSON(e);}
 __attribute__((visibility("default"))) const char* slot_spin_at_json(){static slot::Events e;e=slot::spinAT();return slot::eventsJSON(e);}
+__attribute__((visibility("default"))) const char* slot_force_outcome_json(int code){static slot::Events e;e=slot::forceOutcome(code);return slot::eventsJSON(e);}
 __attribute__((visibility("default"))) const char* slot_apply_reel_payout_json(int medals){static slot::Events e;e.clear();if(medals>0)slot::sectionDelta(medals,e);return slot::eventsJSON(e);}
 }
