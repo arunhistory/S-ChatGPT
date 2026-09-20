@@ -19,4 +19,18 @@ CLANGXX="${CLANGXX:-clang++}"
 
 cp "$ROOT/tools/slot-loader.js" "$ROOT/web/slot.js"
 
-echo "Built web/slot.wasm + web/slot.js directly with clang; GitHub Actions/Emscripten are not used."
+# GitHub connector / static-host friendly text distribution for the WASM binary.
+# The browser loader reads the manifest, joins all chunks, decodes Base64,
+# and instantiates the exact same WebAssembly bytes.
+rm -f "$ROOT"/web/slot.wasm.b64.*
+BASE64_TMP="$ROOT/web/.slot.wasm.b64.tmp"
+base64 "$ROOT/web/slot.wasm" | tr -d '\n' | fold -w 5000 > "$BASE64_TMP"
+chunk_count=0
+while IFS= read -r chunk || [ -n "$chunk" ]; do
+  chunk_count=$((chunk_count + 1))
+  printf '%s' "$chunk" > "$ROOT/web/slot.wasm.b64.$chunk_count"
+done < "$BASE64_TMP"
+printf '%s' "$chunk_count" > "$ROOT/web/slot.wasm.b64.manifest"
+rm -f "$BASE64_TMP"
+
+echo "Built web/slot.wasm + Base64 chunks + web/slot.js directly with clang; GitHub Actions/Emscripten are not used."
