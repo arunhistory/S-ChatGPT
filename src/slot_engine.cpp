@@ -30,7 +30,7 @@ GameConfig gameConfigForSetting(SettingId setting) {
     GameConfig c;
     c.setting = static_cast<int>(setting);
 
-    // 長期目標機械割。実測値ではなく、今後の自動較正が追うターゲット。
+    // 長期目標機械割。シミュレータはこの値との差を較正対象にする。
     switch (setting) {
         case SettingId::S1: c.target_payout_ratio = 0.85; break;
         case SettingId::S2: c.target_payout_ratio = 0.96; break;
@@ -41,52 +41,57 @@ GameConfig gameConfigForSetting(SettingId setting) {
         case SettingId::EX: c.target_payout_ratio = 1.50; break;
     }
 
-    // 設定7 / EX は現行フルスペック原型をそのまま使う。
-    // 設定1〜5の性能パラメータは未較正なので、現時点では目標値だけ固定する。
-    if (setting != SettingId::S6) return c;
+    // 設定1〜5は目標値のみ固定。性能パラメータは後で個別較正する。
+    if (setting != SettingId::S6 && setting != SettingId::EX) return c;
 
-    // 設定6 第一次案:
-    // EXのゲーム性・純増(6/6/9)は維持し、長い出玉の尻尾を中心に削る。
-    c.target_cz_rate = 1.0 / 370.0;
-    c.target_bonus_rate = 1.0 / 430.0;
-    c.target_at_rate = 1.0 / 550.0;
+    if (setting == SettingId::S6) {
+        // 設定6: 日本基準側の最高設定。現行状態機械の長期較正で約114%を狙う。
+        // 純増6/6/9と初期G分布はEXと共通。爆発の尻尾は上位特化で抑える。
+        c.target_cz_rate = 1.0 / 350.0;
+        c.target_bonus_rate = 1.0 / 400.0;
+        c.target_at_rate = 1.0 / 500.0;
 
-    // 現行エンジン用の暫定rawノブ。通常時の全経路統合後に再較正する。
-    c.raw_cz_rate = 1.0 / 480.0;
-    c.raw_bonus_rate = 1.0 / 700.0;
-    c.raw_at_rate = 1.0 / 1400.0;
+        c.raw_cz_rate = 1.0 / 440.0;
+        c.raw_bonus_rate = 1.0 / 600.0;
+        c.raw_at_rate = 1.0 / 1200.0;
 
-    c.bonus_to_stock_rate = 0.08;
-    c.upper_comeback_rate = 0.15;
+        c.bonus_to_stock_rate = 0.12;
+        c.upper_comeback_rate = 0.22;
 
-    // 平均49.25G。EXの50G感をほぼ維持しつつ300G初期を外す。
-    c.initial_games = {
-        {20, 0.20}, {30, 0.25}, {40, 0.20}, {50, 0.15},
-        {75, 0.08}, {100, 0.06}, {150, 0.035}, {200, 0.025}
-    };
+        c.lower_hit_rate = 1.0 / 180.0;
+        c.lower_fall_rate = 1.0 / 420.0;
+        c.lower_add_rate = 1.0 / 240.0;
+        c.lower_special_rate = 1.0 / 600.0;
+        c.lower_upper_special_rate = 1.0 / 4000.0;
 
-    // 平均24.4G。大きい上乗せの裾だけ強く削る。
-    c.add_games = {
-        {10, 0.40}, {20, 0.30}, {30, 0.18},
-        {50, 0.08}, {100, 0.03}, {200, 0.01}
-    };
+        c.middle_event_scale = 2.10;
+        c.upper_event_scale = 2.10;
 
-    // 下位基礎抽選をEXから約10%弱化。
-    c.lower_hit_rate = 1.0 / 220.0;
-    c.lower_fall_rate = 1.0 / 380.0;
-    c.lower_add_rate = 1.0 / 330.0;
-    c.lower_special_rate = 1.0 / 770.0;
-    c.lower_upper_special_rate = 1.0 / 5500.0;
+        // 上位特化はEXより大幅に抑え、短中期の暴れを削る。
+        c.upper_special_chains = {
+            {1,0.20},{2,0.18},{3,0.16},{4,0.14},{5,0.11},
+            {6,0.08},{8,0.06},{12,0.04},{16,0.03}
+        };
+        return c;
+    }
 
-    // 中位・上位も同じゲーム性のまま、EXより約10%重くする。
-    c.middle_event_scale = 1.65;
-    c.upper_event_scale = 1.65;
+    // EX: 個人利用・展示用フルスペック。長期較正で約150%を狙う。
+    // 基本ゲーム性は共通のまま、通常当選・AT内イベント・ストック・引戻しを強化。
+    c.raw_cz_rate = 1.0 / 414.0;
+    c.raw_bonus_rate = 1.0 / 548.0;
+    c.raw_at_rate = 1.0 / 1065.0;
 
-    // 上位特化: 1回あたり上乗せ平均41Gを前提に平均約167G。
-    c.upper_special_chains = {
-        {1,0.20},{2,0.18},{3,0.16},{4,0.14},{5,0.11},
-        {6,0.08},{8,0.06},{12,0.04},{16,0.03}
-    };
+    c.bonus_to_stock_rate = 0.145;
+    c.upper_comeback_rate = 0.255;
+
+    c.lower_hit_rate = 1.0 / 164.0;
+    c.lower_fall_rate = 1.0 / 452.0;
+    c.lower_add_rate = 1.0 / 203.0;
+    c.lower_special_rate = 1.0 / 502.0;
+    c.lower_upper_special_rate = 1.0 / 3075.0;
+
+    c.middle_event_scale = 2.37;
+    c.upper_event_scale = 2.37;
 
     return c;
 }
