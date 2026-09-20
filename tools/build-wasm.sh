@@ -13,6 +13,7 @@ CLANGXX="${CLANGXX:-clang++}"
   -Wl,--export=slot_spin_normal_json \
   -Wl,--export=slot_spin_at_json \
   -Wl,--export=slot_force_outcome_json \
+  -Wl,--export=slot_apply_normal_penalty_json \
   -Wl,--export=slot_apply_reel_payout_json \
   -Wl,--initial-memory=262144 -Wl,--max-memory=16777216 \
   -o "$ROOT/web/slot.wasm" "$ROOT/src/slot_web.cpp"
