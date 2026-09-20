@@ -298,8 +298,8 @@
         : { cls:'omen-red screen-shock', fx:'red slash', text:'チャンス' };
     }
     if (role === 'penguin_chance') {
-      // 青×水色ストライプはこの確定級役だけ。
-      return { cls:'omen-premium', fx:'stripe flash', text:'PENGUIN' };
+      // ペンギンチャンス自体は確定役ではない。プレミアストライプは禁止。
+      return { cls:'omen-red screen-shock', fx:'red flash', text:'PENGUIN' };
     }
     if (role === 'weak_chance') {
       const r=Math.random();
@@ -356,7 +356,7 @@
       strong_cherry: { fx:'red slash', title:'強チェリー', sub:'中段チェリー', eyebrow:'RED', cls:'role-strong' },
       weak_chance: { fx:'purple', title:'CHANCE', sub:'弱チャンス目', eyebrow:'PURPLE' },
       strong_chance: { fx:'red slash', title:'強チャンス目', sub:'🐧 🍒 🐧', eyebrow:'RED', cls:'role-strong' },
-      penguin_chance: { fx:'stripe', title:'PENGUIN CHANCE', sub:'🐧 🐧 🐧', eyebrow:'BLUE × LIGHT BLUE', cls:'role-penguin' },
+      penguin_chance: { fx:'red', title:'PENGUIN CHANCE', sub:'🐧 🐧 🐧', eyebrow:'RED', cls:'role-penguin' },
       hit: { fx:'red flash', title:'HIT', sub:'🟥7 🟥7 BAR', eyebrow:'RED', cls:'role-hit' },
       at: { fx:'gold flash', title:'AT START', sub:'🟥7 🟥7 🟥7', eyebrow:'GOLD', cls:'role-hit' },
       tier_up: { fx:'gold', title:'AT 昇格', sub:'BAR BAR BAR', eyebrow:'GOLD', cls:'role-hit' },
@@ -389,21 +389,44 @@
   };
 
   const updateStageScene = (s) => {
-    let scene = 'normal';
-    let caption = '通常ステージ';
-    if (s.normalMode === 'special') {
-      scene = 'special';
-      caption = '特殊ステージ';
+    let scene = 'day';
+    let caption = '昼ステージ';
+
+    switch (s.normalMode) {
+      case 'normal_a':
+        scene = Number(s.normalPattern || 1) % 2 ? 'morning' : 'day';
+        caption = scene === 'morning' ? '朝ステージ' : '昼ステージ';
+        break;
+      case 'normal_b':
+        scene = 'evening';
+        caption = '夕方ステージ';
+        break;
+      case 'heaven':
+        scene = 'night';
+        caption = '夜ステージ';
+        break;
+      case 'super_heaven':
+        scene = 'deep-night';
+        caption = '深夜ステージ';
+        break;
+      case 'special':
+        scene = 'special';
+        caption = '特殊ステージ';
+        break;
+      default:
+        scene = 'day';
+        caption = '通常ステージ';
     }
+
     if (s.inAT) {
       scene = s.atTier === 'upper' ? 'upper' : 'at';
       caption = s.atTier === 'upper' ? '上位AT' : 'AT';
     }
     if (s.inBonus) {
-      scene = 'at';
+      scene = s.episodeBonus ? 'episode' : 'bonus';
       caption = s.episodeBonus ? 'EPISODE BONUS' : 'BONUS';
     } else if (s.challengeActive) {
-      scene = 'normal';
+      scene = 'challenge';
       caption = 'AT当選チャレンジ';
     }
     els.stageScreen.dataset.scene = scene;
