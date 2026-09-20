@@ -19,19 +19,31 @@ constexpr std::uint32_t ROLE_ONE_MEDAL_COUNT = 107374182u;
 constexpr std::uint32_t ROLE_BASE_TOTAL =
     ROLE_BELL9_COUNT + ROLE_BELL15_COUNT + ROLE_REPLAY_COUNT + ROLE_ONE_MEDAL_COUNT;
 constexpr std::uint32_t ROLE_REMAINDER_COUNT = NORMAL_RNG_SPACE - ROLE_BASE_TOTAL;
-static_assert(ROLE_BASE_TOTAL <= NORMAL_RNG_SPACE);
+constexpr std::uint32_t ROLE_WEAK_CHERRY_COUNT = 894785u;    // ~1/150
+constexpr std::uint32_t ROLE_STRONG_CHERRY_COUNT = 134218u;  // ~1/1000
+constexpr std::uint32_t ROLE_WATERMELON_COUNT = 1342177u;    // ~1/100
+constexpr std::uint32_t ROLE_WEAK_CHANCE_COUNT = 1491308u;   // ~1/90
+constexpr std::uint32_t ROLE_STRONG_CHANCE_COUNT = 745654u;  // ~1/180
+constexpr std::uint32_t ROLE_PENGUIN_COUNT = 268435u;        // ~1/500
+constexpr std::uint32_t ROLE_RARE_TOTAL =
+    ROLE_WEAK_CHERRY_COUNT + ROLE_STRONG_CHERRY_COUNT + ROLE_WATERMELON_COUNT +
+    ROLE_WEAK_CHANCE_COUNT + ROLE_STRONG_CHANCE_COUNT + ROLE_PENGUIN_COUNT;
+static_assert(ROLE_BASE_TOTAL + ROLE_RARE_TOTAL <= NORMAL_RNG_SPACE);
 
 enum class NormalMode : std::uint8_t { NormalA, NormalB, Heaven, SuperHeaven, Special };
 enum class ATTier : std::uint8_t { Lower, Middle, Upper };
 // 1-6: 日本基準を意識した正式設定 / 7: 個人用EX（現行フルスペック原型）
 enum class SettingId : std::uint8_t { S1=1, S2=2, S3=3, S4=4, S5=5, S6=6, EX=7 };
 enum class ATTable : std::uint8_t { Normal, Heaven, SuperHeaven, Specialized };
-enum class ReelRole : std::uint8_t { Miss, OneMedal, Bell9, Bell15, Replay };
+enum class ReelRole : std::uint8_t {
+    Miss, OneMedal, Bell9, Bell15, Replay,
+    WeakCherry, StrongCherry, Watermelon, WeakChance, StrongChance, PenguinChance
+};
 
 enum class EventType : std::uint8_t {
     None, CZ, Bonus, EpisodeBonus, ATStart, ATAddGames, SpecialZone,
     UpperSpecialZone, StockGain, TierUp, TierDown, ATEnd, UpperComeback,
-    Freeze, SectionCross
+    Freeze, SectionCross, HighEnter, HighExit, Shorten, ColdEnter, SectionReward
 };
 
 struct Event {
@@ -64,6 +76,17 @@ struct GameConfig {
     // 通常エリアの高確率モードは実回転数50Gまでは進入禁止。
     // 51G目以降から高確率への移行抽選を許可する。
     int high_probability_block_through_actual_games = 50;
+    int high_probability_min_games = 5;
+    double high_probability_fall_rate = 1.0 / 10.0;
+    double cold_entry_rate = 0.60;
+    double cold_growth_factor = 0.70;
+
+    // 有利区間切断後の0/1/3/5ストック段階。具体率は未固定だったため較正ノブとして保持。
+    std::array<double,4> section_reward_rate{0.0, 0.25, 0.60, 1.0};
+
+    // 上位特化はレバーON時に継続列を先決めするが、理論上は無限継続可能。
+    double upper_special_continue_rate_reduced = 0.7543; // E[ch]=約4.07 -> 約167G
+    double upper_special_continue_rate_ex = 0.94055;     // E[ch]=約16.82 -> 約690G
 
     int bonus_medals = 50;
     int episode_bonus_medals = 80;
@@ -147,6 +170,10 @@ struct MachineState {
     int normal_display_games = 0;
     int normal_ceiling = 1500;
     bool special_window_checked = false;
+    bool high_probability_active = false;
+    int high_probability_games = 0;
+    bool cold_at = false;
+    bool cold_bonus = false;
     int cz_misses = 0;
     int bonus_at_misses = 0;
 
@@ -198,6 +225,9 @@ private:
     bool chance(double p);
     int weightedGames(const std::vector<WeightedGames>& table);
     int weightedUpperChains();
+    int weakShortenGames();
+    int strongShortenGames();
+    int continuousShortenGames();
     ReelRole drawNormalReelRole();
 
     void rerollNormalModeAndPattern();
@@ -205,7 +235,7 @@ private:
     int chooseNormalCeiling(NormalMode mode, int pattern);
     void advanceNormalDisplayGames(int games);
     bool canEnterHighProbability() const;
-    void startAT(ATTier tier, bool withStock, std::vector<Event>& out, const char* reason);
+    void startAT(ATTier tier, bool withStock, std::vector<Event>& out, const char* reason, bool allowCold = true);
     void endAT(std::vector<Event>& out);
     void applySectionDelta(long long medals, std::vector<Event>& out);
     int stockPreferenceLevel() const;
