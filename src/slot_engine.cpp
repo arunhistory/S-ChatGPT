@@ -30,22 +30,36 @@ GameConfig gameConfigForSetting(SettingId setting) {
     GameConfig c;
     c.setting = static_cast<int>(setting);
 
-    // 長期目標機械割。シミュレータはこの値との差を較正対象にする。
+    // 長期目標機械割と、完成ロジック後の較正係数。
     switch (setting) {
-        case SettingId::S1: c.target_payout_ratio = 0.85; break;
+        case SettingId::S1:
+            c.target_payout_ratio = 0.85;
             c.performance_calibration = 0.83;
-        case SettingId::S2: c.target_payout_ratio = 0.96; break;
+            break;
+        case SettingId::S2:
+            c.target_payout_ratio = 0.96;
             c.performance_calibration = 0.89;
-        case SettingId::S3: c.target_payout_ratio = 0.99; break;
+            break;
+        case SettingId::S3:
+            c.target_payout_ratio = 0.99;
             c.performance_calibration = 0.905;
-        case SettingId::S4: c.target_payout_ratio = 1.03; break;
+            break;
+        case SettingId::S4:
+            c.target_payout_ratio = 1.03;
             c.performance_calibration = 0.98;
-        case SettingId::S5: c.target_payout_ratio = 1.08; break;
+            break;
+        case SettingId::S5:
+            c.target_payout_ratio = 1.08;
             c.performance_calibration = 0.92;
-        case SettingId::S6: c.target_payout_ratio = 1.14; break;
+            break;
+        case SettingId::S6:
+            c.target_payout_ratio = 1.14;
             c.performance_calibration = 0.973;
-        case SettingId::EX: c.target_payout_ratio = 1.50; break;
+            break;
+        case SettingId::EX:
+            c.target_payout_ratio = 1.50;
             c.performance_calibration = 1.03;
+            break;
     }
 
     // 設定別の性能プロファイル。ゲームルールは共通で、確率ノブだけを変更する。
