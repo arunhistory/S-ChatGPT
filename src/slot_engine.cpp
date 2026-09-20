@@ -283,6 +283,9 @@ void SlotEngine::rerollNormalModeAndPattern() {
     state_.normal_actual_games = 0;
     state_.normal_display_games = 0;
     state_.special_window_checked = false;
+    state_.high_probability_active = false;
+    state_.high_probability_games = 0;
+    state_.cold_bonus = false;
     state_.normal_ceiling = chooseNormalCeiling(state_.normal_mode, state_.normal_pattern);
 }
 
@@ -314,14 +317,26 @@ bool SlotEngine::canEnterHighProbability() const {
 }
 
 void SlotEngine::rerollATTableAndPattern() {
-    state_.at_table = static_cast<ATTable>(rng_() % 4ULL);
+    const double r = uniform01();
+    if (state_.at_table == ATTable::Heaven || state_.at_table == ATTable::SuperHeaven) {
+        if (r < 0.30) state_.at_table = ATTable::Normal;
+        else if (r < 0.55) state_.at_table = ATTable::Heaven;
+        else if (r < 0.75) state_.at_table = ATTable::SuperHeaven;
+        else state_.at_table = ATTable::Specialized;
+    } else {
+        if (r < 0.50) state_.at_table = ATTable::Normal;
+        else if (r < 0.75) state_.at_table = ATTable::Heaven;
+        else state_.at_table = ATTable::Specialized;
+    }
     state_.at_pattern = static_cast<int>(rng_() % 5ULL);
 }
 
-void SlotEngine::startAT(ATTier tier, bool withStock, std::vector<Event>& out, const char* reason) {
+void SlotEngine::startAT(ATTier tier, bool withStock, std::vector<Event>& out, const char* reason, bool allowCold) {
     state_.in_at = true;
     state_.at_tier = tier;
     state_.at_games_left = weightedGames(config_.initial_games);
+    state_.cold_at = allowCold && chance(config_.cold_entry_rate);
+    if (state_.cold_at) out.push_back({EventType::ColdEnter, 1, "AT cold segment: growth -30%"});
     if (withStock) ++state_.stocks;
     rerollATTableAndPattern();
 
@@ -361,8 +376,18 @@ void SlotEngine::applySectionDelta(long long medals, std::vector<Event>& out) {
              << "; one next-section preference lottery level=" << pref;
         out.push_back({EventType::SectionCross, pref, note.str()});
 
-        // 現在は次区間開始時の内部ATテーブル/パターン再抽選のみ実装。
-        // 0/1/3/5優遇レベル別の最終ルーレット重みは未決定のため勝手に固定しない。
+        // 0/1/3/5段階。具体率は未固定だったためGameConfigの較正ノブを使用。
+        const double rewardRate = config_.section_reward_rate[clampv(pref, 0, 3)];
+        if (state_.in_at && chance(rewardRate)) {
+            if (state_.at_tier == ATTier::Upper) {
+                out.push_back({EventType::SectionReward, pref, "section roulette -> upper special"});
+                auto z = playSpecialZone(true);
+                out.insert(out.end(), z.begin(), z.end());
+            } else {
+                state_.at_tier = state_.at_tier == ATTier::Lower ? ATTier::Middle : ATTier::Upper;
+                out.push_back({EventType::TierUp, pref, "section roulette -> AT tier up"});
+            }
+        }
         rerollATTableAndPattern();
     }
 }
