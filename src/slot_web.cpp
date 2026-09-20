@@ -265,6 +265,16 @@ static Events forceOutcome(int code){
     }
     return out;
 }
+
+static Events applyNormalPenalty(){
+    Events out;out.clear();
+    // 通常時の変則押し1回につき天井を1G延長。
+    // ATへ移行済みのゲームでは次回通常天井を汚さない。
+    if(!s.in_at){
+        ++s.normal_ceiling;
+    }
+    return out;
+}
 }
 
 extern "C" {
@@ -274,5 +284,6 @@ __attribute__((visibility("default"))) const char* slot_state_json(){return slot
 __attribute__((visibility("default"))) const char* slot_spin_normal_json(){static slot::Events e;e=slot::spinNormal();return slot::eventsJSON(e);}
 __attribute__((visibility("default"))) const char* slot_spin_at_json(){static slot::Events e;e=slot::spinAT();return slot::eventsJSON(e);}
 __attribute__((visibility("default"))) const char* slot_force_outcome_json(int code){static slot::Events e;e=slot::forceOutcome(code);return slot::eventsJSON(e);}
+__attribute__((visibility("default"))) const char* slot_apply_normal_penalty_json(){static slot::Events e;e=slot::applyNormalPenalty();return slot::eventsJSON(e);}
 __attribute__((visibility("default"))) const char* slot_apply_reel_payout_json(int medals){static slot::Events e;e.clear();if(medals>0)slot::sectionDelta(medals,e);return slot::eventsJSON(e);}
 }
