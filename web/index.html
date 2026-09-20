@@ -88,14 +88,15 @@
     <div class="reel-result">
       <span>成立役</span><b id="roleResult">---</b>
       <span>払出</span><b id="payoutResult">0枚</b>
+      <b id="naviState" class="navi-state">NAVI ---</b>
     </div>
 
     <section class="controls">
       <button id="lever" class="lever">LEVER<br><small>1 GAME</small></button>
       <div class="stops">
-        <button class="stop" data-stop="0">STOP 1</button>
-        <button class="stop" data-stop="1">STOP 2</button>
-        <button class="stop" data-stop="2">STOP 3</button>
+        <button class="stop" data-stop="0"><span class="nav-order">–</span><small>LEFT STOP</small></button>
+        <button class="stop" data-stop="1"><span class="nav-order">–</span><small>CENTER STOP</small></button>
+        <button class="stop" data-stop="2"><span class="nav-order">–</span><small>RIGHT STOP</small></button>
       </div>
       <div class="utility">
         <button id="autoToggle" aria-pressed="false">AUTO OFF</button>
@@ -121,15 +122,12 @@
       </div>
     </section>
 
-    <section class="history-panel">
-      <div class="panel-title">
-        <h2>EVENT HISTORY</h2>
-        <span>WASM EVENT STREAM</span>
-      </div>
+    <details class="history-panel compact-drawer">
+      <summary>EVENT HISTORY</summary>
       <ol id="history"></ol>
-    </section>
+    </details>
 
-    <details class="debug">
+    <details class="debug compact-drawer">
       <summary>DEBUG STATE / 成立役テスト</summary>
       <div class="debug-tools">
         <label for="roleTest">次ゲーム成立役</label>
