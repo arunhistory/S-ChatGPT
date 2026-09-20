@@ -30,7 +30,7 @@ static constexpr uint32_t ROLE_REMAINDER = RNG_SPACE-ROLE_BASE;
 enum NormalTable : uint8_t { NormalA, NormalB, Heaven, SuperHeaven, Special };
 enum Tier : uint8_t { Lower, Middle, Upper };
 enum ATTable : uint8_t { ATNormal, ATHeaven, ATSuperHeaven, Specialized };
-enum Role : uint8_t { Miss, OneMedal, Bell9, Bell15, Replay, WeakCherry, StrongCherry, Watermelon, WeakChance, StrongChance, PenguinChance };
+enum Role : uint8_t { Miss, OneMedal, Bell9, Bell15, Replay, WeakCherry, StrongCherry, Watermelon, WeakChance, StrongChance, PenguinChance, ThreeMedal=15 };
 enum EvType : uint8_t { EvNone, CZ, Bonus, EpisodeBonus, ChallengeStart, ChallengePoint, ChallengeJudge, ATStart, ATAddGames, SpecialZone, UpperSpecialZone, StockGain, TierUp, TierDown, ATEnd, UpperComeback, Freeze, SectionCross, HighEnter, HighExit, Shorten, ColdEnter, SectionReward };
 struct Event { EvType type; int value; const char* note; };
 struct Events { Event e[256]; int n; void clear(){n=0;} void add(EvType t,int v,const char* s){if(n<256)e[n++]={t,v,s};} };
@@ -101,7 +101,7 @@ static Profile profile(){
 static const char* normalName(NormalTable v){switch(v){case NormalA:return"normal_a";case NormalB:return"normal_b";case Heaven:return"heaven";case SuperHeaven:return"super_heaven";case Special:return"special";}return"unknown";}
 static const char* tierName(Tier v){switch(v){case Lower:return"lower";case Middle:return"middle";case Upper:return"upper";}return"unknown";}
 static const char* atTableName(ATTable v){switch(v){case ATNormal:return"normal";case ATHeaven:return"heaven";case ATSuperHeaven:return"super_heaven";case Specialized:return"specialized";}return"unknown";}
-static const char* roleName(Role v){switch(v){case Miss:return"miss";case OneMedal:return"one_medal";case Bell9:return"bell9";case Bell15:return"bell15";case Replay:return"replay";case WeakCherry:return"weak_cherry";case StrongCherry:return"strong_cherry";case Watermelon:return"watermelon";case WeakChance:return"weak_chance";case StrongChance:return"strong_chance";case PenguinChance:return"penguin_chance";}return"miss";}
+static const char* roleName(Role v){switch(v){case Miss:return"miss";case OneMedal:return"one_medal";case Bell9:return"bell9";case Bell15:return"bell15";case Replay:return"replay";case WeakCherry:return"weak_cherry";case StrongCherry:return"strong_cherry";case Watermelon:return"watermelon";case WeakChance:return"weak_chance";case StrongChance:return"strong_chance";case PenguinChance:return"penguin_chance";case ThreeMedal:return"three_medal";}return"miss";}
 static const char* evName(EvType v){switch(v){case EvNone:return"none";case CZ:return"cz";case Bonus:return"bonus";case EpisodeBonus:return"episode_bonus";case ChallengeStart:return"challenge_start";case ChallengePoint:return"challenge_point";case ChallengeJudge:return"challenge_judge";case ATStart:return"at_start";case ATAddGames:return"at_add_games";case SpecialZone:return"special_zone";case UpperSpecialZone:return"upper_special_zone";case StockGain:return"stock_gain";case TierUp:return"tier_up";case TierDown:return"tier_down";case ATEnd:return"at_end";case UpperComeback:return"upper_comeback";case Freeze:return"freeze";case SectionCross:return"section_cross";case HighEnter:return"high_enter";case HighExit:return"high_exit";case Shorten:return"shorten";case ColdEnter:return"cold_enter";case SectionReward:return"section_reward";}return"unknown";}
 
 static int initialGames(){
@@ -130,6 +130,25 @@ static void sectionDelta(int64_t v,Events& out){s.section_diff+=v;s.total_diff+=
 static void startAT(Tier t,bool stock,Events& out,const char* why,bool allowCold=true){s.in_at=true;s.tier=t;s.at_games_left=initialGames();s.cold_at=allowCold&&chance(.60);if(s.cold_at)out.add(ColdEnter,1,"AT cold segment: growth -30%");if(stock)++s.stocks;rerollAT();out.add(ATStart,s.at_games_left,why);}
 static void playBonus(Events& out);
 static void playCZ(Events& out){bool resolved=false;for(int g=0;g<10&&!resolved;++g){++s.total_games;sectionDelta(-3,out);if(chance(1.0/1000.0)){startAT(Lower,false,out,"CZ direct AT");s.cz_misses=0;resolved=true;}else if(chance(1.0/100.0)){out.add(Bonus,0,"CZ bonus hit");playBonus(out);s.cz_misses=0;resolved=true;}}if(!resolved){++s.cz_misses;if(s.cz_misses>=3){s.cz_misses=0;out.add(Bonus,0,"CZ 3-miss ceiling -> bonus");playBonus(out);}}}
+static Role drawBonusSafeRole(){
+    uint32_t d=(uint32_t)(next64()&7u);
+    // 0..3: 9枚(50%), 4..5: 15枚(25%), 6: REPLAY(12.5%), 7: 3枚役(12.5%)
+    if(d<4)return Bell9;
+    if(d<6)return Bell15;
+    if(d==6)return Replay;
+    return ThreeMedal;
+}
+static bool isRareBonusRole(Role r){
+    return r==WeakCherry||r==Watermelon||r==WeakChance||r==StrongChance;
+}
+static int bonusVisiblePayout(Role r){
+    if(r==Bell9)return 9;
+    if(r==Bell15)return 15;
+    if(r==Replay||r==ThreeMedal)return 3;
+    if(isRareBonusRole(r))return 3; // レア役Gも減算させない
+    return 0;
+}
+
 static double bonusRareRate(Role r){
     switch(r){
         case StrongCherry:return 1.00; // 中段チェリー
@@ -180,20 +199,18 @@ static Events spinBonus(){
     ++s.total_games;
 
     bool forced=false;
-    if(forced_role>=0&&forced_role<=PenguinChance){
+    bool forcedPhysical=(forced_role>=0&&forced_role<=PenguinChance)||forced_role==(int)ThreeMedal;
+    if(forcedPhysical){
         s.last_role=(Role)forced_role;forced_role=-1;forced=true;
     }else{
+        // レア役だけ通常の成立確率を参照。非レアGはBONUS専用の安全役分布へ。
         Role drawn=drawRole();
-        // BONUS / EPISODEは純増6枚AT型。
-        // 指定されたレア役Gだけレア役を優先し、それ以外は6択押し順ベルに集約する。
-        double rare=bonusRareRate(drawn);
-        s.last_role=rare>0.0?drawn:Bell9;
+        s.last_role=isRareBonusRole(drawn)?drawn:drawBonusSafeRole();
     }
 
-    // 通常消化GはBONUS/EPISODEとも6択ベルナビ。
-    // DEBUG強制時もBell9を指定した場合だけナビを出す。
+    // 9枚ベルだけ6択押し順ナビ。15枚役/REPLAY/3枚役/レア役は各停止形を優先。
     s.nav_order=s.last_role==Bell9?(int)(next64()%6):-1;
-    s.last_payout=0;
+    s.last_payout=bonusVisiblePayout(s.last_role);
 
     double rr=bonusRareRate(s.last_role);
     if(rr>0.0&&chance(rr)){
