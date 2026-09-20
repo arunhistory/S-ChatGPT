@@ -46,6 +46,8 @@ struct WeightedGames {
 };
 
 struct GameConfig {
+    int setting = static_cast<int>(SettingId::EX);
+
     double target_cz_rate = 1.0 / 350.0;
     double target_bonus_rate = 1.0 / 400.0;
     double target_at_rate = 1.0 / 500.0;
@@ -130,6 +132,9 @@ struct GameConfig {
 
     std::array<int,4> stock_thresholds{0,1,3,5};
 };
+
+// EXを原型として、設定1〜6は同じ状態機械へ別パラメータを与える。
+GameConfig gameConfigForSetting(SettingId setting);
 
 struct MachineState {
     int setting = static_cast<int>(SettingId::EX);
