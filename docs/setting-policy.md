@@ -47,6 +47,20 @@ Setting 6 is the highest Japanese-target profile. EX is the unconstrained person
 Do not fork the game engine per setting. Keep one state machine and select a setting parameter profile. This allows the same normal-mode, table, omen, CZ, bonus, AT, stock, favorable-section, and reel-control logic to be shared across settings.
 
 
+## Settings 1-5 calibrated profiles
+
+Current measured long-run means from 5,000,000 games x 5 deterministic seeds:
+
+| Setting | Target | Measured mean |
+|---:|---:|---:|
+| 1 / L | 85% | 84.91% |
+| 2 | 96% | 95.98% |
+| 3 | 99% | 98.98% |
+| 4 | 103% | 102.86% |
+| 5 | 108% | 108.24% |
+
+Setting 1/L intentionally uses a very frequent bonus route while suppressing AT conversion, continuation and growth. Settings 2-5 progressively increase AT conversion, stock, comeback and AT-event strength without changing the core state machine.
+
 ## Current calibration candidate
 
 Setting 6 and EX share the same core game rules, initial AT-game distribution, ordinary add distribution, and net rates (+6 / +6 / +9). Their probability profiles differ.
