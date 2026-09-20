@@ -31,6 +31,7 @@ enum NormalTable : uint8_t { NormalA, NormalB, Heaven, SuperHeaven, Special };
 enum Tier : uint8_t { Lower, Middle, Upper };
 enum ATTable : uint8_t { ATNormal, ATHeaven, ATSuperHeaven, Specialized };
 enum Role : uint8_t { Miss, OneMedal, Bell9, Bell15, Replay, WeakCherry, StrongCherry, Watermelon, WeakChance, StrongChance, PenguinChance, ThreeMedal=15 };
+enum PendingEntry : uint8_t { EntryNone, EntryBonus, EntryLowerAT, EntryMiddleAT, EntryUpperAT };
 enum EvType : uint8_t { EvNone, CZ, Bonus, EpisodeBonus, ChallengeStart, ChallengePoint, ChallengeJudge, ATStart, ATAddGames, SpecialZone, UpperSpecialZone, StockGain, TierUp, TierDown, ATEnd, UpperComeback, Freeze, SectionCross, HighEnter, HighExit, Shorten, ColdEnter, SectionReward };
 struct Event { EvType type; int value; const char* note; };
 struct Events { Event e[256]; int n; void clear(){n=0;} void add(EvType t,int v,const char* s){if(n<256)e[n++]={t,v,s};} };
@@ -49,6 +50,8 @@ struct State {
     int cz_misses;
     int bonus_at_misses;
     int bell9_streak;
+    PendingEntry pending_entry;
+    bool pending_entry_stock;
     int nav_order;
     bool in_at;
     Tier tier;
@@ -279,11 +282,40 @@ static void resolveATEvent(Events& out){Profile p=profile();double scale=s.tier=
 static void endAT(Events& out){Profile p=profile();if(s.stocks>0){--s.stocks;s.at_games_left=initialGames();s.cold_at=chance(.60);if(s.cold_at)out.add(ColdEnter,1,"stock restart cold segment: growth -30%");rerollAT();out.add(ATStart,s.at_games_left,"stock activated; initial-game lottery; table/pattern re-roll");return;}if(s.tier==Upper){s.in_at=false;double rate=p.comeback*(s.cold_at?.70:1.0);if(chance(rate)){s.in_at=true;s.tier=Upper;s.at_games_left=initialGames();s.cold_at=chance(.60);if(s.cold_at)out.add(ColdEnter,1,"upper comeback cold segment: growth -30%");rerollAT();out.add(UpperComeback,64,"64G comeback success -> upper AT restart");}else{s.cold_at=false;out.add(ATEnd,64,"64G comeback failed");rerollNormal();}return;}s.in_at=false;s.cold_at=false;out.add(ATEnd,0,"AT ended");rerollNormal();}
 
 struct Writer{char* p;int n,cap;Writer(char* b,int c):p(b),n(0),cap(c){if(cap)p[0]=0;}void ch(char c){if(n+1<cap){p[n++]=c;p[n]=0;}}void str(const char* x){while(*x)ch(*x++);}void i64(int64_t v){if(v==0){ch('0');return;}if(v<0){ch('-');v=-v;}char t[32];int k=0;while(v&&k<31){t[k++]=(char)('0'+v%10);v/=10;}while(k)ch(t[--k]);}void q(const char*x){ch('"');while(*x){char c=*x++;if(c=='"'||c=='\\'){ch('\\');ch(c);}else if(c=='\n'){str("\\n");}else ch(c);}ch('"');}};
-static const char* stateJSON(){Writer w(jsonbuf,sizeof(jsonbuf));w.str("{\"setting\":");w.i64(s.setting);w.str(",\"normalMode\":");w.q(normalName(s.normal_table));w.str(",\"normalPattern\":");w.i64(s.normal_pattern+1);w.str(",\"normalGames\":");w.i64(s.normal_display_games);w.str(",\"normalActualGames\":");w.i64(s.normal_actual_games);w.str(",\"normalDisplayGames\":");w.i64(s.normal_display_games);w.str(",\"highProbabilityUnlocked\":");w.str(highUnlocked()?"true":"false");w.str(",\"highProbabilityActive\":");w.str(s.high_active?"true":"false");w.str(",\"highProbabilityGames\":");w.i64(s.high_games);w.str(",\"coldAT\":");w.str(s.cold_at?"true":"false");w.str(",\"coldBonus\":");w.str(s.cold_bonus?"true":"false");w.str(",\"normalCeiling\":");w.i64(s.normal_ceiling);w.str(",\"inAT\":");w.str(s.in_at?"true":"false");w.str(",\"atTier\":");w.q(tierName(s.tier));w.str(",\"atTable\":");w.q(atTableName(s.at_table));w.str(",\"atPattern\":");w.i64(s.at_pattern+1);w.str(",\"atGamesLeft\":");w.i64(s.at_games_left);w.str(",\"stocks\":");w.i64(s.stocks);w.str(",\"inBonus\":");w.str(s.in_bonus?"true":"false");w.str(",\"episodeBonus\":");w.str(s.episode_bonus?"true":"false");w.str(",\"bonusMedalsLeft\":");w.i64(s.bonus_medals_left);w.str(",\"challengeActive\":");w.str(s.challenge_active?"true":"false");w.str(",\"challengeGamesLeft\":");w.i64(s.challenge_games_left);w.str(",\"challengePoints\":");w.i64(s.challenge_points);w.str(",\"sectionDiff\":");w.i64(s.section_diff);w.str(",\"sectionMinDiff\":");w.i64(s.section_min_diff);w.str(",\"sectionCount\":");w.i64(s.section_count);w.str(",\"totalDiff\":");w.i64(s.total_diff);w.str(",\"totalGames\":");w.i64(s.total_games);w.str(",\"lastReelRole\":");w.q(roleName(s.last_role));w.str(",\"lastNavOrder\":");w.i64(s.nav_order);w.str(",\"lastReelPayout\":");w.i64(s.last_payout);w.str(",\"roleRemainderCount\":");w.i64(ROLE_REMAINDER);w.ch('}');return jsonbuf;}
+static const char* stateJSON(){Writer w(jsonbuf,sizeof(jsonbuf));w.str("{\"setting\":");w.i64(s.setting);w.str(",\"normalMode\":");w.q(normalName(s.normal_table));w.str(",\"normalPattern\":");w.i64(s.normal_pattern+1);w.str(",\"normalGames\":");w.i64(s.normal_display_games);w.str(",\"normalActualGames\":");w.i64(s.normal_actual_games);w.str(",\"normalDisplayGames\":");w.i64(s.normal_display_games);w.str(",\"highProbabilityUnlocked\":");w.str(highUnlocked()?"true":"false");w.str(",\"highProbabilityActive\":");w.str(s.high_active?"true":"false");w.str(",\"highProbabilityGames\":");w.i64(s.high_games);w.str(",\"coldAT\":");w.str(s.cold_at?"true":"false");w.str(",\"coldBonus\":");w.str(s.cold_bonus?"true":"false");w.str(",\"normalCeiling\":");w.i64(s.normal_ceiling);w.str(",\"inAT\":");w.str(s.in_at?"true":"false");w.str(",\"atTier\":");w.q(tierName(s.tier));w.str(",\"atTable\":");w.q(atTableName(s.at_table));w.str(",\"atPattern\":");w.i64(s.at_pattern+1);w.str(",\"atGamesLeft\":");w.i64(s.at_games_left);w.str(",\"stocks\":");w.i64(s.stocks);w.str(",\"inBonus\":");w.str(s.in_bonus?"true":"false");w.str(",\"episodeBonus\":");w.str(s.episode_bonus?"true":"false");w.str(",\"bonusMedalsLeft\":");w.i64(s.bonus_medals_left);w.str(",\"challengeActive\":");w.str(s.challenge_active?"true":"false");w.str(",\"challengeGamesLeft\":");w.i64(s.challenge_games_left);w.str(",\"challengePoints\":");w.i64(s.challenge_points);w.str(",\"sectionDiff\":");w.i64(s.section_diff);w.str(",\"sectionMinDiff\":");w.i64(s.section_min_diff);w.str(",\"sectionCount\":");w.i64(s.section_count);w.str(",\"totalDiff\":");w.i64(s.total_diff);w.str(",\"totalGames\":");w.i64(s.total_games);w.str(",\"pendingEntry\":");w.i64((int)s.pending_entry);w.str(",\"pendingEntryStock\":");w.str(s.pending_entry_stock?"true":"false");w.str(",\"lastReelRole\":");w.q(roleName(s.last_role));w.str(",\"lastNavOrder\":");w.i64(s.nav_order);w.str(",\"lastReelPayout\":");w.i64(s.last_payout);w.str(",\"roleRemainderCount\":");w.i64(ROLE_REMAINDER);w.ch('}');return jsonbuf;}
 static const char* eventsJSON(const Events& e){Writer w(jsonbuf,sizeof(jsonbuf));w.str("{\"events\":[");for(int i=0;i<e.n;++i){if(i)w.ch(',');w.str("{\"type\":");w.q(evName(e.e[i].type));w.str(",\"value\":");w.i64(e.e[i].value);w.str(",\"note\":");w.q(e.e[i].note);w.ch('}');}w.str("],\"inAT\":");w.str(s.in_at?"true":"false");w.str(",\"navOrder\":");w.i64(s.nav_order);w.str(",\"gamesLeft\":");w.i64(s.at_games_left);w.str(",\"stocks\":");w.i64(s.stocks);w.str(",\"inBonus\":");w.str(s.in_bonus?"true":"false");w.str(",\"episodeBonus\":");w.str(s.episode_bonus?"true":"false");w.str(",\"bonusMedalsLeft\":");w.i64(s.bonus_medals_left);w.str(",\"challengeActive\":");w.str(s.challenge_active?"true":"false");w.str(",\"challengeGamesLeft\":");w.i64(s.challenge_games_left);w.str(",\"challengePoints\":");w.i64(s.challenge_points);w.str(",\"reelRole\":");w.q(roleName(s.last_role));w.str(",\"reelPayout\":");w.i64(s.last_payout);w.ch('}');return jsonbuf;}
 static void resetState(uint64_t seed){int keep=(s.setting>=1&&s.setting<=7)?s.setting:7;memset(&s,0,sizeof(s));s.setting=keep;s.tier=Lower;s.at_table=ATNormal;s.last_role=Miss;s.nav_order=-1;rng=seed?seed:0x5343484154475054ULL;rerollNormal();}
+static void queueEntry(PendingEntry entry,bool stock=false){
+    s.pending_entry=entry;
+    s.pending_entry_stock=stock;
+}
+static Events resolvePendingEntry(){
+    Events out;out.clear();
+    if(s.pending_entry==EntryNone)return out;
+
+    PendingEntry entry=s.pending_entry;
+    bool stock=s.pending_entry_stock;
+    s.pending_entry=EntryNone;
+    s.pending_entry_stock=false;
+    s.nav_order=-1;
+    s.last_role=Replay;       // 7/BONUS図柄入賞はリプレイ相当
+    s.last_payout=3;
+    ++s.total_games;
+
+    if(entry==EntryBonus){
+        out.add(Bonus,0,"queued bonus entry");
+        playBonus(out);
+    }else{
+        Tier t=entry==EntryMiddleAT?Middle:(entry==EntryUpperAT?Upper:Lower);
+        startAT(t,stock,out,"queued red-7 AT entry",false);
+        rerollNormal();
+    }
+    return out;
+}
+
 static Events spinNormal(){
     Events out;out.clear();if(s.in_at||s.in_bonus||s.challenge_active)return out;
+    if(s.pending_entry!=EntryNone)return resolvePendingEntry();
     s.nav_order=-1;
     ++s.total_games;++s.normal_actual_games;++s.normal_display_games;
     if(forced_role>=0&&forced_role<=PenguinChance){s.last_role=(Role)forced_role;forced_role=-1;}else{s.last_role=drawRole();}
@@ -302,17 +334,17 @@ static Events spinNormal(){
 
     uint32_t d=(uint32_t)(next64()&(RNG_SPACE-1));
     if(d==0){out.add(Freeze,0,"1/134217728 freeze");startAT(Upper,true,out,"freeze -> upper AT + stock",false);rerollNormal();return out;}
-    if(d<(RNG_SPACE/32768u)+1u){startAT(Upper,false,out,"1/32768 upper AT direct",false);rerollNormal();return out;}
-    if(d<(RNG_SPACE/8192u)+(RNG_SPACE/32768u)+1u){startAT(Middle,true,out,"1/8192 middle AT + stock",false);rerollNormal();return out;}
+    if(d<(RNG_SPACE/32768u)+1u){queueEntry(EntryUpperAT,false);return out;}
+    if(d<(RNG_SPACE/8192u)+(RNG_SPACE/32768u)+1u){queueEntry(EntryMiddleAT,true);return out;}
 
     if(s.last_role==StrongCherry){
-        if(chance(.50)){out.add(Bonus,0,"strong cherry -> regular hit");playBonus(out);}
-        else{Tier t=chance(2.0/3.0)?Lower:Middle;startAT(t,false,out,"strong cherry -> AT",false);rerollNormal();}
+        if(chance(.50))queueEntry(EntryBonus,false);
+        else queueEntry(chance(2.0/3.0)?EntryLowerAT:EntryMiddleAT,false);
         return out;
     }
 
     if(s.last_role==StrongChance&&chance(.01)){
-        startAT(Lower,false,out,"strong chance 1% -> direct AT");rerollNormal();return out;
+        queueEntry(EntryLowerAT,false);return out;
     }
 
     auto highEntry=[](Role r)->double{
@@ -342,7 +374,7 @@ static Events spinNormal(){
     }
 
     Profile p=profile();
-    if(chance(p.rawAT)){startAT(Lower,false,out,"raw AT route");rerollNormal();return out;}
+    if(chance(p.rawAT)){queueEntry(EntryLowerAT,false);return out;}
     if(chance(p.rawBonus)){out.add(Bonus,0,"raw bonus");playBonus(out);return out;}
     if(chance(p.rawCZ)){out.add(CZ,0,"raw CZ");playCZ(out);return out;}
     if(s.normal_display_games>=s.normal_ceiling)resolveCeiling(out);
