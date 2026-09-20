@@ -515,18 +515,27 @@ std::vector<Event> SlotEngine::spinNormal() {
     ++state_.normal_actual_games;
     advanceNormalDisplayGames(1);
 
-    // 通常時の成立役は2^27の整数マスから排他的に抽選。
     state_.last_reel_role = drawNormalReelRole();
     switch (state_.last_reel_role) {
         case ReelRole::OneMedal: state_.last_reel_payout = 1; break;
         case ReelRole::Bell9: state_.last_reel_payout = 9; break;
         case ReelRole::Bell15: state_.last_reel_payout = 15; break;
-        case ReelRole::Replay: state_.last_reel_payout = 3; break; // 3枚BETを相殺
-        case ReelRole::Miss: state_.last_reel_payout = 0; break;
+        case ReelRole::Replay: state_.last_reel_payout = 3; break;
+        default: state_.last_reel_payout = 0; break;
     }
 
-    // 通常遊技は3枚BET。成立役の戻しはリール停止後にWASM APIから加算する。
     applySectionDelta(-3, out);
+
+    // 9枚ベル5連は下位AT確定。
+    static int bell9Streak = 0;
+    if (state_.last_reel_role == ReelRole::Bell9) ++bell9Streak;
+    else bell9Streak = 0;
+    if (bell9Streak >= 5) {
+        bell9Streak = 0;
+        startAT(ATTier::Lower, false, out, "five consecutive 9-medal bells -> lower AT");
+        rerollNormalModeAndPattern();
+        return out;
+    }
 
     if (state_.normal_mode == NormalMode::SuperHeaven && !state_.special_window_checked && state_.normal_actual_games >= 20) {
         state_.special_window_checked = true;
@@ -537,22 +546,100 @@ std::vector<Event> SlotEngine::spinNormal() {
         }
     }
 
+    // フリーズ/1/32768/1/8192は通常時だけの独立抽選。確定系なので冷遇対象外。
     const std::uint32_t draw = static_cast<std::uint32_t>(rng_() & (NORMAL_RNG_SPACE - 1u));
     if (draw == 0u) {
         out.push_back({EventType::Freeze, 0, "1/134217728 freeze"});
-        startAT(ATTier::Upper, true, out, "freeze -> upper AT + stock");
+        startAT(ATTier::Upper, true, out, "freeze -> upper AT + stock", false);
         rerollNormalModeAndPattern();
         return out;
     }
     if (draw < NORMAL_RNG_SPACE / config_.rare_upper_den + 1u) {
-        startAT(ATTier::Upper, false, out, "1/32768 upper AT direct");
+        startAT(ATTier::Upper, false, out, "1/32768 upper AT direct", false);
         rerollNormalModeAndPattern();
         return out;
     }
     if (draw < NORMAL_RNG_SPACE / config_.rare_mid_stock_den + NORMAL_RNG_SPACE / config_.rare_upper_den + 1u) {
-        startAT(ATTier::Middle, true, out, "1/8192 middle AT + stock");
+        startAT(ATTier::Middle, true, out, "1/8192 middle AT + stock", false);
         rerollNormalModeAndPattern();
         return out;
+    }
+
+    // 強チェリー1/1000は100%当選。50%通常当たり / 50%AT、ATは下位2/3・中位1/3。
+    if (state_.last_reel_role == ReelRole::StrongCherry) {
+        if (chance(0.50)) {
+            out.push_back({EventType::Bonus, config_.bonus_medals, "strong cherry -> regular hit"});
+            auto b = playBonus(); out.insert(out.end(), b.begin(), b.end());
+        } else {
+            const ATTier tier = chance(2.0 / 3.0) ? ATTier::Lower : ATTier::Middle;
+            startAT(tier, false, out, "strong cherry -> AT", false);
+            rerollNormalModeAndPattern();
+        }
+        return out;
+    }
+
+    // 高確率。実50Gまでは進入禁止、51G目以降で役別移行抽選。
+    auto highEntryRate = [&](ReelRole role) -> double {
+        switch (role) {
+            case ReelRole::Bell15: return 0.20;
+            case ReelRole::Watermelon: return 0.15;
+            case ReelRole::WeakCherry: return 0.80;
+            case ReelRole::WeakChance: return 0.30;
+            case ReelRole::StrongChance: return 0.90;
+            case ReelRole::Miss: return 0.005;
+            default: return 0.0;
+        }
+    };
+    auto highHitRate = [&](ReelRole role) -> double {
+        switch (role) {
+            case ReelRole::Bell15: return 0.30;
+            case ReelRole::Watermelon: return 0.20;
+            case ReelRole::WeakCherry: return 0.80;
+            case ReelRole::WeakChance: return 0.50;
+            case ReelRole::StrongChance: return 0.99;
+            case ReelRole::Miss: return 0.001;
+            default: return 0.0;
+        }
+    };
+
+    if (state_.high_probability_active) {
+        ++state_.high_probability_games;
+        if (chance(highHitRate(state_.last_reel_role))) {
+            const double result = uniform01();
+            if (result < 0.95) {
+                const double kind = uniform01();
+                int shorten = 0;
+                if (kind < 0.80) shorten = weakShortenGames();
+                else if (kind < 0.95) shorten = strongShortenGames();
+                else shorten = continuousShortenGames();
+                advanceNormalDisplayGames(shorten);
+                out.push_back({EventType::Shorten, shorten, "high probability -> display-game shortening"});
+                if (state_.normal_display_games >= state_.normal_ceiling) {
+                    auto e = resolveNormalCeiling(); out.insert(out.end(), e.begin(), e.end());
+                    return out;
+                }
+            } else if (result < 0.995) {
+                state_.high_probability_active = false;
+                out.push_back({EventType::CZ, 0, "high probability -> CZ"});
+                auto z = playCZ(); out.insert(out.end(), z.begin(), z.end());
+                return out;
+            } else {
+                state_.high_probability_active = false;
+                out.push_back({EventType::Bonus, config_.bonus_medals, "high probability -> regular hit"});
+                auto b = playBonus(); out.insert(out.end(), b.begin(), b.end());
+                return out;
+            }
+        }
+        if (state_.high_probability_games >= config_.high_probability_min_games &&
+            chance(config_.high_probability_fall_rate)) {
+            state_.high_probability_active = false;
+            state_.high_probability_games = 0;
+            out.push_back({EventType::HighExit, 0, "high probability -> normal"});
+        }
+    } else if (canEnterHighProbability() && chance(highEntryRate(state_.last_reel_role))) {
+        state_.high_probability_active = true;
+        state_.high_probability_games = 0;
+        out.push_back({EventType::HighEnter, 0, "normal -> high probability"});
     }
 
     if (chance(config_.raw_at_rate)) {
@@ -567,11 +654,10 @@ std::vector<Event> SlotEngine::spinNormal() {
     }
     if (chance(config_.raw_cz_rate)) {
         out.push_back({EventType::CZ, 0, "raw CZ"});
-        auto c = playCZ(); out.insert(out.end(), c.begin(), c.end());
+        auto z = playCZ(); out.insert(out.end(), z.begin(), z.end());
         return out;
     }
 
-    // テーブル天井は表示回転数で管理。短縮で表示Gが天井へ到達しても発動する。
     if (state_.normal_display_games >= state_.normal_ceiling) return resolveNormalCeiling();
     return out;
 }
