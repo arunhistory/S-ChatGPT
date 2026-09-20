@@ -547,6 +547,7 @@ std::vector<Event> SlotEngine::spinNormal() {
     std::vector<Event> out;
     if (state_.in_at) return out;
 
+    state_.last_nav_order = -1;
     ++state_.total_games;
     ++state_.normal_actual_games;
     advanceNormalDisplayGames(1);
@@ -893,7 +894,9 @@ std::vector<Event> SlotEngine::spinAT() {
     std::vector<Event> out;
     if (!state_.in_at) return out;
 
-    state_.last_reel_role = ReelRole::Miss;
+    // 押し順はSTOP時ではなくレバーON時に6択から確定。
+    state_.last_nav_order = static_cast<int>(rng_() % 6ULL);
+    state_.last_reel_role = ReelRole::Bell9;
     state_.last_reel_payout = 0;
     ++state_.total_games;
     if (state_.at_games_left <= 0) {
@@ -1013,6 +1016,7 @@ std::string SlotEngine::stateJson() const {
       << ",\"totalDiff\":" << state_.total_diff
       << ",\"totalGames\":" << state_.total_games
       << ",\"lastReelRole\":\"" << reelRoleName(state_.last_reel_role) << "\""
+      << ",\"lastNavOrder\":" << state_.last_nav_order
       << ",\"lastReelPayout\":" << state_.last_reel_payout
       << ",\"roleRemainderCount\":" << ROLE_REMAINDER_COUNT << "}";
     return o.str();
