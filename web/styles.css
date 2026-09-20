@@ -627,3 +627,101 @@ body{height:100dvh;min-height:0;padding:4px;overflow:hidden}
     radial-gradient(circle at 50% 32%,#ff5f5950,transparent 30%),
     linear-gradient(180deg,#32121d,#17101c 66%,#08070c);
 }
+
+
+/* ===== Machine-level entry cinematics ===== */
+.machine{position:relative}
+.machine-cinematic{
+  position:absolute;
+  z-index:300;
+  left:50%;
+  top:82px;
+  width:min(520px,90%);
+  min-height:112px;
+  transform:translate(-50%,-12px) scale(.96);
+  display:none;
+  place-items:center;
+  align-content:center;
+  text-align:center;
+  pointer-events:none;
+  padding:14px;
+  border-radius:12px;
+  background:linear-gradient(90deg,#05070dea,#16213cec,#05070dea);
+  border:2px solid #ffffff55;
+  box-shadow:0 14px 45px #000e,inset 0 0 38px #000b;
+}
+.machine-cinematic.show{
+  display:grid;
+  animation:machineCinematicIn .22s ease-out both;
+}
+.machine-cinematic span{
+  font-size:8px;
+  letter-spacing:.32em;
+  color:#b9c5df;
+}
+.machine-cinematic strong{
+  display:block;
+  margin:3px 0;
+  font-size:clamp(28px,7vw,50px);
+  line-height:1;
+  text-shadow:0 4px 0 #000,0 0 20px currentColor;
+}
+.machine-cinematic small{font-size:11px;color:#e0e7f5}
+.machine-cinematic.red strong{color:#ff5268}
+.machine-cinematic.gold strong{color:#ffe073}
+.machine-cinematic.freeze{
+  background:repeating-linear-gradient(135deg,#031021 0 18px,#073452 18px 36px);
+  border-color:#86efff;
+  box-shadow:0 0 38px #51dcff99,inset 0 0 44px #000c;
+}
+.machine-cinematic.freeze strong{color:#8ff4ff}
+.machine-cinematic.confirmed strong{color:#fff}
+.machine-cinematic.target{animation:targetPulse .62s ease-in-out infinite alternate}
+@keyframes machineCinematicIn{
+  from{opacity:0;transform:translate(-50%,-20px) scale(.9)}
+  to{opacity:1;transform:translate(-50%,0) scale(1)}
+}
+@keyframes targetPulse{
+  from{filter:brightness(.85);transform:translate(-50%,0) scale(.985)}
+  to{filter:brightness(1.18);transform:translate(-50%,0) scale(1.015)}
+}
+
+/* フリーズ: 台全体が一旦死ぬ */
+.machine.freeze-all-off > *:not(.machine-cinematic){
+  filter:brightness(.025) saturate(0);
+  transition:filter .08s linear;
+}
+.machine.freeze-all-off{
+  background:#000;
+  box-shadow:0 0 0 2px #000;
+}
+.machine.freeze-return > *:not(.machine-cinematic){
+  animation:freezePowerReturn .45s ease-out both;
+}
+@keyframes freezePowerReturn{
+  0%{filter:brightness(.05) saturate(0)}
+  28%{filter:brightness(2.1) saturate(.25)}
+  100%{filter:brightness(1) saturate(1)}
+}
+
+/* 逆回転中は通常回転とは別の異常感を出す */
+.reel.reverse-spinning{
+  animation:reverseReelVibe .055s linear infinite;
+  box-shadow:inset 0 0 24px #203f71,0 0 12px #5cdfff44;
+}
+@keyframes reverseReelVibe{
+  0%{transform:translateY(-2px)}
+  50%{transform:translateY(2px)}
+  100%{transform:translateY(-2px)}
+}
+
+@media(max-width:600px){
+  .machine-cinematic{
+    top:63px;
+    width:92%;
+    min-height:88px;
+    padding:9px;
+  }
+  .machine-cinematic strong{font-size:30px}
+  .machine-cinematic small{font-size:9px}
+}
