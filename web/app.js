@@ -263,13 +263,24 @@
   };
 
   const classifyPattern = (positions = reelPositions) => {
-    const center = [0,1,2].map(i => centerKind(i, positions[i]));
+    const rowLine = (row) => [0,1,2].map(i => visibleKind(i, positions[i], row));
+    const top = rowLine(0);
+    const center = rowLine(1);
+    const bottom = rowLine(2);
     const diagUp = [
       visibleKind(0, positions[0], 2),
       visibleKind(1, positions[1], 1),
       visibleKind(2, positions[2], 0)
     ];
+    const diagDown = [
+      visibleKind(0, positions[0], 0),
+      visibleKind(1, positions[1], 1),
+      visibleKind(2, positions[2], 2)
+    ];
+    const payoutLines = [top, center, bottom, diagUp, diagDown];
+    const hasLine = (kind) => payoutLines.some(line => line.every(k => k === kind));
 
+    // 7/ボーナス図柄、レア役、チャンス目は中段メインライン基準。
     if (center.every(k => k === 'alt-seven')) return 'freeze';
     if (center.every(k => k === 'seven')) return 'at';
     if (center.every(k => k === 'bar')) return 'tier_up';
@@ -283,11 +294,16 @@
     if (leftBottom === 'cherry' && center[1] === 'replay') return 'weak_cherry';
     if (center[0] === 'cherry' && center[1] !== 'replay') return 'strong_cherry';
 
-    if (center.every(k => k === 'bell')) return 'bell9';
-    if (diagUp.every(k => k === 'bell')) return 'bell15';
+    // スイカ・3枚役などはメインライン基準。取りこぼし時だけ代用停止を使う。
     if (center.every(k => k === 'watermelon')) return 'watermelon';
-    if (center.every(k => k === 'replay')) return 'replay';
     if (center.every(k => k === 'chance')) return 'three_medal';
+
+    // ベル／リプレイはメインライン限定ではない。
+    // 上段・中段・下段・右上がり・右下がりのどこか1ラインで揃えば有効。
+    // 15枚ベルの既存停止形（右上がり）は優先して15枚役として認識する。
+    if (diagUp.every(k => k === 'bell')) return 'bell15';
+    if (hasLine('bell')) return 'bell9';
+    if (hasLine('replay')) return 'replay';
 
     return 'miss';
   };
@@ -379,6 +395,8 @@
     return true;
   };
 
+  // 代用停止は「成立したチャンス系役を、目押し失敗で取りこぼさない」ためだけに使う。
+  // ベル／リプレイは実停止ラインで判定するため、ここには絶対に入れない。
   const assistSubstituteRoles = new Set([
     'watermelon','weak_chance','strong_chance','penguin_chance'
   ]);
