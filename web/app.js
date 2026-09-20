@@ -109,7 +109,7 @@
     stock_gain:'STOCK', tier_up:'昇格', tier_down:'転落', at_end:'AT END',
     upper_comeback:'上位引き戻し', freeze:'FREEZE', section_cross:'有利区間 CROSS',
     high_enter:'高確率 移行', high_exit:'高確率 終了', shorten:'G数短縮',
-    cold_enter:'冷遇', section_reward:'有利区間ルーレット'
+    cold_enter:'冷遇', section_reward:'有利区間ルーレット', at_omen:'AT 予兆'
   };
 
   let gameActive = false;
@@ -126,7 +126,9 @@
   let pendingNaviOrderValid = true;
   let pendingControl = null;
   let deferredEntryReveal = null;
+  let atOmenFlow = null;
   let pendingSyntheticEntry = false;
+  let pendingSyntheticOmen = false;
   let reelTimers = [null, null, null];
   let reelStopped = [true, true, true];
   let reelPositions = [0, 0, 0];
@@ -700,6 +702,16 @@
   };
 
   const displayState = (raw) => {
+    if (atOmenFlow) {
+      return {
+        ...raw,
+        inAT: true,
+        inBonus: false,
+        episodeBonus: false,
+        challengeActive: false,
+        bonusMedalsLeft: 0
+      };
+    }
     if (!deferredEntryReveal || pendingSyntheticEntry) return raw;
     return {
       ...raw,
@@ -767,6 +779,7 @@
     pendingEntryReplayRole = false;
     pendingControl = null;
     pendingSyntheticEntry = false;
+    pendingSyntheticOmen = false;
     clearBellNavi();
 
     // ここがレバーON抽選。直撃予約がある場合は、WASMを進めず
@@ -775,7 +788,43 @@
     if (forcedRole) els.roleTest.value = '';
 
     pendingSyntheticEntry = false;
-    if (deferredEntryReveal) {
+    pendingSyntheticOmen = false;
+    if (atOmenFlow && atOmenFlow.phase === 'omen') {
+      // 旧WASMはすでにBONUSへ遷移済みなので、WASMを進めずAT予兆Gを挟む。
+      pendingSyntheticOmen = true;
+      pendingWasBonus = false;
+      pendingWasAT = true;
+      pendingWasChallenge = false;
+      const omenNav = Math.floor(Math.random() * 6);
+      pendingResult = {
+        events: [{ type:'at_omen', value:0, note:'AT予兆' }],
+        inAT: true,
+        inBonus: false,
+        navOrder: omenNav,
+        reelRole: 'bell9',
+        reelPayout: 0
+      };
+      pendingRole = 'bell9';
+      atOmenFlow.phase = 'entry';
+    } else if (atOmenFlow && atOmenFlow.phase === 'entry') {
+      // 予兆を経由した次Gで初めて当たり図柄を入賞させる。
+      const queued = atOmenFlow;
+      atOmenFlow = null;
+      pendingSyntheticEntry = true;
+      pendingWasBonus = false;
+      pendingWasAT = false;
+      pendingWasChallenge = false;
+      pendingResult = {
+        events: queued.events,
+        inAT: true,
+        inBonus: true,
+        episodeBonus: queued.episode,
+        navOrder: -1,
+        reelRole: 'replay',
+        reelPayout: 3
+      };
+      pendingRole = 'hit';
+    } else if (deferredEntryReveal) {
       const queued = deferredEntryReveal;
       deferredEntryReveal = null;
       pendingSyntheticEntry = true;
@@ -800,6 +849,41 @@
                 ? 'slot_spin_challenge_json'
                 : (s0.inAT ? 'slot_spin_at_json' : 'slot_spin_normal_json')));
       pendingRole = deriveRoleFromResult(pendingResult, pendingWasChallenge);
+
+      // 旧WASMのAT当たりは同GでBONUS/EPISODEへ直行するため、
+      // その遷移を捕まえて「予兆1G → 当たり入賞G」に分解する。
+      const atDirectHit = pendingWasAT
+        && !forcedRole
+        && !!pendingResult.inBonus;
+      if (atDirectHit) {
+        const entryTypes = new Set(['bonus','episode_bonus']);
+        const entryEvents = (pendingResult.events || []).filter(e => entryTypes.has(e.type));
+        const episode = !!pendingResult.episodeBonus
+          || entryEvents.some(e => e.type === 'episode_bonus');
+
+        atOmenFlow = {
+          phase: 'omen',
+          episode,
+          events: entryEvents.length
+            ? entryEvents
+            : [{ type: episode ? 'episode_bonus' : 'bonus', value:0, note:'AT予兆 → 当たり' }]
+        };
+
+        // 当選したATゲーム自体はまだATとして見せる。BONUS開始表示は出さない。
+        const physicalTriggerRole = pendingResult.reelRole || 'bell9';
+        pendingRole = physicalTriggerRole;
+        pendingResult = {
+          ...pendingResult,
+          inAT: true,
+          inBonus: false,
+          episodeBonus: false,
+          reelRole: physicalTriggerRole,
+          events: [
+            ...(pendingResult.events || []).filter(e => !entryTypes.has(e.type)),
+            { type:'at_omen', value:1, note:'AT内部当選 → 予兆開始' }
+          ]
+        };
+      }
 
       // 旧WASMは中段チェリー/直撃で同GにAT/BONUS状態へ入ってしまう。
       // 現在Gは成立役だけで終え、開始イベントだけ次Gの🟥7/BONUS図柄入賞へ繰り越す。
@@ -924,7 +1008,7 @@
     const accountingPayout = (!pendingWasAT && !pendingWasBonus && physicalLinePayoutRole)
       ? accountingReturnForRole(physicalLinePayoutRole)
       : payout;
-    if (accountingPayout > 0 && !pendingWasBonus && !pendingWasAT && !pendingSyntheticEntry) {
+    if (accountingPayout > 0 && !pendingWasBonus && !pendingWasAT && !pendingSyntheticEntry && !pendingSyntheticOmen) {
       const payoutResult = callJson('slot_apply_reel_payout_json', ['number'], [accountingPayout]);
       allEvents = allEvents.concat(payoutResult.events || []);
     }
@@ -1027,7 +1111,9 @@
     pendingNaviOrderValid = true;
     pendingControl = null;
     pendingSyntheticEntry = false;
+    pendingSyntheticOmen = false;
     deferredEntryReveal = null;
+    atOmenFlow = null;
     clearBellNavi();
     reelStopped = [true, true, true];
     els.lever.disabled = false;
