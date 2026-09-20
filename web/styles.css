@@ -510,3 +510,77 @@ body{height:100dvh;min-height:0;padding:4px;overflow:hidden}
     padding:3px 6px;
   }
 }
+
+
+/* ===== Presentation system: layered slot-style omens ===== */
+.omen-text{
+  position:absolute;
+  z-index:7;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%) scale(.8);
+  opacity:0;
+  pointer-events:none;
+  font-weight:1000;
+  font-size:clamp(20px,5vw,38px);
+  letter-spacing:.08em;
+  text-shadow:0 3px 0 #000,0 0 16px currentColor;
+}
+.omen-text.show{animation:omenTextPop .72s ease-out both}
+@keyframes omenTextPop{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.65)}
+  22%,68%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.18)}
+}
+
+.stage-screen.omen-white{box-shadow:inset 0 0 32px #ffffff55,0 0 16px #ffffff22}
+.stage-screen.omen-blue{box-shadow:inset 0 0 36px #4da6ff66,0 0 18px #4da6ff33}
+.stage-screen.omen-yellow{box-shadow:inset 0 0 38px #ffe45f77,0 0 20px #ffe45f33}
+.stage-screen.omen-green{box-shadow:inset 0 0 38px #54ef9477,0 0 20px #54ef9433}
+.stage-screen.omen-purple{box-shadow:inset 0 0 42px #b95cff88,0 0 24px #b95cff44}
+.stage-screen.omen-red{box-shadow:inset 0 0 48px #ff354f99,0 0 28px #ff354f55}
+.stage-screen.omen-gold{box-shadow:inset 0 0 54px #ffd75eaa,0 0 32px #ffd75e66}
+.stage-screen.omen-premium{
+  box-shadow:inset 0 0 60px #67eaffcc,0 0 34px #67eaff88;
+  border-color:#7cecff;
+}
+.stage-screen.omen-white .omen-text{color:#fff}
+.stage-screen.omen-blue .omen-text{color:#72baff}
+.stage-screen.omen-yellow .omen-text{color:#ffe765}
+.stage-screen.omen-green .omen-text{color:#65ff9d}
+.stage-screen.omen-purple .omen-text{color:#ce7cff}
+.stage-screen.omen-red .omen-text{color:#ff5268}
+.stage-screen.omen-gold .omen-text{color:#ffe37c}
+.stage-screen.omen-premium .omen-text{color:#86f4ff}
+
+.stage-screen.screen-blackout::after{
+  content:"";
+  position:absolute;
+  z-index:6;
+  inset:0;
+  background:#000;
+  pointer-events:none;
+  animation:blackoutBurst .88s ease-out forwards;
+}
+.stage-screen.screen-shock{animation:screenShock .16s linear 3}
+@keyframes blackoutBurst{
+  0%,36%{opacity:1}
+  70%{opacity:.86}
+  100%{opacity:0}
+}
+@keyframes screenShock{
+  0%,100%{transform:translate(0)}
+  25%{transform:translate(-3px,1px)}
+  75%{transform:translate(3px,-1px)}
+}
+
+/* AT予兆は背景も脈動。 */
+.stage-screen.omen-purple .stage-light{
+  background:radial-gradient(circle at 50% 48%,#c76cff44,transparent 46%);
+  animation:omenPulse 1s ease-in-out infinite alternate;
+}
+@keyframes omenPulse{from{opacity:.35}to{opacity:1}}
+
+@media(max-width:600px){
+  .omen-text{font-size:22px}
+}
