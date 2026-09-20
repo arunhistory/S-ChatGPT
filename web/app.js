@@ -547,7 +547,10 @@
 
   const pushEvents = (events) => {
     for (const e of events) {
-      history.unshift({ ...e, at: new Date().toLocaleTimeString('ja-JP',{hour12:false}) });
+      // BONUS / EPISODE の50/80は開始時の即時払出ではない。
+      // 獲得予定枚数は bonusMedalsLeft で管理し、開始イベントには枚数を出さない。
+      const value = (e.type === 'bonus' || e.type === 'episode_bonus') ? 0 : e.value;
+      history.unshift({ ...e, value, at: new Date().toLocaleTimeString('ja-JP',{hour12:false}) });
     }
     history.splice(14);
     els.history.innerHTML = history.map(e =>
@@ -560,8 +563,13 @@
   const showFinalBanner = (events, actualRole, payout) => {
     if (events.length) {
       const e = events[events.length - 1];
+      const entryReplay = actualRole === 'hit'
+        || actualRole === 'at'
+        || actualRole === 'tier_up'
+        || actualRole === 'freeze';
       els.eventTitle.textContent = eventLabels[e.type] || e.type.toUpperCase();
-      els.eventNote.textContent = (e.note || '') + ' / 停止形: ' + roleLabels[actualRole] + (payout ? ' / ' + payout + '枚' : '');
+      els.eventNote.textContent = (e.note || '') + ' / 停止形: ' + roleLabels[actualRole]
+        + (entryReplay ? ' / REPLAY' : (payout ? ' / ' + payout + '枚' : ''));
       els.eventBanner.className = 'event-banner' + (isPremium(e.type) ? ' premium' : isHot(e.type) ? ' hot' : '');
     } else {
       els.eventTitle.textContent = roleLabels[actualRole] || 'NO HIT';
