@@ -437,17 +437,18 @@ std::vector<Event> SlotEngine::playCZ() {
 std::vector<Event> SlotEngine::playBonus() {
     std::vector<Event> out;
     const bool wasInAT = state_.in_at;
+    state_.cold_bonus = chance(config_.cold_entry_rate);
+    const double growth = state_.cold_bonus ? config_.cold_growth_factor : 1.0;
+    if (state_.cold_bonus) out.push_back({EventType::ColdEnter, 0, "regular-hit cold segment: growth -30%"});
+
     applySectionDelta(config_.bonus_medals, out);
 
-    if (chance(config_.bonus_to_stock_rate)) {
+    if (chance(config_.bonus_to_stock_rate * growth)) {
         ++state_.stocks;
-        out.push_back({EventType::StockGain, state_.stocks,
-                       state_.setting == static_cast<int>(SettingId::S6)
-                           ? "bonus 8% stock lottery (S6)"
-                           : "bonus 10% stock lottery"});
+        out.push_back({EventType::StockGain, state_.stocks, "bonus stock lottery"});
     }
 
-    if (chance(config_.bonus_to_episode_rate)) {
+    if (chance(config_.bonus_to_episode_rate * growth)) {
         applySectionDelta(config_.episode_bonus_medals, out);
         out.push_back({EventType::EpisodeBonus, config_.episode_bonus_medals, "1% post-bonus episode promotion"});
         if (chance(config_.episode_to_middle_at_rate)) {
@@ -457,6 +458,7 @@ std::vector<Event> SlotEngine::playBonus() {
                     out.push_back({EventType::TierUp, 0, "episode 1/3 -> middle AT"});
                 }
             } else {
+                state_.cold_bonus = false;
                 startAT(ATTier::Middle, false, out, "episode 1/3 middle AT");
                 state_.bonus_at_misses = 0;
                 rerollNormalModeAndPattern();
@@ -465,13 +467,19 @@ std::vector<Event> SlotEngine::playBonus() {
         }
     }
 
-    if (wasInAT) return out;
+    if (wasInAT) {
+        state_.cold_bonus = false;
+        return out;
+    }
 
-    if (chance(config_.bonus_to_at_rate) || state_.bonus_at_misses >= config_.bonus_at_miss_ceiling - 1) {
+    const bool forcedByMissCeiling = state_.bonus_at_misses >= config_.bonus_at_miss_ceiling - 1;
+    if (forcedByMissCeiling || chance(config_.bonus_to_at_rate * growth)) {
         state_.bonus_at_misses = 0;
+        state_.cold_bonus = false;
         startAT(ATTier::Lower, false, out, "bonus performance cleared -> AT");
     } else {
         ++state_.bonus_at_misses;
+        state_.cold_bonus = false;
     }
     rerollNormalModeAndPattern();
     return out;
@@ -736,6 +744,14 @@ std::vector<Event> SlotEngine::resolveATEvent() {
     const double pf = patternFactor[clampv(state_.at_pattern, 0, 4)];
     hit *= pf; add *= pf; special *= pf;
 
+    if (state_.cold_at) {
+        hit *= config_.cold_growth_factor;
+        add *= config_.cold_growth_factor;
+        special *= config_.cold_growth_factor;
+        episode *= config_.cold_growth_factor;
+        upperSpecial *= config_.cold_growth_factor;
+    }
+
     const double total = hit + fall + add + special
         + ((state_.at_table == ATTable::Heaven || state_.at_table == ATTable::SuperHeaven) ? episode : 0.0)
         + ((state_.at_table == ATTable::Specialized) ? upperSpecial : 0.0);
@@ -794,13 +810,17 @@ std::vector<Event> SlotEngine::resolveATEvent() {
 
 std::vector<Event> SlotEngine::resolveUpperComeback() {
     std::vector<Event> out;
-    if (chance(config_.upper_comeback_rate)) {
+    const double rate = config_.upper_comeback_rate * (state_.cold_at ? config_.cold_growth_factor : 1.0);
+    if (chance(rate)) {
         state_.in_at = true;
         state_.at_tier = ATTier::Upper;
         state_.at_games_left = weightedGames(config_.initial_games);
+        state_.cold_at = chance(config_.cold_entry_rate);
+        if (state_.cold_at) out.push_back({EventType::ColdEnter, 1, "upper comeback cold segment: growth -30%"});
         rerollATTableAndPattern();
         out.push_back({EventType::UpperComeback, config_.upper_comeback_games, "64G comeback success -> upper AT restart"});
     } else {
+        state_.cold_at = false;
         out.push_back({EventType::ATEnd, config_.upper_comeback_games, "64G comeback failed"});
         rerollNormalModeAndPattern();
     }
@@ -811,6 +831,8 @@ void SlotEngine::endAT(std::vector<Event>& out) {
     if (state_.stocks > 0) {
         --state_.stocks;
         state_.at_games_left = weightedGames(config_.initial_games);
+        state_.cold_at = chance(config_.cold_entry_rate);
+        if (state_.cold_at) out.push_back({EventType::ColdEnter, 1, "stock restart cold segment: growth -30%"});
         rerollATTableAndPattern();
         out.push_back({EventType::ATStart, state_.at_games_left, "stock activated; common initial-game lottery; table/pattern re-roll"});
         return;
@@ -824,6 +846,7 @@ void SlotEngine::endAT(std::vector<Event>& out) {
     }
 
     state_.in_at = false;
+    state_.cold_at = false;
     out.push_back({EventType::ATEnd, 0, "AT ended"});
     rerollNormalModeAndPattern();
 }
