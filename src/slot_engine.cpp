@@ -46,11 +46,11 @@ GameConfig gameConfigForSetting(SettingId setting) {
             break;
         case SettingId::S4:
             c.target_payout_ratio = 1.03;
-            c.performance_calibration = 0.98;
+            c.performance_calibration = 0.94;
             break;
         case SettingId::S5:
             c.target_payout_ratio = 1.08;
-            c.performance_calibration = 0.92;
+            c.performance_calibration = 0.96;
             break;
         case SettingId::S6:
             c.target_payout_ratio = 1.14;
@@ -58,7 +58,7 @@ GameConfig gameConfigForSetting(SettingId setting) {
             break;
         case SettingId::EX:
             c.target_payout_ratio = 1.50;
-            c.performance_calibration = 1.03;
+            c.performance_calibration = 1.065;
             break;
     }
 
