@@ -438,3 +438,75 @@ body{height:100dvh;min-height:0;padding:4px;overflow:hidden}
   .diff-mini{font-size:7px}
   .stage-screen{height:72px}
 }
+
+
+/* ===== 777Real-like balance: machine first, data panel second ===== */
+.diff-panel{
+  display:grid;
+  grid-template-columns:minmax(96px,132px) 1fr;
+  align-items:center;
+  gap:7px;
+  padding:4px 6px;
+  border-radius:7px;
+  min-height:48px;
+}
+.diff-head{
+  display:block;
+  margin:0;
+}
+.diff-head>div:first-child{
+  display:flex;
+  align-items:baseline;
+  gap:5px;
+}
+.diff-head strong{
+  font-size:clamp(18px,4vw,28px);
+}
+.diff-mini{
+  align-items:flex-start;
+  margin-top:2px;
+  font-size:6px;
+  line-height:1.15;
+}
+#diffGraph{
+  height:44px;
+  min-height:44px;
+  border-radius:4px;
+}
+.machine-info{margin-top:2px}
+.machine-info>summary{padding:1px 7px;font-size:6px}
+
+/* 演出LCDを主役へ戻す */
+.stage-screen{
+  height:180px;
+  margin-top:3px;
+}
+.event-banner{
+  min-height:30px;
+  margin-top:3px;
+}
+.reel-window{
+  margin-top:4px;
+}
+
+@media(max-width:600px){
+  .diff-panel{
+    grid-template-columns:102px 1fr;
+    min-height:42px;
+    padding:3px 5px;
+    gap:5px;
+  }
+  .diff-head strong{font-size:19px}
+  .diff-mini{font-size:5.5px}
+  #diffGraph{
+    height:36px;
+    min-height:36px;
+  }
+  .stage-screen{
+    height:142px;
+  }
+  .event-banner{
+    min-height:28px;
+    padding:3px 6px;
+  }
+}
