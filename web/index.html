@@ -18,35 +18,72 @@
     </header>
 
     <section class="lcd">
-      <div class="headline">
-        <div>
-          <span class="label">MODE</span>
-          <strong id="mode">---</strong>
+      <section class="diff-panel" aria-label="差枚グラフ">
+        <div class="diff-head">
+          <div>
+            <span class="label">差枚</span>
+            <strong id="diffCurrent">±0</strong>
+          </div>
+          <div class="diff-mini">
+            <span id="diffRange">MAX +0 / MIN 0</span>
+            <span id="diffGames">0G</span>
+          </div>
         </div>
-        <div>
-          <span class="label">AT</span>
-          <strong id="tier">---</strong>
-        </div>
-        <div>
-          <span class="label">TABLE</span>
-          <strong id="table">---</strong>
-        </div>
-      </div>
+        <canvas id="diffGraph" aria-label="ゲーム進行に対する差枚推移"></canvas>
+      </section>
 
-      <div class="main-counter">
-        <div class="counter-block">
-          <span>GAME</span>
-          <b id="gameCount">0</b>
+      <details class="machine-info">
+        <summary>DETAIL</summary>
+        <div class="machine-info-body">
+          <div class="headline">
+            <div>
+              <span class="label">MODE</span>
+              <strong id="mode">---</strong>
+            </div>
+            <div>
+              <span class="label">AT</span>
+              <strong id="tier">---</strong>
+            </div>
+            <div>
+              <span class="label">TABLE</span>
+              <strong id="table">---</strong>
+            </div>
+          </div>
+
+          <div class="main-counter">
+            <div class="counter-block">
+              <span>GAME</span>
+              <b id="gameCount">0</b>
+            </div>
+            <div class="counter-block hot">
+              <span>AT LEFT</span>
+              <b id="atLeft">0G</b>
+            </div>
+            <div class="counter-block">
+              <span>STOCK</span>
+              <b id="stocks">0</b>
+            </div>
+          </div>
+
+          <section class="dashboard">
+            <div class="card">
+              <span class="label">NORMAL PATTERN</span>
+              <b id="normalPattern">-</b>
+              <small id="ceiling">Ceiling: -</small>
+            </div>
+            <div class="card">
+              <span class="label">AT PATTERN</span>
+              <b id="atPattern">-</b>
+              <small id="netRate">純増: -</small>
+            </div>
+            <div class="card">
+              <span class="label">TOTAL DIFF</span>
+              <b id="totalDiff">0</b>
+              <small>差枚</small>
+            </div>
+          </section>
         </div>
-        <div class="counter-block hot">
-          <span>AT LEFT</span>
-          <b id="atLeft">0G</b>
-        </div>
-        <div class="counter-block">
-          <span>STOCK</span>
-          <b id="stocks">0</b>
-        </div>
-      </div>
+      </details>
 
       <div class="stage-screen" id="stageScreen" data-scene="normal" aria-label="演出画面">
         <div class="stage-bg"></div>
@@ -101,24 +138,6 @@
       <div class="utility">
         <button id="autoToggle" aria-pressed="false">AUTO OFF</button>
         <button id="reset">RESET</button>
-      </div>
-    </section>
-
-    <section class="dashboard">
-      <div class="card">
-        <span class="label">NORMAL PATTERN</span>
-        <b id="normalPattern">-</b>
-        <small id="ceiling">Ceiling: -</small>
-      </div>
-      <div class="card">
-        <span class="label">AT PATTERN</span>
-        <b id="atPattern">-</b>
-        <small id="netRate">純増: -</small>
-      </div>
-      <div class="card">
-        <span class="label">TOTAL DIFF</span>
-        <b id="totalDiff">0</b>
-        <small>差枚</small>
       </div>
     </section>
 
