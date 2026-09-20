@@ -34,7 +34,7 @@ GameConfig gameConfigForSetting(SettingId setting) {
     switch (setting) {
         case SettingId::S1:
             c.target_payout_ratio = 0.85;
-            c.performance_calibration = 0.83;
+            c.performance_calibration = 0.452;
             break;
         case SettingId::S2:
             c.target_payout_ratio = 0.96;
