@@ -30,7 +30,19 @@ GameConfig gameConfigForSetting(SettingId setting) {
     GameConfig c;
     c.setting = static_cast<int>(setting);
 
+    // 長期目標機械割。実測値ではなく、今後の自動較正が追うターゲット。
+    switch (setting) {
+        case SettingId::S1: c.target_payout_ratio = 0.85; break;
+        case SettingId::S2: c.target_payout_ratio = 0.96; break;
+        case SettingId::S3: c.target_payout_ratio = 0.99; break;
+        case SettingId::S4: c.target_payout_ratio = 1.03; break;
+        case SettingId::S5: c.target_payout_ratio = 1.08; break;
+        case SettingId::S6: c.target_payout_ratio = 1.14; break;
+        case SettingId::EX: c.target_payout_ratio = 1.50; break;
+    }
+
     // 設定7 / EX は現行フルスペック原型をそのまま使う。
+    // 設定1〜5の性能パラメータは未較正なので、現時点では目標値だけ固定する。
     if (setting != SettingId::S6) return c;
 
     // 設定6 第一次案:
