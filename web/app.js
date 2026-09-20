@@ -382,7 +382,7 @@
     els.normalPattern.textContent = 'P' + s.normalPattern;
     els.ceiling.textContent = '天井 ' + s.normalCeiling + 'G / 表示 ' + s.normalDisplayGames + 'G / 実 ' + s.normalActualGames + 'G';
     els.atPattern.textContent = s.inAT ? 'P' + s.atPattern : '-';
-    els.netRate.textContent = s.inAT ? '純増 約' + (s.atTier === 'upper' ? '12' : '6') + '枚/G' : '純増 -';
+    els.netRate.textContent = s.inAT ? '純増 約' + (s.atTier === 'upper' ? '9' : '6') + '枚/G' : '純増 -';
     els.totalDiff.textContent = (s.totalDiff >= 0 ? '+' : '') + s.totalDiff.toLocaleString();
     els.debug.textContent = JSON.stringify(s, null, 2);
     els.statusLamp.className = 'status-lamp ' + (s.inAT ? 'at' : 'live');
