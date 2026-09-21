@@ -21,6 +21,7 @@ add_library(slot_v2_core
   src/slot-v2/shared/rng.cpp
   src/slot-v2/special-lottery/index.cpp
   src/slot-v2/special-result/index.cpp
+  src/slot-v2/special-apply/index.cpp
   src/slot-v2/main-lottery/index.cpp
   src/slot-v2/lever/index.cpp
   src/slot-v2/reel-strip/index.cpp
@@ -120,3 +121,7 @@ target_link_libraries(slot_v2_at_lottery_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_feature_lottery_test src/slot-v2/feature_lottery_test.cpp)
 target_link_libraries(slot_v2_feature_lottery_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_special_apply_test src/slot-v2/special_apply_test.cpp)
+target_link_libraries(slot_v2_special_apply_test PRIVATE slot_v2_core)
