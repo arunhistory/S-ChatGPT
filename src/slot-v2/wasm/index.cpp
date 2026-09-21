@@ -165,6 +165,17 @@ uint32_t slot_v2_visible_symbol(uint32_t reel, uint32_t center_position, int32_t
 }
 
 __attribute__((visibility("default")))
+uint32_t slot_v2_validate_reel(uint32_t reel) {
+    if (reel > 2u) return 0;
+    return slotv2::reel_validator::validateAssist(static_cast<slotv2::ReelId>(reel));
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_reel_ready_mask() {
+    return slotv2::reel_validator::readyMask();
+}
+
+__attribute__((visibility("default")))
 uint32_t slot_v2_validate_left() {
     return slotv2::reel_validator::validateLeft();
 }
