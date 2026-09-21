@@ -53,6 +53,7 @@ add_library(slot_v2_core
   src/slot-v2/line/index.cpp
   src/slot-v2/acquisition/index.cpp
   src/slot-v2/normal-progress/index.cpp
+  src/slot-v2/runtime/index.cpp
   src/slot-v2/stock/index.cpp
   src/slot-v2/section/index.cpp
 )
