@@ -9,7 +9,8 @@ enum class ResolveStatus : uint8_t {
     StripUndefined = 1,
     NoLegalCandidate = 2,
     InvalidReel = 3,
-    SpecialControlPending = 4
+    SpecialControlPending = 4,
+    RoleMissed = 5
 };
 
 struct Context {
