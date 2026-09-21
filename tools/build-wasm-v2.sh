@@ -13,6 +13,8 @@ SRC="$ROOT/src/slot-v2"
   -Wl,--export=slot_v2_last_special \
   -Wl,--export=slot_v2_last_role \
   -Wl,--export=slot_v2_freeze_active \
+  -Wl,--export=slot_v2_stop \
+  -Wl,--export=slot_v2_stopped_position \
   -Wl,--initial-memory=131072 -Wl,--max-memory=16777216 \
   -o "$ROOT/web/slot-v2.wasm" \
   "$SRC/shared/memory.cpp" \
@@ -22,6 +24,17 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/lever/index.cpp" \
   "$SRC/reel-strip/index.cpp" \
   "$SRC/stop-candidate/index.cpp" \
+  "$SRC/stop-rules/common.cpp" \
+  "$SRC/stop-rules/bell.cpp" \
+  "$SRC/stop-rules/replay.cpp" \
+  "$SRC/stop-rules/cherry.cpp" \
+  "$SRC/stop-rules/watermelon.cpp" \
+  "$SRC/stop-rules/fallback.cpp" \
+  "$SRC/stop-rules/router.cpp" \
+  "$SRC/stop-first/index.cpp" \
+  "$SRC/stop-second/index.cpp" \
+  "$SRC/stop-third/index.cpp" \
+  "$SRC/stop-controller/index.cpp" \
   "$SRC/freeze/index.cpp" \
   "$SRC/wasm/index.cpp"
 
