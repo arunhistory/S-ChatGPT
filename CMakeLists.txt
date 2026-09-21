@@ -13,3 +13,23 @@ target_link_libraries(slot_sim PRIVATE slot_engine)
 
 # Browser WASM intentionally does NOT use GitHub Actions or Emscripten.
 # Build it directly with: tools/build-wasm.sh
+
+
+# Slot v2: Edge Function-style C++ programs.
+# The old slot_engine stays intact until the v2 control path is complete.
+add_library(slot_v2_core
+  src/slot-v2/shared/rng.cpp
+  src/slot-v2/special-lottery/index.cpp
+  src/slot-v2/main-lottery/index.cpp
+  src/slot-v2/lever/index.cpp
+  src/slot-v2/reel-strip/index.cpp
+  src/slot-v2/stop-candidate/index.cpp
+  src/slot-v2/freeze/index.cpp
+)
+target_include_directories(slot_v2_core PUBLIC src/slot-v2)
+
+add_executable(slot_v2_sim src/slot-v2/sim_main.cpp)
+target_link_libraries(slot_v2_sim PRIVATE slot_v2_core)
+
+# Browser v2 WASM remains a direct clang build to match the existing project:
+#   tools/build-wasm-v2.sh
