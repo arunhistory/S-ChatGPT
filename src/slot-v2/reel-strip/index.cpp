@@ -2,33 +2,30 @@
 
 namespace slotv2::reel_strip {
 
-// 左リール21コマ。
-// BARを目印に🍉/🍒をフォローできるよう、2か所とも
-// 「🍉 → 🍒 → BAR」の3コマを近接配置。
-// 同時に、非チェリー成立時の🍒蹴りと、🔔/REPLAYの0〜4コマ
-// 引き込み保証が両立する配置へ調整している。
+// ユーザー確定済みの左21コマ。未承認の再配置は行わない。
+// 21→1→2 と 13→14→15 に 🍉 / BAR / 🍒 の目押し目印を保持。
 static constexpr Symbol kLeft[kReelSize] = {
-    Symbol::Replay,      //  1
-    Symbol::Watermelon,  //  2
-    Symbol::Cherry,      //  3
-    Symbol::Bar,         //  4
-    Symbol::Bell,        //  5
+    Symbol::Bar,         //  1
+    Symbol::Cherry,      //  2
+    Symbol::Replay,      //  3
+    Symbol::Bell,        //  4
+    Symbol::Red7,        //  5
     Symbol::Replay,      //  6
-    Symbol::Replay,      //  7
-    Symbol::Bell,        //  8
-    Symbol::Watermelon,  //  9
-    Symbol::Cherry,      // 10
-    Symbol::Bar,         // 11
+    Symbol::Bell,        //  7
+    Symbol::Replay,      //  8
+    Symbol::Bell,        //  9
+    Symbol::Blue7,       // 10
+    Symbol::Bell,        // 11
     Symbol::Replay,      // 12
-    Symbol::Bell,        // 13
-    Symbol::Bell,        // 14
-    Symbol::Replay,      // 15
-    Symbol::Blue7,       // 16
-    Symbol::Penguin,     // 17
-    Symbol::Bell,        // 18
+    Symbol::Watermelon,  // 13
+    Symbol::Bar,         // 14
+    Symbol::Cherry,      // 15
+    Symbol::Bell,        // 16
+    Symbol::Replay,      // 17
+    Symbol::Penguin,     // 18
     Symbol::Replay,      // 19
-    Symbol::Red7,        // 20
-    Symbol::Bell         // 21
+    Symbol::Bell,        // 20
+    Symbol::Watermelon   // 21
 };
 
 StripView get(ReelId reel) {
