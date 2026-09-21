@@ -979,3 +979,15 @@ body{height:100dvh;min-height:0;padding:4px;overflow:hidden}
 .reel-art-failed{
   display:none !important;
 }
+
+
+/* ===== Reel transform ownership fix =====
+   過去の transform:none !important を完全に上書きし、
+   JSが更新する --reel-art-y だけで画像ベルトを動かす。 */
+.reel .reel-art-track,
+.reel.spinning .reel-art-track,
+.reel.spinning.reverse-spinning .reel-art-track{
+  transform:translate3d(0,var(--reel-art-y,0px),0) !important;
+  animation:none !important;
+  transition:none !important;
+}
