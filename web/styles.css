@@ -855,3 +855,22 @@ body{height:100dvh;min-height:0;padding:4px;overflow:hidden}
 .reel-art-track.reel-art-no-transition{
   transition:none !important;
 }
+
+
+/* ===== Reel direction fix =====
+   通常回転は画面上で上→下。フリーズ演出の reverse-spinning だけ下→上。 */
+.reel.spinning .reel-art-track{
+  transition:none !important;
+  animation:reelArtDown .62s linear infinite !important;
+}
+.reel.spinning.reverse-spinning .reel-art-track{
+  animation:reelArtUp .50s linear infinite !important;
+}
+@keyframes reelArtDown{
+  from{transform:translate3d(0,-66.6666667%,0)}
+  to{transform:translate3d(0,-33.3333333%,0)}
+}
+@keyframes reelArtUp{
+  from{transform:translate3d(0,-33.3333333%,0)}
+  to{transform:translate3d(0,-66.6666667%,0)}
+}
