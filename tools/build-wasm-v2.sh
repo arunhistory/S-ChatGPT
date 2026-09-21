@@ -17,6 +17,10 @@ SRC="$ROOT/src/slot-v2"
   -Wl,--export=slot_v2_section_minimum \
   -Wl,--export=slot_v2_section_diff \
   -Wl,--export=slot_v2_machine_area \
+  -Wl,--export=slot_v2_special_committed \
+  -Wl,--export=slot_v2_at_games_left \
+  -Wl,--export=slot_v2_at_tier \
+  -Wl,--export=slot_v2_at_active \
   -Wl,--export=slot_v2_last_role \
   -Wl,--export=slot_v2_freeze_active \
   -Wl,--export=slot_v2_stop \
@@ -37,6 +41,7 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/shared/rng.cpp" \
   "$SRC/special-lottery/index.cpp" \
   "$SRC/special-result/index.cpp" \
+  "$SRC/special-apply/index.cpp" \
   "$SRC/main-lottery/index.cpp" \
   "$SRC/lever/index.cpp" \
   "$SRC/reel-strip/index.cpp" \
