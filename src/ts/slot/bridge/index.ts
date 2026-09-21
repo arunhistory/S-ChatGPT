@@ -1,6 +1,7 @@
 import {
   AcquisitionResult,
   AcquisitionStatus,
+  ATTier,
   CommandStatus,
   EntryTarget,
   LeverResult,
@@ -35,6 +36,10 @@ export interface SlotWasmV2 {
   slot_v2_last_role(): number;
   slot_v2_freeze_active(): number;
   slot_v2_machine_area(): number;
+  slot_v2_at_active(): number;
+  slot_v2_at_tier(): number;
+  slot_v2_at_games_left(): number;
+  slot_v2_special_committed(): number;
   slot_v2_section_diff(): bigint;
   slot_v2_section_minimum(): bigint;
   slot_v2_section_count(): bigint;
@@ -194,5 +199,22 @@ export function readMachineSnapshot(wasm: SlotWasmV2): MachineSnapshot {
     sectionCount: wasm.slot_v2_section_count(),
     stockCount: wasm.slot_v2_stock_count() >>> 0,
     pointCount: wasm.slot_v2_point_count(),
+  };
+}
+
+
+export interface ATSnapshot {
+  active: boolean;
+  tier: ATTier;
+  gamesLeft: number;
+  specialCommitted: boolean;
+}
+
+export function readATSnapshot(wasm: SlotWasmV2): ATSnapshot {
+  return {
+    active: wasm.slot_v2_at_active() !== 0,
+    tier: wasm.slot_v2_at_tier() as ATTier,
+    gamesLeft: wasm.slot_v2_at_games_left() | 0,
+    specialCommitted: wasm.slot_v2_special_committed() !== 0,
   };
 }
