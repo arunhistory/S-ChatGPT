@@ -138,6 +138,9 @@
   let reelTimers = [null, null, null];
   let reelStopped = [true, true, true];
   let reelPositions = [0, 0, 0];
+  // 画像リールは同一ストリップ3枚を連結し、中央コピー付近を基準に連続移動する。
+  // logical position は従来通り0..20、visual top position はラップさせず滑らかに進める。
+  let reelVisualTopPositions = [20, 20, 20];
   let autoEnabled = false;
   let autoTimers = [];
 
@@ -446,7 +449,7 @@
     return strip[mod(position + offset, strip.length)];
   };
 
-  const renderReelArt = (index) => {
+  const renderReelArt = (index, immediate = false) => {
     const track = reelArtTracks[index];
     if (!track) return;
 
@@ -455,16 +458,53 @@
 
     const cellHeight = reelHeight / 3;
     const stripHeight = cellHeight * 21;
-    const topIndex = mod(reelPositions[index] - 1, 21);
+    const logicalTop = mod(reelPositions[index] - 1, 21);
 
     [...track.querySelectorAll('img')].forEach((img) => {
+      // 横幅を潰さない。生成画像の左右余白はoverflowで自然にクロップする。
       img.style.height = stripHeight + 'px';
+      img.style.width = 'auto';
     });
 
-    // 3枚重ねの中央コピーを基準にし、既存21コマpositionと完全同期。
-    // 上段=position-1 / 中段=position / 下段=position+1。
-    track.style.transform =
-      'translate3d(0,' + (-(stripHeight + topIndex * cellHeight)) + 'px,0)';
+    let visualTop = reelVisualTopPositions[index];
+    const currentMod = mod(visualTop, 21);
+    const reverse = reels[index].classList.contains('reverse-spinning');
+    const spinning = reels[index].classList.contains('spinning');
+
+    if (immediate) {
+      visualTop = 21 + logicalTop;
+    } else if (spinning) {
+      // 通常回転/逆回転とも常に同じ向きへ1コマずつ連続移動させる。
+      const delta = reverse
+        ? -mod(currentMod - logicalTop, 21)
+        : mod(logicalTop - currentMod, 21);
+      visualTop += delta;
+    } else {
+      // 停止時も現在位置から前方向へ最短の同一図柄位置に着地。
+      visualTop += mod(logicalTop - currentMod, 21);
+    }
+
+    // 3コピーの中央付近へ戻す。21コマ分の差は画像が同一なので見た目は変わらない。
+    if (visualTop > 41 || visualTop < 20) {
+      const rebased = visualTop > 41 ? visualTop - 21 : visualTop + 21;
+      track.classList.add('reel-art-no-transition');
+      const oldY = -(reelVisualTopPositions[index] * cellHeight);
+      track.style.transform = 'translate3d(0,' + oldY + 'px,0)';
+      void track.offsetHeight;
+      reelVisualTopPositions[index] = rebased;
+      track.style.transform = 'translate3d(0,' + (-(rebased * cellHeight)) + 'px,0)';
+      void track.offsetHeight;
+      track.classList.remove('reel-art-no-transition');
+      visualTop = rebased;
+    }
+
+    reelVisualTopPositions[index] = visualTop;
+    if (immediate) track.classList.add('reel-art-no-transition');
+    track.style.transform = 'translate3d(0,' + (-(visualTop * cellHeight)) + 'px,0)';
+    if (immediate) {
+      void track.offsetHeight;
+      track.classList.remove('reel-art-no-transition');
+    }
   };
 
   const renderReel = (index) => {
@@ -480,7 +520,13 @@
 
 
   window.addEventListener('resize', () => {
-    for (let i = 0; i < 3; i++) renderReelArt(i);
+    for (let i = 0; i < 3; i++) renderReelArt(i, true);
+  });
+
+  reelArtTracks.forEach((track, index) => {
+    track?.querySelectorAll('img').forEach((img) => {
+      img.addEventListener('load', () => renderReelArt(index, true), { once:true });
+    });
   });
 
   const centerKind = (index, position = reelPositions[index]) => visibleKind(index, position, 1);
