@@ -702,9 +702,11 @@
 
     const cells=Math.abs(target-current)/geo.cellHeight;
 
-    // 通常なら residual + 0〜4コマ = 最大5コマ未満。
-    // ここを超えたら停止制御の整合が壊れているので、見た目を一周させず即exactへ合わせる。
-    if(cells>5.05){
+    const exactAssist = !!pendingControl?.exactAssistUsed?.[index];
+
+    // 通常役は0〜4コマの範囲内。
+    // ベル/REPLAYの専用アシストだけは、他図柄へ逃がさず次の同図柄まで止める。
+    if(cells>5.05 && !exactAssist){
       reelArtPhase[index]=exact;
       normalizeReelArtPhase(index);
       paintReelArt(index);
@@ -712,9 +714,9 @@
     }
 
     const from=current;
-    // 回転速度を保ったまま0〜4コマだけ引き込む。
-    // 4コマなら約150ms。停止時だけ不自然にスロー化させない。
-    const duration=Math.max(38,Math.min(175,cells*42+18));
+    const duration = exactAssist
+      ? Math.max(90, Math.min(320, cells * 24))
+      : Math.max(38, Math.min(175, cells * 42 + 18));
     const started=performance.now();
 
     // ほぼ一定速で滑り、最後の約18%だけ軽く減速。
@@ -854,10 +856,13 @@
     const rightVisible = [0,1,2].map(row => visibleKind(2, positions[2], row));
 
     const leftHasCherry = leftVisible.includes('cherry');
-    const hasVisibleReplay = middleVisible.includes('replay') || rightVisible.includes('replay');
+    const hasVisibleReplay =
+      leftVisible.includes('replay')
+      || middleVisible.includes('replay')
+      || rightVisible.includes('replay');
 
-    // チェリー強弱は停止窓に見えているREPLAYの有無を優先。
-    // REPLAYが1つでも見えていれば弱チェ。REPLAY無し＋左中段🍒で強チェ。
+    // 弱チェ：左リールに🍒が見え、停止窓内にREPLAYが1つでもある。
+    // 強チェ：左中段🍒かつ、停止窓内にREPLAYが1つもない。
     if (leftHasCherry && hasVisibleReplay) return 'weak_cherry';
     if (center[0] === 'cherry' && !hasVisibleReplay) return 'strong_cherry';
 
@@ -1014,6 +1019,7 @@
       manualFirst: true,
       assistSubstitute: assistSubstituteRoles.has(role),
       substituteUsed: [false, false, false],
+      exactAssistUsed: [false, false, false],
       aimAssist: aimAssistRoles.has(role),
       aimAssistUsed: [false, false, false],
       navOrder: Number(result.navOrder ?? -1)
@@ -1046,51 +1052,65 @@
     return null;
   };
 
+  const guaranteedLinesForRole = (role) => {
+    if (role === 'bell9') return ['center'];
+    if (role === 'bell15') return ['diagUp'];
+    if (role === 'three_medal') {
+      const line = pendingControl?.threeMedalLine;
+      return line ? [line] : ['diagDown','top','bottom'];
+    }
+    if (role === 'replay') return ['center'];
+    return [];
+  };
+
   const chooseGuaranteedPayoutPosition = (index, target, base) => {
-    const symbol = guaranteedSymbolForRole(pendingControl?.role);
+    const role = pendingControl?.role;
+    const symbol = guaranteedSymbolForRole(role);
     if (!symbol) return base;
 
     if (!Array.isArray(pendingGuaranteedLines) || !pendingGuaranteedLines.length) {
-      pendingGuaranteedLines = Object.keys(payoutLineRows);
+      pendingGuaranteedLines = guaranteedLinesForRole(role);
     }
 
-    let best = null;
-
-    for (let slip = 0; slip <= 4; slip++) {
+    const candidatesForSlip = (slip) => {
       const candidate = slipPosition(index, base, slip);
-
       const lines = pendingGuaranteedLines.filter(name => {
         const rows = payoutLineRows[name];
         if (!rows) return false;
 
-        // 今回止めるリールは、必ず成立図柄そのものをそのラインへ置く。
+        // ベル/REPLAYは、その図柄そのものでしか成立させない。
         if (visibleKind(index, candidate, rows[index]) !== symbol) return false;
 
-        // 既に止まっているリールも同じライン上で同じ成立図柄でなければ不可。
         for (let j = 0; j < 3; j++) {
           if (j === index || !reelStopped[j]) continue;
           if (visibleKind(j, reelPositions[j], rows[j]) !== symbol) return false;
         }
         return true;
       });
+      return { candidate, lines };
+    };
 
-      if (!lines.length) continue;
-
-      // 後続リールの選択肢を多く残す候補を優先。同数なら最小スベリ。
-      if (!best || lines.length > best.lines.length
-          || (lines.length === best.lines.length && slip < best.slip)) {
-        best = { candidate, slip, lines };
+    // まず通常の0〜4コマ引き込み。
+    for (let slip = 0; slip <= 4; slip++) {
+      const hit = candidatesForSlip(slip);
+      if (hit.lines.length) {
+        pendingGuaranteedLines = hit.lines;
+        return hit.candidate;
       }
     }
 
-    if (best) {
-      pendingGuaranteedLines = best.lines;
-      return best.candidate;
+    // ベル/REPLAYは代用図柄やハズレへ逃がさない。
+    // 現代機側のアシスト領域として、同じ成立図柄の次の停止位置まで制御する。
+    for (let slip = 5; slip < reelStrips[index].length; slip++) {
+      const hit = candidatesForSlip(slip);
+      if (hit.lines.length) {
+        pendingGuaranteedLines = hit.lines;
+        pendingControl.exactAssistUsed[index] = true;
+        return hit.candidate;
+      }
     }
 
-    // 4コマ以内に「その図柄だけ」で成立ラインを作れない場合、
-    // 他図柄を代用してベル/リプレイ扱いには絶対にしない。
-    pendingGuaranteedLines = [];
+    // 配列上にも成立図柄が作れない異常時だけ現位置。
     return base;
   };
 
@@ -1106,15 +1126,10 @@
   };
 
   const chooseNavigatedBellPosition = (index, base) => {
-    const target = { row:1, kind:'bell' };
-
-    for (let slip = 0; slip <= 4; slip++) {
-      const candidate = slipPosition(index, base, slip);
-      if (candidateMatchesTarget(index, candidate, target)) return candidate;
-    }
-
-    // レバーONの成立フラグは維持するが、停止表示は4コマを超えて飛ばさない。
-    return base;
+    // 押し順正解時は必ず🔔そのもので中段成立。
+    // 他図柄をベル扱いすることは絶対にしない。
+    pendingGuaranteedLines = ['center'];
+    return chooseGuaranteedPayoutPosition(index, { row:1, kind:'bell' }, base);
   };
 
   const middleCherryMiddleReelSafe = (position) => {
@@ -1816,7 +1831,7 @@
     // そのゲームで実際に成立している物理役(reelRole)だけを0〜4コマ制御する。
     pendingControl = buildSpinControl(pendingPhysicalRole, pendingResult);
     pendingGuaranteedLines = guaranteedPayoutRoles.has(pendingPhysicalRole)
-      ? Object.keys(payoutLineRows)
+      ? guaranteedLinesForRole(pendingPhysicalRole)
       : null;
     pendingBellNaviActive = (pendingWasAT || pendingWasBonus)
       && pendingPhysicalRole === 'bell9'
@@ -2074,6 +2089,7 @@
         && physicalPattern !== pendingPhysicalRole
         && !assistSubstitute
         && !aimAssistUsed
+        && !pendingControl?.exactAssistUsed?.some(Boolean)
         && pendingPhysicalRole !== 'one_medal') {
       els.eventNote.textContent += ' / 取りこぼし停止';
     }
