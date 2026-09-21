@@ -28,12 +28,11 @@ bool hasBarLandmarkPair(const reel_strip::StripView& strip) {
     int pairs = 0;
     for (int bar = 0; bar < strip.size; ++bar) {
         if (strip.data[bar] != Symbol::Bar) continue;
-        int cherry = bar - 1;
-        int watermelon = bar - 2;
-        while (cherry < 0) cherry += strip.size;
+        int watermelon = bar - 1;
+        int cherry = bar + 1;
         while (watermelon < 0) watermelon += strip.size;
-        cherry %= strip.size;
         watermelon %= strip.size;
+        cherry %= strip.size;
 
         if (strip.data[cherry] == Symbol::Cherry
             && strip.data[watermelon] == Symbol::Watermelon) {
