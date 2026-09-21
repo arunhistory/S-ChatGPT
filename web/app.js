@@ -462,11 +462,12 @@
     const src = source.getAttribute('src');
     if (!src) return;
 
-    // 21コマを1コマずつDOM化し、4周分だけ並べる。
+    // 21コマを1コマずつDOM化し、12周分並べる。
+    // 常に中央6周付近だけを使うので、どちらへ回しても表示窓がベルト端へ到達しない。
     // 元画像そのものをbackgroundとして使うためcanvas変換は不要。
     // 各周は逆順にすることで、ベルトを下へ動かすと内部positionの+方向と一致する。
     const fragment = document.createDocumentFragment();
-    for (let copy = 0; copy < 4; copy++) {
+    for (let copy = 0; copy < 12; copy++) {
       for (let visualCell = 0; visualCell < 21; visualCell++) {
         const logicalCell = mod(-visualCell, 21);
         const cell = document.createElement('div');
@@ -535,7 +536,7 @@
     // 上段=position-1 が画面上端へ来るように、中央寄りのコピーを使う。
     const topLogical = mod(reelPositions[index] - 1, 21);
     const visualIndex = mod(-topLogical, 21);
-    const cellIndex = 21 + visualIndex;
+    const cellIndex = 21 * 6 + visualIndex;
     return -(cellIndex * geo.cellHeight);
   };
 
@@ -572,9 +573,11 @@
 
     const cycle = geo.stripHeight;
 
-    // 4周の中央2周だけを使う。1周分の補正は見た目が完全に同じなので飛ばない。
-    while (reelArtPhase[index] > -cycle) reelArtPhase[index] -= cycle;
-    while (reelArtPhase[index] < -3 * cycle) reelArtPhase[index] += cycle;
+    // 12周のうち中央4〜8周だけを使う。
+    // ベルト端が表示窓へ来る前に、同一絵柄位置のまま1周単位で中央へ戻す。
+    // 1周分は完全に同じセル列なので、見た目は一切変化しない。
+    while (reelArtPhase[index] > -4 * cycle) reelArtPhase[index] -= cycle;
+    while (reelArtPhase[index] < -8 * cycle) reelArtPhase[index] += cycle;
   };
 
   const startReelArtMotion = (index, direction) => {
@@ -635,6 +638,10 @@
     } else {
       while (target > current) target -= cycle;
     }
+
+    // 停止先も中央帯の中へ収める。端まで行かせない。
+    while (target > -4 * cycle) target -= cycle;
+    while (target < -8 * cycle) target += cycle;
 
     const distance = Math.abs(target - current);
     const duration = Math.max(90, Math.min(320, 85 + (distance / geo.cellHeight) * 28));
