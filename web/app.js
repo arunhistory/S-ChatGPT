@@ -1441,14 +1441,22 @@
   const showFinalBanner = (events, actualRole, payout) => {
     if (events.length) {
       const e = events[events.length - 1];
-      const entryReplay = actualRole === 'hit'
-        || actualRole === 'at'
-        || actualRole === 'tier_up'
-        || actualRole === 'freeze';
+      const internalEvent = new Set([
+        'bonus','episode_bonus','at_start','tier_up','freeze',
+        'special_zone','upper_special_zone','upper_comeback','section_cross'
+      ]).has(e.type);
+
       els.eventTitle.textContent = eventLabels[e.type] || e.type.toUpperCase();
-      els.eventNote.textContent = (e.note || '') + ' / 停止形: ' + roleLabels[actualRole]
-        + (entryReplay ? ' / REPLAY' : (payout ? ' / ' + payout + '枚' : ''));
-      els.eventBanner.className = 'event-banner' + (isPremium(e.type) ? ' premium' : isHot(e.type) ? ' hot' : '');
+
+      // 内部当選と停止役を因果関係のように1文へ混ぜない。
+      // BONUS/ATは内部結果、下の「成立役」はそのゲームの物理停止役として別表示。
+      els.eventNote.textContent = internalEvent
+        ? ((e.note || '') + (e.note ? ' / ' : '') + '内部当選')
+        : ((e.note || '') + ' / 停止役: ' + (roleLabels[actualRole] || actualRole)
+            + (payout ? ' / ' + payout + '枚' : ''));
+
+      els.eventBanner.className = 'event-banner'
+        + (isPremium(e.type) ? ' premium' : isHot(e.type) ? ' hot' : '');
     } else {
       els.eventTitle.textContent = roleLabels[actualRole] || 'NO HIT';
       els.eventNote.textContent = payout ? payout + '枚払出' : '次ゲームへ';
@@ -1571,43 +1579,7 @@
       };
       pendingRole = 'bell9';
       atOmenFlow.phase = 'entry';
-    } else if (atOmenFlow && atOmenFlow.phase === 'entry') {
-      // 予兆を経由した次Gで初めて当たり図柄を入賞させる。
-      const queued = atOmenFlow;
-      atOmenFlow = null;
-      pendingSyntheticEntry = true;
-      pendingEntryAmbiguous = false;
-      pendingWasBonus = false;
-      pendingWasAT = false;
-      pendingWasChallenge = false;
-      pendingResult = {
-        events: queued.events,
-        inAT: true,
-        inBonus: true,
-        episodeBonus: queued.episode,
-        navOrder: -1,
-        reelRole: 'replay',
-        reelPayout: 3
-      };
-      pendingRole = 'hit';
-    } else if (deferredEntryReveal) {
-      const queued = deferredEntryReveal;
-      deferredEntryReveal = null;
-      pendingSyntheticEntry = true;
-      pendingEntryAmbiguous = queued.ambiguous !== false && queued.role !== 'freeze';
-      pendingWasBonus = false;
-      pendingWasAT = false;
-      pendingWasChallenge = false;
-      pendingResult = {
-        events: queued.events,
-        inAT: queued.role === 'at' || queued.role === 'freeze',
-        inBonus: queued.role === 'hit',
-        navOrder: -1,
-        reelRole: 'replay',
-        reelPayout: 3
-      };
-      pendingRole = queued.role;
-    } else {
+55730    } else {
       pendingResult = forcedRole
         ? callJson('slot_force_outcome_json', ['number'], [forceOutcomeCodes[forcedRole]])
         : callJson(s0.inBonus
@@ -1656,35 +1628,34 @@
         };
       }
 
-      // 旧WASMは中段チェリー/直撃で同GにAT/BONUS状態へ入ってしまう。
-      // 現在Gは成立役だけで終え、開始イベントだけ次Gの🟥7/BONUS図柄入賞へ繰り越す。
+      // 通常時の内部AT/BONUS当選はレバーONで確定するが、
+      // リール側はそのゲームで実際に成立した物理役だけを停止させる。
+      // 次ゲームへ「リプレイ入賞ゲーム」を捏造しない。
       const normalTrigger = !pendingWasAT && !pendingWasBonus && !pendingWasChallenge;
       const physicalTriggerRole = pendingResult.reelRole || 'miss';
       const naturalTransition = normalTrigger
         && !forcedRole
         && (pendingResult.inBonus || pendingResult.inAT);
+
       if (naturalTransition) {
-        const entryTypes = new Set([
-          'bonus','episode_bonus','at_start','cold_enter','stock_gain','tier_up','freeze'
-        ]);
-        const entryEvents = (pendingResult.events || []).filter(e => entryTypes.has(e.type));
+        const entryEvents = (pendingResult.events || []).filter(e =>
+          ['bonus','episode_bonus','at_start','cold_enter','stock_gain','tier_up','freeze'].includes(e.type)
+        );
         const hasFreezeEntry = entryEvents.some(e => e.type === 'freeze');
+
+        // STOP完了までは表示上だけNORMALに伏せる。
+        // finishGameでこのマーカーを解除すると、WASM内部のBONUS/AT状態をそのまま表示する。
         deferredEntryReveal = {
           role: hasFreezeEntry ? 'freeze' : (pendingResult.inBonus ? 'hit' : 'at'),
           events: entryEvents,
-          // 通常時の当選は、FREEZE等の確定契機を除きAT/BONUSの行き先を演出で隠す。
           ambiguous: !hasFreezeEntry
         };
 
-        // 現在Gは実際に成立した役だけを表示する。
-        // AT/BONUS図柄は次Gの入賞ゲームまで出さない。
+        pendingEntryAmbiguous = !hasFreezeEntry;
         pendingRole = physicalTriggerRole;
         pendingResult = {
           ...pendingResult,
-          reelRole: physicalTriggerRole,
-          events: (pendingResult.events || []).filter(e => !entryTypes.has(e.type)),
-          inAT: false,
-          inBonus: false
+          reelRole: physicalTriggerRole
         };
       }
     }
@@ -1704,27 +1675,20 @@
       };
     }
 
-    pendingEntryReplayRole = pendingRole === 'hit'
-      || pendingRole === 'at'
-      || pendingRole === 'tier_up'
-      || pendingRole === 'freeze';
+    pendingPhysicalRole = pendingResult.reelRole || pendingRole;
+    pendingEntryReplayRole = pendingPhysicalRole === 'replay';
+
     pendingPayout = pendingWasChallenge
       ? 0
       : (pendingWasBonus
-          ? bonusVisibleReturnForRole(pendingRole)
-          : (pendingEntryReplayRole
-              ? 3
-              : (forcedRole
-                  ? accountingReturnForRole(forcedRole)
-                  : Number(pendingResult.reelPayout || 0))));
+          ? bonusVisibleReturnForRole(pendingPhysicalRole)
+          : (forcedRole
+              ? accountingReturnForRole(pendingPhysicalRole)
+              : Number(pendingResult.reelPayout ?? accountingReturnForRole(pendingPhysicalRole))));
 
     // レバーONで内部結果(pendingRole)はここまでに確定済み。
     // リール停止制御は別物。AT/BONUSの内部当選を赤7/BARへ強制変換せず、
     // そのゲームで実際に成立している物理役(reelRole)だけを0〜4コマ制御する。
-    pendingPhysicalRole = pendingResult.reelRole || pendingRole;
-    if (pendingEntryReplayRole && pendingRole !== 'freeze') {
-      pendingPhysicalRole = pendingResult.reelRole || 'replay';
-    }
     pendingControl = buildSpinControl(pendingPhysicalRole, pendingResult);
     pendingBellNaviActive = (pendingWasAT || pendingWasBonus)
       && pendingPhysicalRole === 'bell9'
@@ -1816,6 +1780,16 @@
           : (naviMiss ? accountingReturnForRole(physicalPattern) : payout));
     let allEvents = [...(result.events || [])];
 
+    if (pendingSyntheticOmen && atOmenFlow && atOmenFlow.phase === 'entry') {
+      allEvents = allEvents.concat(atOmenFlow.events || []);
+      atOmenFlow = null;
+    }
+
+    if (deferredEntryReveal) {
+      // 内部当選はこのレバーONで既に完結済み。
+      // 3リール停止後に表示制限だけ解除し、次Gの偽リプレイは作らない。
+      deferredEntryReveal = null;
+    }
 
     // 通常時は、実停止5ラインで新たに成立したベル/リプレイも差枚へ反映。
     // AT/BONUSは内部純増会計済みなので二重加算しない。
@@ -1844,7 +1818,7 @@
                   ? '+' + visiblePayout + '枚'
                   : (pendingBellNaviActive && pendingWasAT
                       ? 'AT純増'
-                      : (pendingEntryReplayRole ? 'REPLAY' : visiblePayout + '枚')))));
+                      : (visibleRole === 'replay' ? 'REPLAY' : visiblePayout + '枚')))));
 
     pushEvents(allEvents);
     showFinalBanner(allEvents, visibleRole, visiblePayout);
@@ -1857,7 +1831,7 @@
     if (aimAssistUsed) {
       els.eventNote.textContent += ' / 目押しアシスト';
     }
-    if (pendingPhysicalRole !== pendingRole && pendingEntryReplayRole) {
+    if (pendingPhysicalRole !== pendingRole && result?.inBonus) {
       els.eventNote.textContent += ' / 内部当選';
     }
     if (!naviMiss && !physicalLinePayoutRole
