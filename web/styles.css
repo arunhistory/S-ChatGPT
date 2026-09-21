@@ -991,3 +991,21 @@ body{height:100dvh;min-height:0;padding:4px;overflow:hidden}
   animation:none !important;
   transition:none !important;
 }
+
+
+/* ===== Reel gap protection v5 =====
+   セル境界のサブピクセル隙間と、背景画像端の空白を同時に防ぐ。 */
+.reel-art-cell{
+  position:relative;
+  margin-top:-0.6px;
+  margin-bottom:-0.6px;
+  padding-top:0.6px;
+  padding-bottom:0.6px;
+  background-repeat:repeat-y !important;
+  background-color:#f6f8fb;
+  transform:translateZ(0);
+  backface-visibility:hidden;
+}
+.reel-art-track{
+  min-height:1200% !important;
+}
