@@ -15,6 +15,7 @@ SRC="$ROOT/src/slot-v2"
   -Wl,--export=slot_v2_freeze_active \
   -Wl,--export=slot_v2_stop \
   -Wl,--export=slot_v2_stopped_position \
+  -Wl,--export=slot_v2_stop_sequence \
   -Wl,--export=slot_v2_acquisition \
   -Wl,--export=slot_v2_validate_left \
   -Wl,--export=slot_v2_complete_special \
@@ -47,6 +48,7 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/stop-rules/one-medal.cpp" \
   "$SRC/stop-rules/miss.cpp" \
   "$SRC/role-policy/index.cpp" \
+  "$SRC/navigation/index.cpp" \
   "$SRC/stop-first/index.cpp" \
   "$SRC/stop-second/index.cpp" \
   "$SRC/stop-third/index.cpp" \
