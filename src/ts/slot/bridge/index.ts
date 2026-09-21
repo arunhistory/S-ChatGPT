@@ -13,6 +13,7 @@ export interface SlotWasmV2 {
   slot_v2_lever(): number;
   slot_v2_stop(reel: number, pressedPosition: number): number;
   slot_v2_stopped_position(reel: number): number;
+  slot_v2_validate_left(): number;
   slot_v2_last_special(): number;
   slot_v2_last_role(): number;
   slot_v2_freeze_active(): number;
@@ -47,4 +48,20 @@ export function stop(
   return decodeStopResult(
     wasm.slot_v2_stop(reel, pressedPosition) >>> 0,
   );
+}
+
+
+export interface LeftReelValidation {
+  cherryHidePossible: boolean;
+  bellGuaranteed: boolean;
+  replayGuaranteed: boolean;
+}
+
+export function validateLeftReel(wasm: SlotWasmV2): LeftReelValidation {
+  const bits = wasm.slot_v2_validate_left() >>> 0;
+  return {
+    cherryHidePossible: (bits & 1) !== 0,
+    bellGuaranteed: (bits & 2) !== 0,
+    replayGuaranteed: (bits & 4) !== 0,
+  };
 }
