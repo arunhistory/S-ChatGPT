@@ -11,6 +11,12 @@ SRC="$ROOT/src/slot-v2"
   -Wl,--export=slot_v2_reset \
   -Wl,--export=slot_v2_lever \
   -Wl,--export=slot_v2_last_special \
+  -Wl,--export=slot_v2_point_count \
+  -Wl,--export=slot_v2_stock_count \
+  -Wl,--export=slot_v2_section_count \
+  -Wl,--export=slot_v2_section_minimum \
+  -Wl,--export=slot_v2_section_diff \
+  -Wl,--export=slot_v2_machine_area \
   -Wl,--export=slot_v2_last_role \
   -Wl,--export=slot_v2_freeze_active \
   -Wl,--export=slot_v2_stop \
@@ -62,6 +68,9 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/acquisition/index.cpp" \
   "$SRC/normal-progress/index.cpp" \
   "$SRC/runtime/index.cpp" \
+  "$SRC/point-ledger/index.cpp" \
+  "$SRC/accounting/index.cpp" \
+  "$SRC/machine-state/index.cpp" \
   "$SRC/cz-state/index.cpp" \
   "$SRC/bonus-state/index.cpp" \
   "$SRC/at-state/index.cpp" \
