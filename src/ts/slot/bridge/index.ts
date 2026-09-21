@@ -28,6 +28,8 @@ export interface SlotWasmV2 {
   slot_v2_symbol_at(reel: number, position: number): number;
   slot_v2_visible_symbol(reel: number, centerPosition: number, rowOffset: number): number;
   slot_v2_validate_left(): number;
+  slot_v2_validate_reel(reel: number): number;
+  slot_v2_reel_ready_mask(): number;
   slot_v2_last_special(): number;
   slot_v2_last_role(): number;
   slot_v2_freeze_active(): number;
@@ -142,4 +144,27 @@ export function readStopSequence(
   const value = wasm.slot_v2_stop_sequence(orderIndex) >>> 0;
   if (value === 0xffffffff) return null;
   return value as ReelId;
+}
+
+
+export interface AssistReelValidation {
+  defined: boolean;
+  bellGuaranteed: boolean;
+  replayGuaranteed: boolean;
+}
+
+export function validateAssistReel(
+  wasm: SlotWasmV2,
+  reel: ReelId,
+): AssistReelValidation {
+  const bits = wasm.slot_v2_validate_reel(reel) >>> 0;
+  return {
+    defined: (bits & 1) !== 0,
+    bellGuaranteed: (bits & 2) !== 0,
+    replayGuaranteed: (bits & 4) !== 0,
+  };
+}
+
+export function readReelReadyMask(wasm: SlotWasmV2): number {
+  return wasm.slot_v2_reel_ready_mask() >>> 0;
 }
