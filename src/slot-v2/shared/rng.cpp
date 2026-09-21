@@ -20,4 +20,21 @@ uint32_t Rng::next27() {
     return static_cast<uint32_t>(next64() & (kRngSpace - 1u));
 }
 
+bool Rng::oneIn(uint32_t denominator) {
+    if (denominator == 0u) return false;
+    if (denominator == 1u) return true;
+
+    // 2^64空間をdenominatorで割り切れる範囲へrejectionして剰余偏りを除く。
+    const uint64_t threshold =
+        (static_cast<uint64_t>(0) - static_cast<uint64_t>(denominator))
+        % static_cast<uint64_t>(denominator);
+
+    uint64_t value = 0;
+    do {
+        value = next64();
+    } while (value < threshold);
+
+    return (value % static_cast<uint64_t>(denominator)) == 0u;
+}
+
 } // namespace slotv2
