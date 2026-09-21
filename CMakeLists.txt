@@ -20,6 +20,7 @@ target_link_libraries(slot_sim PRIVATE slot_engine)
 add_library(slot_v2_core
   src/slot-v2/shared/rng.cpp
   src/slot-v2/special-lottery/index.cpp
+  src/slot-v2/special-result/index.cpp
   src/slot-v2/main-lottery/index.cpp
   src/slot-v2/lever/index.cpp
   src/slot-v2/reel-strip/index.cpp
