@@ -585,6 +585,7 @@
 
   const targetForRole = (role, index, threeMedalLine = null) => {
     switch (role) {
+      // 通常当選の左・中は共通で🟥7。右リールだけがAT=🟥7 / 当たり=BAR。
       case 'at': return { row:1, kind:'seven' };
       case 'tier_up': return { row:1, kind:'bar' };
       case 'hit': return { row:1, kind:index === 2 ? 'bar' : 'seven' };
@@ -959,53 +960,30 @@
     }
   };
 
-  const runNormalEntryJudgeCinematic = (role) => {
+  const runNormalEntryJudgeCinematic = () => {
     entryCinematicActive = true;
 
-    // 入賞Gのリールは回すが、ジャッジ中はSTOP不可。
+    // 通常当選の答えは演出文字では出さない。
+    // 左・中は必ず🟥7、右リールだけが内部結果に応じて🟥7/BARへ着地する。
     for (let i = 0; i < 3; i++) {
       startReelMotion(i);
       stops[i].disabled = true;
       stops[i].classList.remove('active');
     }
 
-    // この時点ではAT/BONUSの答えを一切出さない。
     els.eventTitle.textContent = '当たり';
-    els.eventNote.textContent = '行き先ジャッジ中';
-    showMachineCinematic('HIT', '当たり', 'BONUSか… ATか…', 'judge');
+    els.eventNote.textContent = 'まだ行き先は分からない';
+    showMachineCinematic('HIT', '当たり', '右リールで決まる', 'judge');
 
     autoTimers.push(setTimeout(() => {
-      showMachineCinematic('JUDGE', 'BONUS ？  AT', 'まだ分からない', 'judge versus');
-      els.stageScreen.classList.add('screen-shock','omen-purple');
+      showMachineCinematic('TARGET', '🟥7を狙え', '左・中は🟥7　右は…？', 'judge target');
+      els.stageScreen.classList.add('omen-purple');
       els.effectLayer.className = 'effect-layer purple';
-    }, 650));
-
-    autoTimers.push(setTimeout(() => {
-      const isAT = role === 'at';
-      showMachineCinematic(
-        isAT ? 'AT' : 'BONUS',
-        isAT ? 'AT 突入！' : 'BONUS！',
-        isAT ? '上位を目指せ' : 'ここから勝負',
-        isAT ? 'gold judge-result' : 'red judge-result'
-      );
-      els.stageScreen.classList.remove('omen-purple');
-      els.stageScreen.classList.add(isAT ? 'omen-gold' : 'omen-red');
-      els.effectLayer.className = 'effect-layer ' + (isAT ? 'gold flash' : 'red flash');
-    }, 1350));
-
-    autoTimers.push(setTimeout(() => {
-      const isAT = role === 'at';
-      showMachineCinematic(
-        'TARGET',
-        '🟥7を狙え',
-        isAT ? '🟥7 🟥7 🟥7' : '🟥7 🟥7 BAR',
-        isAT ? 'gold target' : 'red target'
-      );
       els.eventTitle.textContent = '🟥7を狙え';
-      els.eventNote.textContent = isAT ? 'AT図柄を揃えろ' : 'BONUS図柄を揃えろ';
+      els.eventNote.textContent = '右リールの 🟥7 / BAR で行き先決定';
       entryCinematicActive = false;
       unlockEntryStops();
-    }, 2050));
+    }, 850));
   };
 
   const runBonusEntryCinematic = (role) => {
@@ -1113,7 +1091,40 @@
       reelTimers[index] = null;
     }
 
-    reelPositions[index] = chooseStopPosition(index, navigatedBell, naviMiss);
+    const finalPosition = chooseStopPosition(index, navigatedBell, naviMiss);
+
+    // 通常当選の右リールは🟥7とBARが隣接しているため、
+    // 最後だけ一瞬タメて「どっちに止まるか」をリールそのもので見せる。
+    if (pendingEntryAmbiguous && index === 2) {
+      stops[index].disabled = true;
+      stops[index].classList.remove('active','nav-first');
+      reels[index].classList.add('judging-stop');
+
+      const nearKind = pendingRole === 'at' ? 'bar' : 'seven';
+      reelPositions[index] = findExactPosition(index, nearKind, 1);
+      renderReel(index);
+
+      entryCinematicActive = true;
+      autoTimers.push(setTimeout(() => {
+        reelPositions[index] = finalPosition;
+        renderReel(index);
+        reelStopped[index] = true;
+        reels[index].classList.remove('spinning','judging-stop');
+        entryCinematicActive = false;
+
+        // ここで初めてAT/BONUSの答えを公開する。
+        if (pendingRole === 'at') {
+          showMachineCinematic('RESULT', 'AT 突入！', '🟥7 🟥7 🟥7', 'gold judge-result');
+        } else {
+          showMachineCinematic('RESULT', 'BONUS！', '🟥7 🟥7 BAR', 'red judge-result');
+        }
+        autoTimers.push(setTimeout(hideMachineCinematic, 650));
+        if (reelStopped.every(Boolean)) finishGame();
+      }, 280));
+      return;
+    }
+
+    reelPositions[index] = finalPosition;
     renderReel(index);
     reelStopped[index] = true;
 
@@ -1454,7 +1465,7 @@
       // 通常時からの自然当選は最後のジャッジまでAT/BONUSを伏せる。
       // AT中予兆経由など、既に行き先を見せてよい経路だけ従来の確定演出。
       if (pendingEntryAmbiguous) {
-        runNormalEntryJudgeCinematic(pendingRole);
+        runNormalEntryJudgeCinematic();
       } else {
         runBonusEntryCinematic(pendingRole);
       }
