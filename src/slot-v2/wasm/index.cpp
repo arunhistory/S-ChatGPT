@@ -5,6 +5,7 @@
 #include "../freeze/index.hpp"
 #include "../stop-controller/index.hpp"
 #include "../reel-validator/index.hpp"
+#include "../reel-read/index.hpp"
 #include "../session/index.hpp"
 #include "../acquisition/index.hpp"
 
@@ -91,6 +92,31 @@ uint32_t slot_v2_acquisition() {
     return static_cast<uint32_t>(g_acquisition.status)
         | (static_cast<uint32_t>(g_acquisition.internal_role) << 8)
         | ((static_cast<uint32_t>(g_acquisition.medals) & 0xffffu) << 16);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_symbol_at(uint32_t reel, uint32_t position) {
+    if (reel > 2u) return static_cast<uint32_t>(slotv2::Symbol::Unknown);
+    return static_cast<uint32_t>(
+        slotv2::reel_read::at(
+            static_cast<slotv2::ReelId>(reel),
+            static_cast<uint8_t>(position)
+        )
+    );
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_visible_symbol(uint32_t reel, uint32_t center_position, int32_t row_offset) {
+    if (reel > 2u || row_offset < -1 || row_offset > 1) {
+        return static_cast<uint32_t>(slotv2::Symbol::Unknown);
+    }
+    return static_cast<uint32_t>(
+        slotv2::reel_read::visible(
+            static_cast<slotv2::ReelId>(reel),
+            static_cast<uint8_t>(center_position),
+            static_cast<int8_t>(row_offset)
+        )
+    );
 }
 
 __attribute__((visibility("default")))
