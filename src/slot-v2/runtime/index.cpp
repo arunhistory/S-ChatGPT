@@ -10,6 +10,9 @@ void reset(State& state, uint64_t seed) {
     state.rng.reset(seed);
     session::reset(state.session);
     state.acquisition = {};
+    machine_state::reset(state.machine);
+    state.accounting = {};
+    state.points = {};
 }
 
 uint32_t lever(State& state) {
@@ -123,6 +126,30 @@ uint32_t lastRole(const State& state) {
 
 uint32_t freezeActive(const State& state) {
     return state.session.freeze.active ? 1u : 0u;
+}
+
+uint32_t machineArea(const State& state) {
+    return static_cast<uint32_t>(state.machine.area);
+}
+
+int64_t sectionDiff(const State& state) {
+    return state.machine.section.current_diff;
+}
+
+int64_t sectionMinimum(const State& state) {
+    return state.machine.section.minimum_diff;
+}
+
+uint64_t sectionCount(const State& state) {
+    return state.machine.section.section_count;
+}
+
+uint32_t stockCount(const State& state) {
+    return state.machine.stock.count;
+}
+
+int64_t pointCount(const State& state) {
+    return state.points.points;
 }
 
 } // namespace slotv2::runtime
