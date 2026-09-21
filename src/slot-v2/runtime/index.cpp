@@ -13,6 +13,8 @@ void reset(State& state, uint64_t seed) {
     machine_state::reset(state.machine);
     state.accounting = {};
     state.points = {};
+    state.special_committed = false;
+    state.last_special_apply = {};
 }
 
 uint32_t lever(State& state) {
@@ -30,6 +32,8 @@ uint32_t lever(State& state) {
 
     session::begin(state.session, result, special, freeze);
     state.acquisition = {};
+    state.special_committed = false;
+    state.last_special_apply = {};
 
     return static_cast<uint32_t>(result.role)
         | (static_cast<uint32_t>(result.special) << 8)
@@ -96,6 +100,15 @@ uint32_t specialResult(const State& state) {
 }
 
 uint32_t completeSpecial(State& state) {
+    if (state.session.phase == session::Phase::SpecialPending
+        && !state.special_committed) {
+        state.last_special_apply = special_apply::apply(
+            state.machine,
+            state.session.special
+        );
+        state.special_committed = true;
+    }
+
     session::completeSpecial(state.session);
     return static_cast<uint32_t>(state.session.phase);
 }
@@ -150,6 +163,22 @@ uint32_t stockCount(const State& state) {
 
 int64_t pointCount(const State& state) {
     return state.points.points;
+}
+
+uint32_t atActive(const State& state) {
+    return state.machine.at.active ? 1u : 0u;
+}
+
+uint32_t atTier(const State& state) {
+    return static_cast<uint32_t>(state.machine.at.tier);
+}
+
+int32_t atGamesLeft(const State& state) {
+    return state.machine.at.games_left;
+}
+
+uint32_t specialCommitted(const State& state) {
+    return state.special_committed ? 1u : 0u;
 }
 
 } // namespace slotv2::runtime
