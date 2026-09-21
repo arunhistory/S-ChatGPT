@@ -849,9 +849,17 @@
     if (center[0] === 'penguin' && center[1] === 'cherry' && center[2] === 'penguin') return 'strong_chance';
     if (center.filter(k => k === 'penguin').length === 2) return 'weak_chance';
 
-    const leftBottom = visibleKind(0, positions[0], 2);
-    if (leftBottom === 'cherry' && center[1] === 'replay') return 'weak_cherry';
-    if (center[0] === 'cherry' && center[1] !== 'replay') return 'strong_cherry'; // 中段チェリー
+    const leftVisible = [0,1,2].map(row => visibleKind(0, positions[0], row));
+    const middleVisible = [0,1,2].map(row => visibleKind(1, positions[1], row));
+    const rightVisible = [0,1,2].map(row => visibleKind(2, positions[2], row));
+
+    const leftHasCherry = leftVisible.includes('cherry');
+    const hasVisibleReplay = middleVisible.includes('replay') || rightVisible.includes('replay');
+
+    // チェリー強弱は停止窓に見えているREPLAYの有無を優先。
+    // REPLAYが1つでも見えていれば弱チェ。REPLAY無し＋左中段🍒で強チェ。
+    if (leftHasCherry && hasVisibleReplay) return 'weak_cherry';
+    if (center[0] === 'cherry' && !hasVisibleReplay) return 'strong_cherry';
 
     // スイカなどのレア役はメインライン基準。取りこぼし時だけ代用停止を使う。
     if (center.every(k => k === 'watermelon')) return 'watermelon';
@@ -1130,6 +1138,9 @@
         const candidate = slipPosition(index, base, slip);
         if (middleCherryMiddleReelSafe(candidate)) return candidate;
       }
+      // 4コマ以内にREPLAY無し停止形を作れない場合は無理に強チェ扱いしない。
+      // 実際に止まった窓のREPLAY有無で弱/強を判定する。
+      return base;
     }
 
     return base;
@@ -1944,13 +1955,18 @@
       ? physicalLinePayoutRole
       : null;
 
+    const cherryPhysical = pendingPhysicalRole === 'weak_cherry'
+      || pendingPhysicalRole === 'strong_cherry';
+
     const visibleRole = pendingSyntheticEntry
       ? physicalPattern
-      : (naviMiss
+      : (cherryPhysical
           ? physicalPattern
-          : (guaranteedRoleExpected
-              ? (guaranteedPhysicalRole || physicalPattern)
-              : (physicalLinePayoutRole || pendingPhysicalRole)));
+          : (naviMiss
+              ? physicalPattern
+              : (guaranteedRoleExpected
+                  ? (guaranteedPhysicalRole || physicalPattern)
+                  : (physicalLinePayoutRole || pendingPhysicalRole))));
 
     const visiblePayout = guaranteedRoleExpected
       ? (guaranteedPhysicalRole
@@ -2005,7 +2021,7 @@
       allEvents = allEvents.concat(payoutResult.events || []);
     }
 
-    els.roleResult.textContent = pendingSyntheticEntry
+    els.roleResult.textContent = pendingSyntheticEntry || cherryPhysical
       ? (roleLabels[physicalPattern] || physicalPattern)
       : (naviMiss
           ? 'ナビ外し / ' + (roleLabels[physicalPattern] || physicalPattern)
@@ -2053,6 +2069,7 @@
       els.eventNote.textContent += ' / 目押しアシスト';
     }
     if (!pendingSyntheticEntry
+        && !cherryPhysical
         && !naviMiss && !physicalLinePayoutRole
         && physicalPattern !== pendingPhysicalRole
         && !assistSubstitute
