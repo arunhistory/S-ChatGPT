@@ -37,11 +37,11 @@
   ];
   const symbolByKind = Object.fromEntries(symbols.map(s => [s.kind, s]));
 
-  // 確定済み21コマ配列
-  // 🍉=2/2/1, 🍒=2/1/0, 🔔=2/2/2
-  // 右11〜13は 青7→赤7→BAR
+  // 21コマ配列を実機式停止制御に合わせて再設計中。
+  // LEFT は確定。BARを狙えば隣接する🍉/🍒をフォローできる配置。
+  // MIDDLE / RIGHT は次工程で再配置するため現行配列を一時維持。
   const reelStrips = [
-    ['seven','replay','miss','cherry','bar','replay','bell','penguin','miss','alt-seven','replay','watermelon','cherry','bar','miss','replay','bell','chance','watermelon','miss','replay'],
+    ['bar','cherry','replay','bell','seven','replay','bell','replay','bell','alt-seven','bell','replay','watermelon','bar','cherry','bell','replay','penguin','replay','bell','watermelon'],
     ['bell','replay','miss','seven','watermelon','replay','bar','miss','penguin','replay','alt-seven','miss','cherry','replay','bar','watermelon','miss','chance','bell','replay','miss'],
     ['replay','miss','bell','penguin','replay','bar','miss','replay','watermelon','chance','alt-seven','seven','bar','replay','miss','bell','replay','bar','miss','replay','miss']
   ];
