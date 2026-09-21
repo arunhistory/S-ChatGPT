@@ -6,6 +6,7 @@ namespace slotv2::lever {
 
 LeverResult pull(Rng& rng) {
     LeverResult result{};
+    result.command_status = CommandStatus::Ok;
 
     const SpecialHit special = special_lottery::draw(rng.next27());
     if (special != SpecialHit::None) {
