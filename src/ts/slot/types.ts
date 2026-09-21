@@ -57,3 +57,17 @@ export interface AcquisitionResult {
   status: AcquisitionStatus;
   medals: number;
 }
+
+
+export const enum Symbol {
+  Unknown = 0,
+  Red7,
+  Blue7,
+  Bar,
+  Bell,
+  Replay,
+  Cherry,
+  Watermelon,
+  Penguin,
+  Snow,
+}
