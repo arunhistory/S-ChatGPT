@@ -132,6 +132,7 @@
   let deferredEntryReveal = null;
   let atOmenFlow = null;
   let pendingSyntheticEntry = false;
+  let pendingEntryAlignFlag = false; // BONUS/AT開始待ち中、このGで図柄揃いを許可する1/2フラグ
   let pendingSyntheticOmen = false;
   let entryCinematicActive = false;
   let freezeSequenceActive = false;
@@ -1475,7 +1476,7 @@
         bonusMedalsLeft: 0
       };
     }
-    if (!deferredEntryReveal || pendingSyntheticEntry) return raw;
+    if (!deferredEntryReveal) return raw;
     return {
       ...raw,
       inAT: false,
@@ -1543,6 +1544,7 @@
     pendingEntryReplayRole = false;
     pendingControl = null;
     pendingSyntheticEntry = false;
+    pendingEntryAlignFlag = false;
     pendingSyntheticOmen = false;
     pendingEntryAmbiguous = false;
     clearBellNavi();
@@ -1560,8 +1562,33 @@
       && (forcedRole === 'hit' || forcedRole === 'at');
 
     pendingSyntheticEntry = false;
+    pendingEntryAlignFlag = false;
     pendingSyntheticOmen = false;
-    if (atOmenFlow && atOmenFlow.phase === 'omen') {
+
+    if (deferredEntryReveal) {
+      // BONUS/ATの初回開始待ち。
+      // 内部当選はすでに成立済みだが、対応図柄が実際に揃うまで開始表示へ進めない。
+      // 各G 1/2で「図柄揃い許可フラグ」を立てる。
+      const queued = deferredEntryReveal;
+      pendingSyntheticEntry = true;
+      pendingEntryAlignFlag = Math.random() < 0.5;
+      pendingEntryAmbiguous = queued.ambiguous !== false;
+      pendingWasBonus = false;
+      pendingWasAT = false;
+      pendingWasChallenge = false;
+
+      pendingRole = queued.role; // 内部開始待ち: hit=BONUS / at=AT
+      pendingResult = {
+        events: [],
+        inAT: false,
+        inBonus: false,
+        navOrder: -1,
+        // フラグONのGだけ開始図柄を停止制御対象にする。
+        // OFFなら通常のハズレ制御で、偶然揃いも最終停止で蹴る。
+        reelRole: pendingEntryAlignFlag ? queued.role : 'miss',
+        reelPayout: 0
+      };
+    } else if (atOmenFlow && atOmenFlow.phase === 'omen') {
       // 旧WASMはすでにBONUSへ遷移済みなので、WASMを進めずAT予兆Gを挟む。
       pendingSyntheticOmen = true;
       pendingWasBonus = false;
@@ -1633,7 +1660,7 @@
       const normalTrigger = !pendingWasAT && !pendingWasBonus && !pendingWasChallenge;
       const physicalTriggerRole = pendingResult.reelRole || 'miss';
       const naturalTransition = normalTrigger
-        && !forcedRole
+        && (!forcedRole || forcedNormalDestination)
         && (pendingResult.inBonus || pendingResult.inAT);
 
       if (naturalTransition) {
@@ -1654,7 +1681,11 @@
         pendingRole = physicalTriggerRole;
         pendingResult = {
           ...pendingResult,
-          reelRole: physicalTriggerRole
+          reelRole: physicalTriggerRole,
+          // 内部開始イベントは図柄が揃った瞬間まで画面へ出さない。
+          events: (pendingResult.events || []).filter(e =>
+            !['bonus','episode_bonus','at_start','cold_enter','stock_gain','tier_up','freeze'].includes(e.type)
+          )
         };
       }
     }
@@ -1703,7 +1734,9 @@
     }
 
     stageCue(
-      pendingEntryAmbiguous ? 'entry_judge' : pendingRole,
+      pendingSyntheticEntry
+        ? (pendingEntryAlignFlag ? 'entry_judge' : pendingPhysicalRole)
+        : (pendingEntryAmbiguous ? 'entry_judge' : pendingRole),
       'spin'
     );
 
@@ -1713,15 +1746,32 @@
       return;
     }
 
-    if ((pendingSyntheticEntry || forcedRole === 'hit' || forcedRole === 'at') && (pendingRole === 'hit' || pendingRole === 'at')) {
+    if (pendingSyntheticEntry && (pendingRole === 'hit' || pendingRole === 'at')) {
       clearAutoTimers();
 
-      // 通常時からの自然当選は最後のジャッジまでAT/BONUSを伏せる。
-      // AT中予兆経由など、既に行き先を見せてよい経路だけ従来の確定演出。
-      if (pendingEntryAmbiguous) {
-        runNormalEntryJudgeCinematic();
+      if (pendingEntryAlignFlag) {
+        const isAT = pendingRole === 'at';
+        showMachineCinematic(
+          'TARGET',
+          isAT ? '🟥7を狙え' : '🟥7・🟥7・BARを狙え',
+          '押した位置から最大4コマ引き込み',
+          isAT ? 'gold target' : 'red target'
+        );
+        els.eventTitle.textContent = isAT ? '🟥7を狙え' : '🟥7・🟥7・BARを狙え';
+        els.eventNote.textContent = '開始フラグ ON / 揃うまでBONUS・ATは開始しない';
       } else {
-        runBonusEntryCinematic(pendingRole);
+        hideMachineCinematic();
+        els.eventTitle.textContent = 'SPINNING';
+        els.eventNote.textContent = '開始待機中';
+      }
+
+      for (let i = 0; i < 3; i++) startReelMotion(i);
+
+      if (autoEnabled) {
+        clearAutoTimers();
+        [0,1,2].forEach((reelIndex,i) => {
+          autoTimers.push(setTimeout(() => stopReelMotion(reelIndex), 450 + i * 250));
+        });
       }
       return;
     }
@@ -1769,9 +1819,11 @@
     const guaranteedPhysicalRole = guaranteedPayoutRoles.has(pendingPhysicalRole)
       ? physicalLinePayoutRole
       : null;
-    const visibleRole = naviMiss
+    const visibleRole = pendingSyntheticEntry
       ? physicalPattern
-      : (guaranteedPhysicalRole || physicalLinePayoutRole || pendingPhysicalRole);
+      : (naviMiss
+          ? physicalPattern
+          : (guaranteedPhysicalRole || physicalLinePayoutRole || pendingPhysicalRole));
     const visiblePayout = guaranteedPhysicalRole
       ? accountingReturnForRole(guaranteedPhysicalRole)
       : (physicalLinePayoutRole
@@ -1780,14 +1832,37 @@
     let allEvents = [...(result.events || [])];
 
     if (pendingSyntheticOmen && atOmenFlow && atOmenFlow.phase === 'entry') {
-      allEvents = allEvents.concat(atOmenFlow.events || []);
+      // AT中の予兆明けも同じ開始待ちへ接続する。
+      deferredEntryReveal = {
+        role: 'hit',
+        events: [...(atOmenFlow.events || [])],
+        ambiguous: false
+      };
       atOmenFlow = null;
     }
 
-    if (deferredEntryReveal) {
-      // 内部当選はこのレバーONで既に完結済み。
-      // 3リール停止後に表示制限だけ解除し、次Gの偽リプレイは作らない。
-      deferredEntryReveal = null;
+    if (pendingSyntheticEntry && deferredEntryReveal) {
+      const queued = deferredEntryReveal;
+      const entrySucceeded = pendingEntryAlignFlag
+        && physicalPattern === queued.role;
+
+      if (entrySucceeded) {
+        // 対応図柄が実際に揃ったこの瞬間にだけBONUS/AT開始イベントを公開。
+        allEvents = allEvents.concat(queued.events || []);
+        deferredEntryReveal = null;
+        pendingEntryAmbiguous = false;
+
+        showMachineCinematic(
+          'START',
+          queued.role === 'at' ? 'AT START' : 'BONUS START',
+          queued.role === 'at' ? '🟥7 🟥7 🟥7' : '🟥7 🟥7 BAR',
+          queued.role === 'at' ? 'gold judge-result' : 'red judge-result'
+        );
+        autoTimers.push(setTimeout(hideMachineCinematic,700));
+      } else {
+        // 内部当選は保持。次Gでもう一度1/2抽選から開始。
+        allEvents = [];
+      }
     }
 
     // 通常時は、実停止5ラインで新たに成立したベル/リプレイも差枚へ反映。
@@ -1800,13 +1875,15 @@
       allEvents = allEvents.concat(payoutResult.events || []);
     }
 
-    els.roleResult.textContent = naviMiss
-      ? 'ナビ外し / ' + (roleLabels[physicalPattern] || physicalPattern)
-      : (physicalLinePayoutRole
-          ? (roleLabels[physicalLinePayoutRole] || physicalLinePayoutRole)
-          : (pendingBellNaviActive
-              ? '🔔 押し順ベル'
-              : (roleLabels[pendingPhysicalRole] || pendingPhysicalRole)));
+    els.roleResult.textContent = pendingSyntheticEntry
+      ? (roleLabels[physicalPattern] || physicalPattern)
+      : (naviMiss
+          ? 'ナビ外し / ' + (roleLabels[physicalPattern] || physicalPattern)
+          : (physicalLinePayoutRole
+              ? (roleLabels[physicalLinePayoutRole] || physicalLinePayoutRole)
+              : (pendingBellNaviActive
+                  ? '🔔 押し順ベル'
+                  : (roleLabels[pendingPhysicalRole] || pendingPhysicalRole))));
     els.payoutResult.textContent = pendingWasChallenge
       ? ('POINT ' + Number(result.challengePoints ?? state().challengePoints) + '/10')
       : (visibleRole === 'replay'
@@ -1821,6 +1898,16 @@
 
     pushEvents(allEvents);
     showFinalBanner(allEvents, visibleRole, visiblePayout);
+
+    if (pendingSyntheticEntry && deferredEntryReveal) {
+      if (pendingEntryAlignFlag) {
+        els.eventTitle.textContent = '開始図柄 揃わず';
+        els.eventNote.textContent = '内部当選保持 / 次Gも開始待ち';
+      } else {
+        els.eventTitle.textContent = '開始待機';
+        els.eventNote.textContent = '内部当選保持';
+      }
+    }
     if (naviMiss) {
       els.eventNote.textContent += ' / ナビ外し（内部成立: 押し順ベル）';
     }
@@ -1908,6 +1995,7 @@
     pendingNaviOrderValid = true;
     pendingControl = null;
     pendingSyntheticEntry = false;
+    pendingEntryAlignFlag = false;
     pendingSyntheticOmen = false;
     entryCinematicActive = false;
     freezeSequenceActive = false;
