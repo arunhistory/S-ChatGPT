@@ -1,3 +1,21 @@
+export const enum CommandStatus {
+  Ok = 0,
+  RejectedPhase = 1,
+}
+
+export const enum SessionPhase {
+  Idle = 0,
+  Stopping = 1,
+  SpecialPending = 2,
+  Complete = 3,
+}
+
+export const enum EntryTarget {
+  None = 0,
+  MiddleAT = 1,
+  UpperAT = 2,
+}
+
 export type ReelId = 0 | 1 | 2;
 export type ReelPosition = number;
 
@@ -33,9 +51,17 @@ export const enum StopStatus {
 }
 
 export interface LeverResult {
+  commandStatus: CommandStatus;
   special: SpecialHit;
   role: RoleFlag;
   mainLotteryRan: boolean;
+}
+
+export interface SpecialResult {
+  hit: SpecialHit;
+  target: EntryTarget;
+  stock: number;
+  freeze: boolean;
 }
 
 export interface StopResult {
