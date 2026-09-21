@@ -1049,3 +1049,26 @@ body{height:100dvh;min-height:0;padding:4px;overflow:hidden}
   height:100%;
   pointer-events:none;
 }
+
+
+/* ===== Reel visibility fail-safe v7 ===== */
+.reel-art-track > img{
+  display:block !important;
+  position:absolute !important;
+  left:50% !important;
+  top:0 !important;
+  height:100% !important;
+  width:auto !important;
+  max-width:none !important;
+  transform:translateX(-50%) !important;
+  object-fit:contain !important;
+}
+.reel-art-track.canvas-ready > img{
+  display:none !important;
+}
+.reel-art-track:not(.canvas-ready) .reel-art-canvas{
+  display:none !important;
+}
+.reel-art-track.canvas-ready .reel-art-canvas{
+  display:block !important;
+}
