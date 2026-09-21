@@ -1,0 +1,64 @@
+#include "index.hpp"
+#include "../line/index.hpp"
+
+namespace slotv2::acquisition {
+namespace {
+
+bool bellRight(Symbol s) {
+    // 右リールだけ、ベル内部フラグ時は赤7をベル代用として許可する設計。
+    return s == Symbol::Bell || s == Symbol::Red7;
+}
+
+}
+
+Result judge(
+    RoleFlag internal_role,
+    uint8_t left_pos,
+    uint8_t middle_pos,
+    uint8_t right_pos
+) {
+    const auto line = line::read(left_pos, middle_pos, right_pos);
+    if (!line.ready) return {internal_role, Status::NotReady, 0};
+
+    switch (internal_role) {
+        case RoleFlag::Bell9:
+            if (line.left == Symbol::Bell
+                && line.middle == Symbol::Bell
+                && bellRight(line.right)) {
+                return {internal_role, Status::Acquired, 9};
+            }
+            return {internal_role, Status::Missed, 0};
+
+        case RoleFlag::Bell15:
+            // 新制御は中段1ラインのみ。15枚ベルも別ラインへ逃がさない。
+            if (line.left == Symbol::Bell
+                && line.middle == Symbol::Bell
+                && bellRight(line.right)) {
+                return {internal_role, Status::Acquired, 15};
+            }
+            return {internal_role, Status::Missed, 0};
+
+        case RoleFlag::Replay:
+            if (line.left == Symbol::Replay
+                && line.middle == Symbol::Replay
+                && line.right == Symbol::Replay) {
+                // REPLAYは再遊技。メダル払出とは分離する。
+                return {internal_role, Status::Acquired, 0};
+            }
+            return {internal_role, Status::Missed, 0};
+
+        case RoleFlag::WeakCherry:
+        case RoleFlag::StrongCherry:
+        case RoleFlag::Watermelon:
+        case RoleFlag::WeakChance:
+        case RoleFlag::StrongChance:
+        case RoleFlag::PenguinChance:
+            // これらは停止形を役ごとに確定してから専用判定を追加する。
+            return {internal_role, Status::NoPayoutRole, 0};
+
+        default:
+            return {internal_role, Status::NoPayoutRole, 0};
+    }
+}
+
+} // namespace slotv2::acquisition
