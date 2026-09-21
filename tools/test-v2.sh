@@ -6,12 +6,13 @@ BUILD="$ROOT/.build-slot-v2"
 
 rm -rf "$BUILD"
 cmake -S "$ROOT" -B "$BUILD"
-cmake --build "$BUILD" --target slot_v2_stop_test slot_v2_special_test slot_v2_navigation_test slot_v2_assist_test slot_v2_bell_navigation_test slot_v2_progress_test
+cmake --build "$BUILD" --target slot_v2_stop_test slot_v2_special_test slot_v2_navigation_test slot_v2_assist_test slot_v2_bell_navigation_test slot_v2_progress_test slot_v2_state_modules_test
 "$BUILD/slot_v2_stop_test"
 "$BUILD/slot_v2_special_test"
 "$BUILD/slot_v2_navigation_test"
 "$BUILD/slot_v2_assist_test"
 "$BUILD/slot_v2_bell_navigation_test"
 "$BUILD/slot_v2_progress_test"
+"$BUILD/slot_v2_state_modules_test"
 
 echo "slot v2 native tests passed."
