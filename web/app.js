@@ -463,14 +463,11 @@
     // DOMを21分割して並べる方式は廃止。
     // 元の縦リール画像をソースにして、canvasへ必要な3〜5コマだけ毎フレーム描画する。
     // これなら「継ぎ目」「ベルト端」「セル抜け」が物理的に存在しない。
-    track.querySelectorAll('img').forEach(img => {
-      img.style.display = 'none';
-    });
-
     const canvas = document.createElement('canvas');
     canvas.className = 'reel-art-canvas';
     canvas.setAttribute('aria-hidden','true');
     track.appendChild(canvas);
+    track.classList.add('canvas-ready');
 
     reelArtReady[index] = true;
   };
@@ -479,7 +476,15 @@
     prepareReelBelt(index);
     if (!reelArtReady[index]) return;
 
-    renderReelArt(index, true);
+    try {
+      renderReelArt(index, true);
+    } catch (err) {
+      const track=reelArtTracks[index];
+      track?.classList.remove('canvas-ready');
+      const canvas=track?.querySelector('.reel-art-canvas');
+      if (canvas) canvas.style.display='none';
+      return;
+    }
 
     if (reels[index].classList.contains('spinning') && reelArtFrames[index] === null) {
       startReelArtMotion(
@@ -489,87 +494,6 @@
     }
   };
 
-  const detectReelGrid = (index, source) => {
-    if (reelGridCache[index]) return reelGridCache[index];
-
-    const sampleW = 96;
-    const sampleH = source.naturalHeight;
-    const scan = document.createElement('canvas');
-    scan.width = sampleW;
-    scan.height = sampleH;
-    const sctx = scan.getContext('2d', { willReadFrequently:true });
-    sctx.drawImage(source,0,0,sampleW,sampleH);
-
-    const pixels = sctx.getImageData(0,0,sampleW,sampleH).data;
-    const row = new Float32Array(sampleH);
-
-    // 絵柄中央を避け、左右のレール内側を読む。横罫線だけを拾いやすい帯。
-    const bands = [
-      [Math.floor(sampleW*0.30),Math.floor(sampleW*0.38)],
-      [Math.floor(sampleW*0.62),Math.floor(sampleW*0.70)]
-    ];
-
-    for (let y=0;y<sampleH;y++) {
-      let sum=0,count=0;
-      for (const [x0,x1] of bands) {
-        for (let x=x0;x<=x1;x++) {
-          const p=(y*sampleW+x)*4;
-          sum += pixels[p]*0.299 + pixels[p+1]*0.587 + pixels[p+2]*0.114;
-          count++;
-        }
-      }
-      row[y]=sum/Math.max(1,count);
-    }
-
-    const edge = new Float32Array(sampleH-1);
-    for (let y=0;y<sampleH-1;y++) edge[y]=Math.abs(row[y+1]-row[y]);
-
-    let bestOffset=0;
-    let bestStep=sampleH/21.6;
-    let bestScore=-Infinity;
-    const minStep=sampleH/23.0;
-    const maxStep=sampleH/20.5;
-    const maxOffset=sampleH*0.035;
-
-    for (let step=minStep;step<=maxStep;step+=0.25) {
-      for (let off=0;off<=maxOffset;off+=0.5) {
-        const last=off+21*step;
-        if (last>=sampleH-2) continue;
-        let score=0;
-        for (let n=0;n<=21;n++) {
-          const y=Math.round(off+n*step);
-          let local=0;
-          for (let d=-2;d<=2;d++) {
-            const yy=y+d;
-            if (yy>=0 && yy<edge.length) local=Math.max(local,edge[yy]);
-          }
-          score+=local;
-        }
-        if (score>bestScore) {
-          bestScore=score;
-          bestOffset=off;
-          bestStep=step;
-        }
-      }
-    }
-
-    const bounds=[];
-    for (let n=0;n<=21;n++) {
-      const pred=Math.round(bestOffset+n*bestStep);
-      let bestY=pred,bestE=-1;
-      for (let d=-4;d<=4;d++) {
-        const y=pred+d;
-        if (y>=0 && y<edge.length && edge[y]>bestE) {
-          bestE=edge[y];
-          bestY=y;
-        }
-      }
-      bounds.push(bestY);
-    }
-
-    reelGridCache[index]={ bounds };
-    return reelGridCache[index];
-  };
 
   const reelArtGeometry = (index) => {
     const track = reelArtTracks[index];
@@ -602,12 +526,18 @@
     // 横は白余白を捨て、レール本体だけ。
     const sx=source.naturalWidth*0.300;
     const sw=source.naturalWidth*0.400;
-    const grid=detectReelGrid(index,source);
+
+    // 生成済み3本とも21コマ等間隔。上下の丸い終端だけ除いて固定分割する。
+    // ブラウザ上で画像を読み戻さないので、CORS/tainted canvasで消滅しない。
+    const top=source.naturalHeight*0.0052;
+    const bottom=source.naturalHeight*0.9935;
+    const step=(bottom-top)/21;
+    const bounds=Array.from({length:22},(_,n)=>top+step*n);
 
     return {
       track,source,canvas,ctx:canvas.getContext('2d'),
       width,height,dpr,cellHeight,stripHeight,sx,sw,
-      bounds:grid.bounds
+      bounds
     };
   };
 
@@ -652,17 +582,24 @@
     const firstK = Math.floor((-phase) / cellHeight) - 2;
     const lastK = firstK + 8;
 
-    for (let k = firstK; k <= lastK; k++) {
-      const logical = mod(k,21);
-      const sy = bounds[logical];
-      const srcCellHeight = Math.max(1,bounds[logical+1]-bounds[logical]);
-      const dy = phase + k * cellHeight;
+    try {
+      for (let k = firstK; k <= lastK; k++) {
+        const logical = mod(k,21);
+        const sy = bounds[logical];
+        const srcCellHeight = Math.max(1,bounds[logical+1]-bounds[logical]);
+        const dy = phase + k * cellHeight;
 
-      ctx.drawImage(
-        source,
-        sx, sy, sw, srcCellHeight,
-        -0.5,dy-0.6,width+1,cellHeight+1.2
-      );
+        ctx.drawImage(
+          source,
+          sx, sy, sw, srcCellHeight,
+          -0.5,dy-0.6,width+1,cellHeight+1.2
+        );
+      }
+    } catch (err) {
+      // 最悪でもリールそのものは消さない。
+      geo.track.classList.remove('canvas-ready');
+      geo.canvas.style.display='none';
+      return;
     }
   };
 
