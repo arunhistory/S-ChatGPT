@@ -943,14 +943,14 @@
     return true;
   };
 
-  // 代用停止は「成立したチャンス系役を、目押し失敗で取りこぼさない」ためだけに使う。
-  // ベル／リプレイは実停止ラインで判定するため、ここには絶対に入れない。
+  // 基本は目押し。成立図柄が押下位置から0〜4コマにあれば通常の引き込みで取れる。
+  // そのうえで現代機側の救済として、指定役だけ「本図柄を外した時の代用停止」を許可する。
+  // BARはチェリー/スイカを狙うためのランドマークなので、代用停止先には使わない。
   const assistSubstituteRoles = new Set([
     'watermelon','weak_chance','strong_chance','penguin_chance'
   ]);
 
-  // 🟥7当選系は、STOP入力そのものを狙える位相へ補正する目押しアシスト。
-  // 青7フリーズのような無条件強制停止とは分け、補正後も0〜4コマ引き込みで停止させる。
+  // AT/BONUSなどの内部当選をリール側へ強制表示するアシストは使わない。
   const aimAssistRoles = new Set();
 
   const buildSpinControl = (role, result) => {
@@ -966,6 +966,8 @@
       // 制御テーブルはレバーON時点で固定。STOP時は押下位置からこの表を参照するだけ。
       targets: [0,1,2].map(index => targetForRole(role, index, threeMedalLine)),
       threeMedalLine,
+      // hybrid: manual pull-in first, substitute rescue second.
+      manualFirst: true,
       assistSubstitute: assistSubstituteRoles.has(role),
       substituteUsed: [false, false, false],
       aimAssist: aimAssistRoles.has(role),
@@ -980,7 +982,7 @@
   const chooseAssistSubstitutePosition = (index, base) => {
     // 代用停止も押下位置から0〜4コマ。最小スベリを最優先する。
     // BAR/CHANCE/×のどれかへ無理に大きく滑らせない。
-    const safeKinds = new Set(['chance','bar','miss']);
+    const safeKinds = new Set(['chance','miss']);
     for (let slip = 0; slip <= 4; slip++) {
       const candidate = slipPosition(index,base,slip);
       if (safeKinds.has(visibleKind(index,candidate,1))) {
@@ -1141,17 +1143,19 @@
         return chooseGuaranteedPayoutPosition(index, target, base);
       }
 
+      // まず実機の基本となる0〜4コマ引き込み。
+      // ここは「アシスト」ではなく、押した場所に応じた通常の停止制御。
       for (let slip = 0; slip <= 4; slip++) {
         const candidate = slipPosition(index, base, slip);
         if (candidateMatchesTarget(index, candidate, target)) return candidate;
       }
 
-      // 🟥7当選系は取りこぼしにせず、狙える位相までSTOPをアシストして成立ラインを完成させる。
       if (pendingControl.aimAssist) {
         return chooseAimAssistedPosition(index, target, base);
       }
 
-      // アシスト対象役は4コマで本来図柄を引き込めなくても代用停止で成立を維持する。
+      // 指定された救済役だけ、本図柄が4コマ圏外なら代用停止へ落とす。
+      // それ以外は目押し結果をそのまま反映して取りこぼす。
       if (pendingControl.assistSubstitute) {
         return chooseAssistSubstitutePosition(index, base);
       }
@@ -1372,7 +1376,7 @@
     }
 
     const isBellNavi = pendingBellNaviActive
-      && pendingRole === 'bell9'
+      && pendingPhysicalRole === 'bell9'
       && pendingControl
       && pendingControl.navOrder >= 0
       && pendingControl.navOrder < stopOrders.length;
@@ -1723,7 +1727,7 @@
     }
     pendingControl = buildSpinControl(pendingPhysicalRole, pendingResult);
     pendingBellNaviActive = (pendingWasAT || pendingWasBonus)
-      && pendingRole === 'bell9'
+      && pendingPhysicalRole === 'bell9'
       && Number.isInteger(pendingControl.navOrder)
       && pendingControl.navOrder >= 0
       && pendingControl.navOrder < stopOrders.length;
@@ -1790,7 +1794,7 @@
     const assistSubstitute = !!pendingControl?.substituteUsed?.some(Boolean);
     const aimAssistUsed = !!pendingControl?.aimAssistUsed?.some(Boolean);
     const naviMiss = pendingBellNaviActive
-      && pendingRole === 'bell9'
+      && pendingPhysicalRole === 'bell9'
       && pendingControl
       && pendingControl.navOrder >= 0
       && !pendingNaviOrderValid;
@@ -1799,12 +1803,12 @@
 
     // ベル/リプレイは「内部予約役」より実停止ラインを優先する。
     // 5ラインのどこかで揃っていれば、その停止役が有効。
-    const guaranteedPhysicalRole = guaranteedPayoutRoles.has(pendingRole)
+    const guaranteedPhysicalRole = guaranteedPayoutRoles.has(pendingPhysicalRole)
       ? physicalLinePayoutRole
       : null;
     const visibleRole = naviMiss
       ? physicalPattern
-      : (guaranteedPhysicalRole || physicalLinePayoutRole || pendingRole);
+      : (guaranteedPhysicalRole || physicalLinePayoutRole || pendingPhysicalRole);
     const visiblePayout = guaranteedPhysicalRole
       ? accountingReturnForRole(guaranteedPhysicalRole)
       : (physicalLinePayoutRole
@@ -1829,7 +1833,7 @@
           ? (roleLabels[physicalLinePayoutRole] || physicalLinePayoutRole)
           : (pendingBellNaviActive
               ? '🔔 押し順ベル'
-              : (roleLabels[pendingRole] || pendingRole)));
+              : (roleLabels[pendingPhysicalRole] || pendingPhysicalRole)));
     els.payoutResult.textContent = pendingWasChallenge
       ? ('POINT ' + Number(result.challengePoints ?? state().challengePoints) + '/10')
       : (visibleRole === 'replay'
@@ -1854,9 +1858,13 @@
       els.eventNote.textContent += ' / 目押しアシスト';
     }
     if (pendingPhysicalRole !== pendingRole && pendingEntryReplayRole) {
-      els.eventNote.textContent += ' / 内部結果と停止役は別管理';
+      els.eventNote.textContent += ' / 内部当選';
     }
-    if (!naviMiss && !physicalLinePayoutRole && physicalPattern !== pendingRole && !assistSubstitute && !aimAssistUsed && pendingRole !== 'one_medal') {
+    if (!naviMiss && !physicalLinePayoutRole
+        && physicalPattern !== pendingPhysicalRole
+        && !assistSubstitute
+        && !aimAssistUsed
+        && pendingPhysicalRole !== 'one_medal') {
       els.eventNote.textContent += ' / 取りこぼし停止';
     }
     stageCue(visibleRole, 'result');
