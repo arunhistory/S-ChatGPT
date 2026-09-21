@@ -77,6 +77,7 @@ export const enum AcquisitionStatus {
   Acquired = 1,
   Missed = 2,
   NoPayoutRole = 3,
+  Substitute = 4,
 }
 
 export interface AcquisitionResult {
