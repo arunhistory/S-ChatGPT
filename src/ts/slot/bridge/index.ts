@@ -1,4 +1,6 @@
 import {
+  AcquisitionResult,
+  AcquisitionStatus,
   LeverResult,
   ReelId,
   ReelPosition,
@@ -13,6 +15,7 @@ export interface SlotWasmV2 {
   slot_v2_lever(): number;
   slot_v2_stop(reel: number, pressedPosition: number): number;
   slot_v2_stopped_position(reel: number): number;
+  slot_v2_acquisition(): number;
   slot_v2_validate_left(): number;
   slot_v2_last_special(): number;
   slot_v2_last_role(): number;
@@ -63,5 +66,15 @@ export function validateLeftReel(wasm: SlotWasmV2): LeftReelValidation {
     cherryHidePossible: (bits & 1) !== 0,
     bellGuaranteed: (bits & 2) !== 0,
     replayGuaranteed: (bits & 4) !== 0,
+  };
+}
+
+
+export function readAcquisition(wasm: SlotWasmV2): AcquisitionResult {
+  const packed = wasm.slot_v2_acquisition() >>> 0;
+  return {
+    status: (packed & 0xff) as AcquisitionStatus,
+    internalRole: ((packed >>> 8) & 0xff) as RoleFlag,
+    medals: (packed >>> 16) & 0xffff,
   };
 }
