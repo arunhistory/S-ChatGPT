@@ -1451,7 +1451,7 @@
       // 内部当選と停止役を因果関係のように1文へ混ぜない。
       // BONUS/ATは内部結果、下の「成立役」はそのゲームの物理停止役として別表示。
       els.eventNote.textContent = internalEvent
-        ? ((e.note || '') + (e.note ? ' / ' : '') + '内部当選')
+        ? ((e.note || '') + (e.note ? ' / ' : '') + '内部結果')
         : ((e.note || '') + ' / 停止役: ' + (roleLabels[actualRole] || actualRole)
             + (payout ? ' / ' + payout + '枚' : ''));
 
@@ -1547,8 +1547,7 @@
     pendingEntryAmbiguous = false;
     clearBellNavi();
 
-    // ここがレバーON抽選。直撃予約がある場合は、WASMを進めず
-    // 「次Gの入賞表示」だけを1ゲーム挟む。
+    // ここがレバーON抽選。内部AT/BONUS当選と物理リール停止役は別管理する。
     const forcedRole = els.roleTest.value;
     if (forcedRole) els.roleTest.value = '';
 
@@ -1579,7 +1578,7 @@
       };
       pendingRole = 'bell9';
       atOmenFlow.phase = 'entry';
-55730    } else {
+    } else {
       pendingResult = forcedRole
         ? callJson('slot_force_outcome_json', ['number'], [forceOutcomeCodes[forcedRole]])
         : callJson(s0.inBonus
@@ -1830,9 +1829,6 @@
     }
     if (aimAssistUsed) {
       els.eventNote.textContent += ' / 目押しアシスト';
-    }
-    if (pendingPhysicalRole !== pendingRole && result?.inBonus) {
-      els.eventNote.textContent += ' / 内部当選';
     }
     if (!naviMiss && !physicalLinePayoutRole
         && physicalPattern !== pendingPhysicalRole
