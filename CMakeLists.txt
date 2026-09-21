@@ -61,6 +61,7 @@ add_library(slot_v2_core
   src/slot-v2/cz-state/index.cpp
   src/slot-v2/bonus-state/index.cpp
   src/slot-v2/at-state/index.cpp
+  src/slot-v2/at-lottery/index.cpp
   src/slot-v2/stock/index.cpp
   src/slot-v2/section/index.cpp
 )
@@ -107,3 +108,7 @@ target_link_libraries(slot_v2_reel_candidate_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_machine_state_test src/slot-v2/machine_state_test.cpp)
 target_link_libraries(slot_v2_machine_state_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_at_lottery_test src/slot-v2/at_lottery_test.cpp)
+target_link_libraries(slot_v2_at_lottery_test PRIVATE slot_v2_core)
