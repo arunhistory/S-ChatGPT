@@ -4,6 +4,7 @@ import {
   CommandStatus,
   EntryTarget,
   LeverResult,
+  MachineArea,
   ReelId,
   ReelPosition,
   RoleFlag,
@@ -33,6 +34,12 @@ export interface SlotWasmV2 {
   slot_v2_last_special(): number;
   slot_v2_last_role(): number;
   slot_v2_freeze_active(): number;
+  slot_v2_machine_area(): number;
+  slot_v2_section_diff(): bigint;
+  slot_v2_section_minimum(): bigint;
+  slot_v2_section_count(): bigint;
+  slot_v2_stock_count(): number;
+  slot_v2_point_count(): bigint;
 }
 
 export function decodeLeverResult(packed: number): LeverResult {
@@ -167,4 +174,25 @@ export function validateAssistReel(
 
 export function readReelReadyMask(wasm: SlotWasmV2): number {
   return wasm.slot_v2_reel_ready_mask() >>> 0;
+}
+
+
+export interface MachineSnapshot {
+  area: MachineArea;
+  sectionDiff: bigint;
+  sectionMinimum: bigint;
+  sectionCount: bigint;
+  stockCount: number;
+  pointCount: bigint;
+}
+
+export function readMachineSnapshot(wasm: SlotWasmV2): MachineSnapshot {
+  return {
+    area: wasm.slot_v2_machine_area() as MachineArea,
+    sectionDiff: wasm.slot_v2_section_diff(),
+    sectionMinimum: wasm.slot_v2_section_minimum(),
+    sectionCount: wasm.slot_v2_section_count(),
+    stockCount: wasm.slot_v2_stock_count() >>> 0,
+    pointCount: wasm.slot_v2_point_count(),
+  };
 }
