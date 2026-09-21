@@ -23,6 +23,7 @@ add_library(slot_v2_core
   src/slot-v2/main-lottery/index.cpp
   src/slot-v2/lever/index.cpp
   src/slot-v2/reel-strip/index.cpp
+  src/slot-v2/reel-validator/index.cpp
   src/slot-v2/stop-candidate/index.cpp
   src/slot-v2/stop-rules/common.cpp
   src/slot-v2/stop-rules/bell.cpp
@@ -44,3 +45,7 @@ target_link_libraries(slot_v2_sim PRIVATE slot_v2_core)
 
 # Browser v2 WASM remains a direct clang build to match the existing project:
 #   tools/build-wasm-v2.sh
+
+
+add_executable(slot_v2_stop_test src/slot-v2/stop_test.cpp)
+target_link_libraries(slot_v2_stop_test PRIVATE slot_v2_core)
