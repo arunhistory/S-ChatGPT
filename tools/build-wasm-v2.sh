@@ -60,6 +60,9 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/stop-controller/index.cpp" \
   "$SRC/freeze/index.cpp" \
   "$SRC/acquisition/index.cpp" \
+  "$SRC/normal-progress/index.cpp" \
+  "$SRC/stock/index.cpp" \
+  "$SRC/section/index.cpp" \
   "$SRC/line/index.cpp" \
   "$SRC/session/index.cpp" \
   "$SRC/wasm/index.cpp"
