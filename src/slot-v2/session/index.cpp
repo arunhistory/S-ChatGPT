@@ -22,6 +22,8 @@ bool begin(
     state.lever = lever;
     state.special = special;
     state.freeze = freeze;
+    state.bell_navigation = {};
+    state.navigation_correct = true;
     state.stop_count = 0;
     for (int i = 0; i < 3; ++i) {
         state.stopped[i] = false;
@@ -34,6 +36,11 @@ bool begin(
         ? Phase::Stopping
         : Phase::SpecialPending;
     return true;
+}
+
+void setBellNavigation(State& state, const bell_navigation::Plan& plan) {
+    state.bell_navigation = plan;
+    state.navigation_correct = true;
 }
 
 bool canStop(const State& state, ReelId reel) {
@@ -72,6 +79,15 @@ void acceptStop(State& state, ReelId reel, const stop_shared::Result& result) {
     }
 
     const auto i = static_cast<uint8_t>(reel);
+    if (state.bell_navigation.active && state.navigation_correct) {
+        state.navigation_correct = navigation::nextIs(
+            state.bell_navigation.order,
+            state.stop_sequence,
+            state.stop_count,
+            reel
+        );
+    }
+
     state.stopped[i] = true;
     state.position[i] = result.final_position;
     state.stop_status[i] = result.status;
