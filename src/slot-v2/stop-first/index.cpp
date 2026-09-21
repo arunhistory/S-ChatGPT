@@ -36,6 +36,9 @@ stop_shared::Result resolve(const stop_shared::Context& ctx) {
         if (policy == role_policy::StopPolicy::EyeStop) {
             return {stop_shared::ResolveStatus::RoleMissed, candidate, i};
         }
+        if (policy == role_policy::StopPolicy::Assist) {
+            return {stop_shared::ResolveStatus::AssistGap, candidate, i};
+        }
         return {stop_shared::ResolveStatus::NoLegalCandidate, candidate, i};
     }
 
