@@ -7,6 +7,7 @@
 #include "../machine-state/index.hpp"
 #include "../accounting/index.hpp"
 #include "../point-ledger/index.hpp"
+#include "../special-apply/index.hpp"
 
 namespace slotv2::runtime {
 
@@ -17,6 +18,8 @@ struct State {
     machine_state::State machine{};
     accounting::State accounting{};
     point_ledger::State points{};
+    bool special_committed{false};
+    special_apply::Result last_special_apply{};
 };
 
 void reset(State& state, uint64_t seed);
@@ -39,5 +42,9 @@ int64_t sectionMinimum(const State& state);
 uint64_t sectionCount(const State& state);
 uint32_t stockCount(const State& state);
 int64_t pointCount(const State& state);
+uint32_t atActive(const State& state);
+uint32_t atTier(const State& state);
+int32_t atGamesLeft(const State& state);
+uint32_t specialCommitted(const State& state);
 
 } // namespace slotv2::runtime
