@@ -41,6 +41,12 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/stop-rules/watermelon.cpp" \
   "$SRC/stop-rules/fallback.cpp" \
   "$SRC/stop-rules/router.cpp" \
+  "$SRC/stop-rules/penguin.cpp" \
+  "$SRC/stop-rules/strong-chance.cpp" \
+  "$SRC/stop-rules/weak-chance.cpp" \
+  "$SRC/stop-rules/one-medal.cpp" \
+  "$SRC/stop-rules/miss.cpp" \
+  "$SRC/role-policy/index.cpp" \
   "$SRC/stop-first/index.cpp" \
   "$SRC/stop-second/index.cpp" \
   "$SRC/stop-third/index.cpp" \
