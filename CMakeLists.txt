@@ -24,6 +24,7 @@ add_library(slot_v2_core
   src/slot-v2/lever/index.cpp
   src/slot-v2/reel-strip/index.cpp
   src/slot-v2/reel-validator/index.cpp
+  src/slot-v2/reel-read/index.cpp
   src/slot-v2/stop-candidate/index.cpp
   src/slot-v2/stop-rules/common.cpp
   src/slot-v2/stop-rules/bell.cpp
