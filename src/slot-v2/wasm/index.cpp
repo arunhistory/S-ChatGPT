@@ -1,19 +1,10 @@
 #include <stdint.h>
-#include "../shared/rng.hpp"
-#include "../shared/types.hpp"
-#include "../lever/index.hpp"
-#include "../freeze/index.hpp"
-#include "../special-result/index.hpp"
-#include "../stop-controller/index.hpp"
+#include "../runtime/index.hpp"
 #include "../reel-validator/index.hpp"
 #include "../reel-read/index.hpp"
-#include "../session/index.hpp"
-#include "../acquisition/index.hpp"
 
 namespace {
-slotv2::Rng g_rng;
-slotv2::session::State g_session{};
-slotv2::acquisition::Result g_acquisition{};
+slotv2::runtime::State g_runtime{};
 }
 
 extern "C" {
@@ -21,122 +12,47 @@ extern "C" {
 __attribute__((visibility("default")))
 void slot_v2_reset(uint32_t seed_lo, uint32_t seed_hi) {
     const uint64_t seed = (static_cast<uint64_t>(seed_hi) << 32) | seed_lo;
-    g_rng.reset(seed);
-    slotv2::session::reset(g_session);
-    g_acquisition = {};
+    slotv2::runtime::reset(g_runtime, seed);
 }
 
 __attribute__((visibility("default")))
 uint32_t slot_v2_lever() {
-    if (!slotv2::session::canLever(g_session)) {
-        const auto current = g_session.lever;
-        return static_cast<uint32_t>(current.role)
-            | (static_cast<uint32_t>(current.special) << 8)
-            | (current.main_lottery_ran ? (1u << 16) : 0u)
-            | (static_cast<uint32_t>(slotv2::CommandStatus::RejectedPhase) << 24);
-    }
-
-    auto lever = slotv2::lever::pull(g_rng);
-    const auto special = slotv2::special_result::resolve(lever.special);
-    const auto freeze = slotv2::freeze::begin(lever.special);
-    slotv2::session::begin(g_session, lever, special, freeze);
-    g_acquisition = {};
-
-    // 0..7 role / 8..15 special / bit16 main-lottery-ran / 24..31 command status
-    return static_cast<uint32_t>(lever.role)
-        | (static_cast<uint32_t>(lever.special) << 8)
-        | (lever.main_lottery_ran ? (1u << 16) : 0u)
-        | (static_cast<uint32_t>(lever.command_status) << 24);
+    return slotv2::runtime::lever(g_runtime);
 }
 
 __attribute__((visibility("default")))
 uint32_t slot_v2_stop(uint32_t reel, uint32_t pressed_position) {
-    if (reel > 2u) {
-        return (static_cast<uint32_t>(slotv2::stop_shared::ResolveStatus::InvalidReel) << 16);
-    }
-
-    const auto reel_id = static_cast<slotv2::ReelId>(reel);
-
-    // 同じリールを二度止めて停止順を壊さない。
-    if (g_session.stopped[reel]) {
-        return (static_cast<uint32_t>(slotv2::stop_shared::ResolveStatus::InvalidReel) << 16)
-            | static_cast<uint32_t>(g_session.position[reel]);
-    }
-
-    if (g_session.phase == slotv2::session::Phase::SpecialPending) {
-        return (static_cast<uint32_t>(slotv2::stop_shared::ResolveStatus::SpecialControlPending) << 16);
-    }
-
-    if (!slotv2::session::canStop(g_session, reel_id)) {
-        return (static_cast<uint32_t>(slotv2::stop_shared::ResolveStatus::InvalidReel) << 16);
-    }
-
-    const auto ctx = slotv2::session::makeStopContext(
-        g_session,
-        reel_id,
-        static_cast<uint8_t>(pressed_position)
-    );
-
-    const auto result = slotv2::stop_controller::resolve(ctx);
-    slotv2::session::acceptStop(g_session, reel_id, result);
-
-    if (g_session.stop_count == 3u) {
-        g_acquisition = slotv2::acquisition::judge(
-            g_session.lever.role,
-            g_session.position[0],
-            g_session.position[1],
-            g_session.position[2],
-            slotv2::session::hadSubstitute(g_session),
-            slotv2::session::hadRoleMiss(g_session),
-            slotv2::session::hadAssistGap(g_session)
-        );
-    }
-
-    // bits 0..7 final position / 8..15 slip / 16..23 status
-    return static_cast<uint32_t>(result.final_position)
-        | (static_cast<uint32_t>(result.slip) << 8)
-        | (static_cast<uint32_t>(result.status) << 16);
+    return slotv2::runtime::stop(g_runtime, reel, pressed_position);
 }
 
 __attribute__((visibility("default")))
 uint32_t slot_v2_phase() {
-    return static_cast<uint32_t>(g_session.phase);
+    return slotv2::runtime::phase(g_runtime);
 }
 
 __attribute__((visibility("default")))
 uint32_t slot_v2_special_result() {
-    const auto& r = g_session.special;
-    // 0..7 SpecialHit / 8..15 EntryTarget / 16..23 stock / bit24 freeze
-    return static_cast<uint32_t>(r.hit)
-        | (static_cast<uint32_t>(r.target) << 8)
-        | (static_cast<uint32_t>(r.stock) << 16)
-        | (r.freeze ? (1u << 24) : 0u);
+    return slotv2::runtime::specialResult(g_runtime);
 }
 
 __attribute__((visibility("default")))
 uint32_t slot_v2_complete_special() {
-    slotv2::session::completeSpecial(g_session);
-    return static_cast<uint32_t>(g_session.phase);
+    return slotv2::runtime::completeSpecial(g_runtime);
 }
 
 __attribute__((visibility("default")))
 uint32_t slot_v2_stop_sequence(uint32_t order_index) {
-    if (order_index >= g_session.stop_count || order_index > 2u) return 0xffffffffu;
-    return static_cast<uint32_t>(g_session.stop_sequence[order_index]);
+    return slotv2::runtime::stopSequence(g_runtime, order_index);
 }
 
 __attribute__((visibility("default")))
 uint32_t slot_v2_stopped_position(uint32_t reel) {
-    if (reel > 2u || !g_session.stopped[reel]) return 0xffffffffu;
-    return static_cast<uint32_t>(g_session.position[reel]);
+    return slotv2::runtime::stoppedPosition(g_runtime, reel);
 }
 
 __attribute__((visibility("default")))
 uint32_t slot_v2_acquisition() {
-    // low 8bit = acquisition status / next 8bit = internal RoleFlag / high 16bit = medals
-    return static_cast<uint32_t>(g_acquisition.status)
-        | (static_cast<uint32_t>(g_acquisition.internal_role) << 8)
-        | ((static_cast<uint32_t>(g_acquisition.medals) & 0xffffu) << 16);
+    return slotv2::runtime::acquisitionPacked(g_runtime);
 }
 
 __attribute__((visibility("default")))
@@ -182,17 +98,17 @@ uint32_t slot_v2_validate_left() {
 
 __attribute__((visibility("default")))
 uint32_t slot_v2_last_special() {
-    return static_cast<uint32_t>(g_session.lever.special);
+    return slotv2::runtime::lastSpecial(g_runtime);
 }
 
 __attribute__((visibility("default")))
 uint32_t slot_v2_last_role() {
-    return static_cast<uint32_t>(g_session.lever.role);
+    return slotv2::runtime::lastRole(g_runtime);
 }
 
 __attribute__((visibility("default")))
 uint32_t slot_v2_freeze_active() {
-    return g_session.freeze.active ? 1u : 0u;
+    return slotv2::runtime::freezeActive(g_runtime);
 }
 
 }
