@@ -61,6 +61,7 @@ export interface LeftReelValidation {
   cherryHidePossible: boolean;
   bellGuaranteed: boolean;
   replayGuaranteed: boolean;
+  barLandmarkPair: boolean;
 }
 
 export function validateLeftReel(wasm: SlotWasmV2): LeftReelValidation {
@@ -69,6 +70,7 @@ export function validateLeftReel(wasm: SlotWasmV2): LeftReelValidation {
     cherryHidePossible: (bits & 1) !== 0,
     bellGuaranteed: (bits & 2) !== 0,
     replayGuaranteed: (bits & 4) !== 0,
+    barLandmarkPair: (bits & 8) !== 0,
   };
 }
 
