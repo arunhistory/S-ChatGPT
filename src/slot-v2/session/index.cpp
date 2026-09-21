@@ -63,7 +63,8 @@ void acceptStop(State& state, ReelId reel, const stop_shared::Result& result) {
     if (!canStop(state, reel)) return;
 
     if (result.status != stop_shared::ResolveStatus::Ok
-        && result.status != stop_shared::ResolveStatus::RoleMissed) {
+        && result.status != stop_shared::ResolveStatus::RoleMissed
+        && result.status != stop_shared::ResolveStatus::SubstituteStop) {
         return;
     }
 
