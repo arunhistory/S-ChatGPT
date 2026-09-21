@@ -457,29 +457,20 @@
     if (!track || reelArtReady[index]) return;
 
     const source = track.querySelector('img');
-    if (!source) return;
+    if (!source || !source.complete || source.naturalWidth === 0) return;
 
-    const src = source.getAttribute('src');
-    if (!src) return;
+    // DOMを21分割して並べる方式は廃止。
+    // 元の縦リール画像をソースにして、canvasへ必要な3〜5コマだけ毎フレーム描画する。
+    // これなら「継ぎ目」「ベルト端」「セル抜け」が物理的に存在しない。
+    track.querySelectorAll('img').forEach(img => {
+      img.style.display = 'none';
+    });
 
-    // 21コマを1コマずつDOM化し、12周分並べる。
-    // 常に中央6周付近だけを使うので、どちらへ回しても表示窓がベルト端へ到達しない。
-    // 元画像そのものをbackgroundとして使うためcanvas変換は不要。
-    // 各周は逆順にすることで、ベルトを下へ動かすと内部positionの+方向と一致する。
-    const fragment = document.createDocumentFragment();
-    for (let copy = 0; copy < 12; copy++) {
-      for (let visualCell = 0; visualCell < 21; visualCell++) {
-        const logicalCell = mod(-visualCell, 21);
-        const cell = document.createElement('div');
-        cell.className = 'reel-art-cell';
-        cell.dataset.logical = String(logicalCell);
-        cell.style.backgroundImage = 'url("' + src + '")';
-        fragment.appendChild(cell);
-      }
-    }
+    const canvas = document.createElement('canvas');
+    canvas.className = 'reel-art-canvas';
+    canvas.setAttribute('aria-hidden','true');
+    track.appendChild(canvas);
 
-    track.innerHTML = '';
-    track.appendChild(fragment);
     reelArtReady[index] = true;
   };
 
@@ -489,7 +480,6 @@
 
     renderReelArt(index, true);
 
-    // レバーONが画像ロード完了より先でも、ロード完了した瞬間に画像回転を追従開始。
     if (reels[index].classList.contains('spinning') && reelArtFrames[index] === null) {
       startReelArtMotion(
         index,
@@ -505,58 +495,96 @@
     prepareReelBelt(index);
     if (!reelArtReady[index]) return null;
 
-    const reelHeight = reels[index].clientHeight;
-    if (!reelHeight) return null;
+    const source = track.querySelector('img');
+    const canvas = track.querySelector('.reel-art-canvas');
+    if (!source || !canvas || !source.naturalWidth || !source.naturalHeight) return null;
 
-    const cellHeight = reelHeight / 3;
+    const width = reels[index].clientWidth;
+    const height = reels[index].clientHeight;
+    if (!width || !height) return null;
+
+    const dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+    const pixelW = Math.max(1, Math.round(width * dpr));
+    const pixelH = Math.max(1, Math.round(height * dpr));
+    if (canvas.width !== pixelW || canvas.height !== pixelH) {
+      canvas.width = pixelW;
+      canvas.height = pixelH;
+    }
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+
+    const cellHeight = height / 3;
     const stripHeight = cellHeight * 21;
 
-    // 上下端の丸い「リール終端」は使わない。
-    // 元画像の約1.2%ずつを上下から除外した21コマ領域だけを各セルへ投影。
-    const visibleFraction = 0.976;
-    const bgHeight = stripHeight / visibleFraction;
-    const topTrim = bgHeight * 0.012;
+    // 外側の白余白を切り、青いレールを含む中央帯だけ使う。
+    const sx = source.naturalWidth * 0.285;
+    const sw = source.naturalWidth * 0.430;
 
-    const cells = track.querySelectorAll('.reel-art-cell');
-    cells.forEach((cell) => {
-      const logicalCell = Number(cell.dataset.logical || 0);
-      cell.style.height = cellHeight + 'px';
-      cell.style.backgroundSize = 'auto ' + bgHeight + 'px';
-      cell.style.backgroundPosition =
-        'center ' + (-(topTrim + logicalCell * cellHeight)) + 'px';
-    });
+    // 上下の丸い「リール終端」を除外して、21コマだけを等分する。
+    const sy0 = source.naturalHeight * 0.014;
+    const sy1 = source.naturalHeight * 0.986;
+    const srcCellHeight = (sy1 - sy0) / 21;
 
-    return { track, cellHeight, stripHeight };
+    return {
+      track, source, canvas,
+      ctx: canvas.getContext('2d'),
+      width, height, dpr,
+      cellHeight, stripHeight,
+      sx, sw, sy0, srcCellHeight
+    };
   };
 
-  const targetReelArtY = (index) => {
+  const targetReelArtPhase = (index) => {
     const geo = reelArtGeometry(index);
     if (!geo) return null;
 
-    // 上段=position-1 が画面上端へ来るように、中央寄りのコピーを使う。
+    // 停止時は必ず、上段=position-1 / 中段=position / 下段=position+1。
     const topLogical = mod(reelPositions[index] - 1, 21);
-    const visualIndex = mod(-topLogical, 21);
-    const cellIndex = 21 * 6 + visualIndex;
-    return -(cellIndex * geo.cellHeight);
+    return -(topLogical * geo.cellHeight);
   };
 
   const paintReelArt = (index) => {
     const geo = reelArtGeometry(index);
-    if (!geo) return;
+    if (!geo || !geo.ctx) return;
 
-    // 古いCSSの transform:none !important と競合させない。
-    // 移動量だけCSS変数へ渡し、最終transformはCSS側で一本化する。
-    geo.track.style.setProperty('--reel-art-y', reelArtPhase[index] + 'px');
+    const {ctx, source, width, height, dpr, cellHeight, sx, sw, sy0, srcCellHeight} = geo;
+
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,width,height);
+    ctx.fillStyle = '#f7f9fc';
+    ctx.fillRect(0,0,width,height);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    const phase = reelArtPhase[index];
+
+    // 画面に見える範囲だけ描画。
+    // kは無限リール上のコマ番号で、mod(k,21)により永久に循環する。
+    const firstK = Math.floor((-phase) / cellHeight) - 2;
+    const lastK = firstK + 8;
+
+    for (let k = firstK; k <= lastK; k++) {
+      const logical = mod(k,21);
+      const sy = sy0 + logical * srcCellHeight;
+      const dy = phase + k * cellHeight;
+
+      // 1px弱重ねて、Retina/iPhoneのサブピクセル境界でも白線を出さない。
+      ctx.drawImage(
+        source,
+        sx, sy, sw, srcCellHeight,
+        -0.5, dy - 0.6, width + 1, cellHeight + 1.2
+      );
+    }
   };
 
   const renderReelArt = (index, immediate = false) => {
-    // 回転中はrequestAnimationFrameが連続描画を担当する。
     if (reelArtFrames[index] !== null && !immediate) return;
 
-    const y = targetReelArtY(index);
-    if (y === null) return;
+    const phase = targetReelArtPhase(index);
+    if (phase === null) return;
 
-    reelArtPhase[index] = y;
+    reelArtPhase[index] = phase;
+    normalizeReelArtPhase(index);
     paintReelArt(index);
   };
 
@@ -567,17 +595,14 @@
     }
   };
 
-  const normalizeReelArtY = (index) => {
+  const normalizeReelArtPhase = (index) => {
     const geo = reelArtGeometry(index);
     if (!geo) return;
 
+    // canvas上では21コマごとに完全同一なので、ここで±1周しても画面は1pxも変わらない。
     const cycle = geo.stripHeight;
-
-    // 12周のうち中央4〜8周だけを使う。
-    // ベルト端が表示窓へ来る前に、同一絵柄位置のまま1周単位で中央へ戻す。
-    // 1周分は完全に同じセル列なので、見た目は一切変化しない。
-    while (reelArtPhase[index] > -4 * cycle) reelArtPhase[index] -= cycle;
-    while (reelArtPhase[index] < -8 * cycle) reelArtPhase[index] += cycle;
+    while (reelArtPhase[index] > 0) reelArtPhase[index] -= cycle;
+    while (reelArtPhase[index] <= -cycle) reelArtPhase[index] += cycle;
   };
 
   const startReelArtMotion = (index, direction) => {
@@ -589,10 +614,11 @@
     reelArtDirection[index] = direction;
 
     if (!Number.isFinite(reelArtPhase[index])) {
-      reelArtPhase[index] = targetReelArtY(index) ?? -geo.stripHeight;
+      reelArtPhase[index] = targetReelArtPhase(index) ?? 0;
     }
+    normalizeReelArtPhase(index);
 
-    // 通常回転=約8.7コマ/秒。逆回転だけ少し速め。
+    // 通常は下向き。フリーズ逆回転だけ上向き。
     const secondsPerCell = direction > 0 ? 0.115 : 0.090;
     const speed = geo.cellHeight / secondsPerCell;
     let last = performance.now();
@@ -604,12 +630,11 @@
         return;
       }
 
-      const dt = Math.min(0.035, Math.max(0, (now - last) / 1000));
+      const dt = Math.min(0.035, Math.max(0,(now-last)/1000));
       last = now;
 
-      // 通常はひたすら下向き。逆回転時だけ上向き。
       reelArtPhase[index] += direction * speed * dt;
-      normalizeReelArtY(index);
+      normalizeReelArtPhase(index);
       paintReelArt(index);
 
       reelArtFrames[index] = requestAnimationFrame(frame);
@@ -624,14 +649,14 @@
     const geo = reelArtGeometry(index);
     if (!geo) return;
 
-    const base = targetReelArtY(index);
+    const base = targetReelArtPhase(index);
     if (base === null) return;
 
     const cycle = geo.stripHeight;
     const current = reelArtPhase[index];
 
-    // 同じ停止位置は1周ごとに無限に存在する。
-    // 今流れている方向を維持したまま、次に来る同一位置へ着地させる。
+    // 同じ停止位置は21コマごとに無限に存在する。
+    // 今の移動方向を反転させず、次に来る同一停止位置へ入れる。
     let target = base;
     if (reelArtDirection[index] >= 0) {
       while (target < current) target += cycle;
@@ -639,19 +664,15 @@
       while (target > current) target -= cycle;
     }
 
-    // 停止先も中央帯の中へ収める。端まで行かせない。
-    while (target > -4 * cycle) target -= cycle;
-    while (target < -8 * cycle) target += cycle;
-
-    const distance = Math.abs(target - current);
-    const duration = Math.max(90, Math.min(320, 85 + (distance / geo.cellHeight) * 28));
-    const startY = current;
+    const distance = Math.abs(target-current);
+    const duration = Math.max(90,Math.min(300,90+(distance/geo.cellHeight)*22));
+    const from = current;
     const started = performance.now();
-    const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+    const easeOut = t => 1-Math.pow(1-t,3);
 
     const frame = (now) => {
-      const t = Math.min(1, (now - started) / duration);
-      reelArtPhase[index] = startY + (target - startY) * easeOut(t);
+      const t = Math.min(1,(now-started)/duration);
+      reelArtPhase[index] = from + (target-from)*easeOut(t);
       paintReelArt(index);
 
       if (t < 1) {
@@ -659,7 +680,7 @@
       } else {
         reelArtFrames[index] = null;
         reelArtPhase[index] = target;
-        normalizeReelArtY(index);
+        normalizeReelArtPhase(index);
         paintReelArt(index);
       }
     };
