@@ -843,3 +843,15 @@ body{height:100dvh;min-height:0;padding:4px;overflow:hidden}
     height:156px !important;
   }
 }
+
+
+/* ===== Reel direction fix: normal DOWN / reverse UP ===== */
+.reel-art-track{
+  transition:transform 95ms cubic-bezier(.15,.72,.25,1);
+}
+.reel.spinning .reel-art-track{
+  transition:none !important;
+}
+.reel-art-track.reel-art-no-transition{
+  transition:none !important;
+}
