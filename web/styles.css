@@ -789,3 +789,57 @@ body{height:100dvh;min-height:0;padding:4px;overflow:hidden}
 .payline{
   z-index:8;
 }
+
+
+/* ===== Reel overlay v2: full-width crop + smooth motion ===== */
+.reel-window{
+  width:min(366px,calc(100vw - 12px)) !important;
+  height:178px !important;
+  padding:4px !important;
+  gap:4px !important;
+  border-width:4px !important;
+}
+.reel{
+  flex:1 1 0 !important;
+  width:auto !important;
+  height:162px !important;
+  min-width:0;
+  animation:none !important;
+}
+.reel-art{
+  inset:0 !important;
+  border-radius:6px;
+}
+.reel-art-track{
+  left:50% !important;
+  width:auto !important;
+  min-width:100%;
+  transform-origin:50% 0;
+  transition:transform 68ms linear;
+}
+.reel-art-track.reel-art-no-transition{
+  transition:none !important;
+}
+.reel-art-track img{
+  display:block;
+  width:auto !important;
+  max-width:none !important;
+  margin-left:0 !important;
+  transform:translateX(-50%);
+  object-fit:contain !important;
+}
+.reel.spinning .reel-art-track{
+  filter:blur(.65px);
+}
+.reel.reverse-spinning .reel-art-track{
+  filter:blur(.8px);
+}
+@media(max-width:600px){
+  .reel-window{
+    width:min(356px,calc(100vw - 8px)) !important;
+    height:172px !important;
+  }
+  .reel{
+    height:156px !important;
+  }
+}
