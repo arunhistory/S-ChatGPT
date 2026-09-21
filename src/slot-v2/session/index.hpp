@@ -21,6 +21,11 @@ struct State {
     freeze::Directive freeze{};
     bool stopped[3]{false,false,false};
     uint8_t position[3]{0,0,0};
+    stop_shared::ResolveStatus stop_status[3]{
+        stop_shared::ResolveStatus::NoLegalCandidate,
+        stop_shared::ResolveStatus::NoLegalCandidate,
+        stop_shared::ResolveStatus::NoLegalCandidate
+    };
     uint8_t stop_count{0};
 };
 
@@ -39,6 +44,8 @@ stop_shared::Context makeStopContext(
     uint8_t pressed_position
 );
 void acceptStop(State& state, ReelId reel, const stop_shared::Result& result);
+bool hadSubstitute(const State& state);
+bool hadRoleMiss(const State& state);
 void completeSpecial(State& state);
 
 } // namespace slotv2::session
