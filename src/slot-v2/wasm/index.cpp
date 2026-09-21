@@ -3,6 +3,7 @@
 #include "../shared/types.hpp"
 #include "../lever/index.hpp"
 #include "../freeze/index.hpp"
+#include "../special-result/index.hpp"
 #include "../stop-controller/index.hpp"
 #include "../reel-validator/index.hpp"
 #include "../reel-read/index.hpp"
@@ -27,15 +28,25 @@ void slot_v2_reset(uint32_t seed_lo, uint32_t seed_hi) {
 
 __attribute__((visibility("default")))
 uint32_t slot_v2_lever() {
-    const auto lever = slotv2::lever::pull(g_rng);
+    if (!slotv2::session::canLever(g_session)) {
+        const auto current = g_session.lever;
+        return static_cast<uint32_t>(current.role)
+            | (static_cast<uint32_t>(current.special) << 8)
+            | (current.main_lottery_ran ? (1u << 16) : 0u)
+            | (static_cast<uint32_t>(slotv2::CommandStatus::RejectedPhase) << 24);
+    }
+
+    auto lever = slotv2::lever::pull(g_rng);
+    const auto special = slotv2::special_result::resolve(lever.special);
     const auto freeze = slotv2::freeze::begin(lever.special);
-    slotv2::session::begin(g_session, lever, freeze);
+    slotv2::session::begin(g_session, lever, special, freeze);
     g_acquisition = {};
 
-    // low 8bit = RoleFlag / next 8bit = SpecialHit / bit16 = main lottery ran
+    // 0..7 role / 8..15 special / bit16 main-lottery-ran / 24..31 command status
     return static_cast<uint32_t>(lever.role)
         | (static_cast<uint32_t>(lever.special) << 8)
-        | (lever.main_lottery_ran ? (1u << 16) : 0u);
+        | (lever.main_lottery_ran ? (1u << 16) : 0u)
+        | (static_cast<uint32_t>(lever.command_status) << 24);
 }
 
 __attribute__((visibility("default")))
@@ -52,8 +63,12 @@ uint32_t slot_v2_stop(uint32_t reel, uint32_t pressed_position) {
             | static_cast<uint32_t>(g_session.position[reel]);
     }
 
-    if (g_session.lever.special != slotv2::SpecialHit::None) {
+    if (g_session.phase == slotv2::session::Phase::SpecialPending) {
         return (static_cast<uint32_t>(slotv2::stop_shared::ResolveStatus::SpecialControlPending) << 16);
+    }
+
+    if (!slotv2::session::canStop(g_session, reel_id)) {
+        return (static_cast<uint32_t>(slotv2::stop_shared::ResolveStatus::InvalidReel) << 16);
     }
 
     const auto ctx = slotv2::session::makeStopContext(
@@ -78,6 +93,27 @@ uint32_t slot_v2_stop(uint32_t reel, uint32_t pressed_position) {
     return static_cast<uint32_t>(result.final_position)
         | (static_cast<uint32_t>(result.slip) << 8)
         | (static_cast<uint32_t>(result.status) << 16);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_phase() {
+    return static_cast<uint32_t>(g_session.phase);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_special_result() {
+    const auto& r = g_session.special;
+    // 0..7 SpecialHit / 8..15 EntryTarget / 16..23 stock / bit24 freeze
+    return static_cast<uint32_t>(r.hit)
+        | (static_cast<uint32_t>(r.target) << 8)
+        | (static_cast<uint32_t>(r.stock) << 16)
+        | (r.freeze ? (1u << 24) : 0u);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_complete_special() {
+    slotv2::session::completeSpecial(g_session);
+    return static_cast<uint32_t>(g_session.phase);
 }
 
 __attribute__((visibility("default")))
