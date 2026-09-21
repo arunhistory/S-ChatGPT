@@ -881,6 +881,32 @@
     return accountingReturnForRole(role);
   };
 
+  const chooseEntryWaitPhysicalRole = () => {
+    // BONUS/AT開始待ち中も、見た目は通常遊技として成立役を出す。
+    // 内部BONUS/AT状態は進めず、停止制御用の物理役だけを独立抽選する。
+    const r = Math.random();
+    let x = 0;
+
+    const table = [
+      ['one_medal', 4/5],
+      ['bell9', 1/15],
+      ['replay', 1/30],
+      ['bell15', 1/80],
+      ['weak_chance', 1/90],
+      ['watermelon', 1/100],
+      ['weak_cherry', 1/180],
+      ['strong_chance', 1/150],
+      ['penguin_chance', 1/500],
+      ['strong_cherry', 1/1000]
+    ];
+
+    for (const [role, p] of table) {
+      x += p;
+      if (r < x) return role;
+    }
+    return 'miss';
+  };
+
   const deriveRoleFromResult = (result, physicalFirst = false) => {
     const forced = els.roleTest.value;
     if (forced) return forced;
@@ -1578,15 +1604,19 @@
       pendingWasChallenge = false;
 
       pendingRole = queued.role; // 内部開始待ち: hit=BONUS / at=AT
+      const waitPhysicalRole = pendingEntryAlignFlag
+        ? queued.role
+        : chooseEntryWaitPhysicalRole();
+
       pendingResult = {
         events: [],
         inAT: false,
         inBonus: false,
         navOrder: -1,
-        // フラグONのGだけ開始図柄を停止制御対象にする。
-        // OFFなら通常のハズレ制御で、偶然揃いも最終停止で蹴る。
-        reelRole: pendingEntryAlignFlag ? queued.role : 'miss',
-        reelPayout: 0
+        // 1/2フラグOFF時は普通に遊技する。
+        // ON時だけ開始図柄フラグを停止制御へ渡す。
+        reelRole: waitPhysicalRole,
+        reelPayout: accountingReturnForRole(waitPhysicalRole)
       };
     } else if (atOmenFlow && atOmenFlow.phase === 'omen') {
       // 旧WASMはすでにBONUSへ遷移済みなので、WASMを進めずAT予兆Gを挟む。
@@ -1736,7 +1766,7 @@
     stageCue(
       pendingSyntheticEntry
         ? (pendingEntryAlignFlag ? 'entry_judge' : pendingPhysicalRole)
-        : (pendingEntryAmbiguous ? 'entry_judge' : pendingRole),
+        : pendingPhysicalRole,
       'spin'
     );
 
@@ -1749,30 +1779,66 @@
     if (pendingSyntheticEntry && (pendingRole === 'hit' || pendingRole === 'at')) {
       clearAutoTimers();
 
-      if (pendingEntryAlignFlag) {
-        const isAT = pendingRole === 'at';
+      if (!pendingEntryAlignFlag) {
+        // 1/2フラグOFFは完全に通常遊技として見せる。
+        for (let i = 0; i < 3; i++) startReelMotion(i);
+
+        if (autoEnabled) {
+          clearAutoTimers();
+          [0,1,2].forEach((reelIndex,i) => {
+            autoTimers.push(setTimeout(() => stopReelMotion(reelIndex), 450 + i * 250));
+          });
+        }
+        return;
+      }
+
+      // 1/2フラグONでも、いきなり「7を狙え」は出さない。
+      // まず当たり告知 → 少し間を置いて狙え、の順にする。
+      entryCinematicActive = true;
+      for (let i = 0; i < 3; i++) {
+        startReelMotion(i);
+        stops[i].disabled = true;
+        stops[i].classList.remove('active');
+      }
+
+      const queued = deferredEntryReveal;
+      const ambiguous = queued?.ambiguous !== false;
+
+      showMachineCinematic(
+        'HIT',
+        ambiguous ? '当たり' : (pendingRole === 'at' ? 'AT 確定' : 'BONUS 確定'),
+        ambiguous ? '行き先はまだ分からない' : '',
+        ambiguous ? 'judge' : (pendingRole === 'at' ? 'gold' : 'red')
+      );
+      els.eventTitle.textContent = ambiguous ? '当たり' : '確定';
+      els.eventNote.textContent = ambiguous ? '図柄告知待機' : '開始図柄を狙え';
+
+      autoTimers.push(setTimeout(() => {
         showMachineCinematic(
           'TARGET',
-          isAT ? '🟥7を狙え' : '🟥7・🟥7・BARを狙え',
-          '押した位置から最大4コマ引き込み',
-          isAT ? 'gold target' : 'red target'
+          '🟥7を狙え',
+          ambiguous ? '右リールの 🟥7 / BAR で行き先決定' : '押した位置から最大4コマ引き込み',
+          pendingRole === 'at' ? 'gold target' : 'red target'
         );
-        els.eventTitle.textContent = isAT ? '🟥7を狙え' : '🟥7・🟥7・BARを狙え';
-        els.eventNote.textContent = '開始フラグ ON / 揃うまでBONUS・ATは開始しない';
-      } else {
-        hideMachineCinematic();
-        els.eventTitle.textContent = 'SPINNING';
-        els.eventNote.textContent = '開始待機中';
-      }
+        els.eventTitle.textContent = '🟥7を狙え';
+        els.eventNote.textContent = ambiguous
+          ? '右リールでAT / BONUSをジャッジ'
+          : '押した位置から最大4コマ引き込み';
 
-      for (let i = 0; i < 3; i++) startReelMotion(i);
+        entryCinematicActive = false;
+        for (let i = 0; i < 3; i++) {
+          stops[i].disabled = false;
+          stops[i].classList.add('active');
+        }
 
-      if (autoEnabled) {
-        clearAutoTimers();
-        [0,1,2].forEach((reelIndex,i) => {
-          autoTimers.push(setTimeout(() => stopReelMotion(reelIndex), 450 + i * 250));
-        });
-      }
+        if (autoEnabled) {
+          clearAutoTimers();
+          [0,1,2].forEach((reelIndex,i) => {
+            autoTimers.push(setTimeout(() => stopReelMotion(reelIndex), 500 + i * 280));
+          });
+        }
+      }, 600));
+
       return;
     }
 
@@ -1899,14 +1965,11 @@
     pushEvents(allEvents);
     showFinalBanner(allEvents, visibleRole, visiblePayout);
 
-    if (pendingSyntheticEntry && deferredEntryReveal) {
-      if (pendingEntryAlignFlag) {
-        els.eventTitle.textContent = '開始図柄 揃わず';
-        els.eventNote.textContent = '内部当選保持 / 次Gも開始待ち';
-      } else {
-        els.eventTitle.textContent = '開始待機';
-        els.eventNote.textContent = '内部当選保持';
-      }
+    if (pendingSyntheticEntry && deferredEntryReveal && pendingEntryAlignFlag) {
+      // 「狙え」を出したGだけ、失敗時に次Gへ持ち越すことを表示。
+      // フラグOFFの通常遊技では、強チェ等の成立役表示を絶対に上書きしない。
+      els.eventTitle.textContent = '図柄揃わず';
+      els.eventNote.textContent = '次ゲームへ';
     }
     if (naviMiss) {
       els.eventNote.textContent += ' / ナビ外し（内部成立: 押し順ベル）';
@@ -1917,7 +1980,8 @@
     if (aimAssistUsed) {
       els.eventNote.textContent += ' / 目押しアシスト';
     }
-    if (!naviMiss && !physicalLinePayoutRole
+    if (!pendingSyntheticEntry
+        && !naviMiss && !physicalLinePayoutRole
         && physicalPattern !== pendingPhysicalRole
         && !assistSubstitute
         && !aimAssistUsed
