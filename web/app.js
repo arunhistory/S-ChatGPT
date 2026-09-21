@@ -129,6 +129,7 @@
   let pendingPressedOrder = [];
   let pendingNaviOrderValid = true;
   let pendingControl = null;
+  let pendingGuaranteedLines = null;
   let deferredEntryReveal = null;
   let atOmenFlow = null;
   let pendingSyntheticEntry = false;
@@ -805,6 +806,14 @@
     };
   };
 
+  const payoutLineRows = {
+    top:[0,0,0],
+    center:[1,1,1],
+    bottom:[2,2,2],
+    diagUp:[2,1,0],
+    diagDown:[0,1,2]
+  };
+
   const classifyPhysicalLinePayout = (positions = reelPositions) => {
     const lines = payoutLinesForPositions(positions);
     const all = [lines.top, lines.center, lines.bottom, lines.diagUp, lines.diagDown];
@@ -1023,13 +1032,57 @@
 
   const guaranteedPayoutRoles = new Set(['bell9','bell15','three_medal','replay']);
 
+  const guaranteedSymbolForRole = (role) => {
+    if (role === 'replay') return 'replay';
+    if (role === 'bell9' || role === 'bell15' || role === 'three_medal') return 'bell';
+    return null;
+  };
+
   const chooseGuaranteedPayoutPosition = (index, target, base) => {
-    // STOPを押した位置から、回転方向へ0〜4コマだけ引き込む。
-    // 5コマ以上先へワープさせる制御は禁止。
+    const symbol = guaranteedSymbolForRole(pendingControl?.role);
+    if (!symbol) return base;
+
+    if (!Array.isArray(pendingGuaranteedLines) || !pendingGuaranteedLines.length) {
+      pendingGuaranteedLines = Object.keys(payoutLineRows);
+    }
+
+    let best = null;
+
     for (let slip = 0; slip <= 4; slip++) {
       const candidate = slipPosition(index, base, slip);
-      if (candidateMatchesTarget(index, candidate, target)) return candidate;
+
+      const lines = pendingGuaranteedLines.filter(name => {
+        const rows = payoutLineRows[name];
+        if (!rows) return false;
+
+        // 今回止めるリールは、必ず成立図柄そのものをそのラインへ置く。
+        if (visibleKind(index, candidate, rows[index]) !== symbol) return false;
+
+        // 既に止まっているリールも同じライン上で同じ成立図柄でなければ不可。
+        for (let j = 0; j < 3; j++) {
+          if (j === index || !reelStopped[j]) continue;
+          if (visibleKind(j, reelPositions[j], rows[j]) !== symbol) return false;
+        }
+        return true;
+      });
+
+      if (!lines.length) continue;
+
+      // 後続リールの選択肢を多く残す候補を優先。同数なら最小スベリ。
+      if (!best || lines.length > best.lines.length
+          || (lines.length === best.lines.length && slip < best.slip)) {
+        best = { candidate, slip, lines };
+      }
     }
+
+    if (best) {
+      pendingGuaranteedLines = best.lines;
+      return best.candidate;
+    }
+
+    // 4コマ以内に「その図柄だけ」で成立ラインを作れない場合、
+    // 他図柄を代用してベル/リプレイ扱いには絶対にしない。
+    pendingGuaranteedLines = [];
     return base;
   };
 
@@ -1569,6 +1622,7 @@
     pendingBellNaviActive = false;
     pendingEntryReplayRole = false;
     pendingControl = null;
+    pendingGuaranteedLines = null;
     pendingSyntheticEntry = false;
     pendingEntryAlignFlag = false;
     pendingSyntheticOmen = false;
@@ -1750,6 +1804,9 @@
     // リール停止制御は別物。AT/BONUSの内部当選を赤7/BARへ強制変換せず、
     // そのゲームで実際に成立している物理役(reelRole)だけを0〜4コマ制御する。
     pendingControl = buildSpinControl(pendingPhysicalRole, pendingResult);
+    pendingGuaranteedLines = guaranteedPayoutRoles.has(pendingPhysicalRole)
+      ? Object.keys(payoutLineRows)
+      : null;
     pendingBellNaviActive = (pendingWasAT || pendingWasBonus)
       && pendingPhysicalRole === 'bell9'
       && Number.isInteger(pendingControl.navOrder)
@@ -1882,16 +1939,23 @@
 
     // ベル/リプレイは「内部予約役」より実停止ラインを優先する。
     // 5ラインのどこかで揃っていれば、その停止役が有効。
-    const guaranteedPhysicalRole = guaranteedPayoutRoles.has(pendingPhysicalRole)
+    const guaranteedRoleExpected = guaranteedPayoutRoles.has(pendingPhysicalRole);
+    const guaranteedPhysicalRole = guaranteedRoleExpected
       ? physicalLinePayoutRole
       : null;
+
     const visibleRole = pendingSyntheticEntry
       ? physicalPattern
       : (naviMiss
           ? physicalPattern
-          : (guaranteedPhysicalRole || physicalLinePayoutRole || pendingPhysicalRole));
-    const visiblePayout = guaranteedPhysicalRole
-      ? accountingReturnForRole(guaranteedPhysicalRole)
+          : (guaranteedRoleExpected
+              ? (guaranteedPhysicalRole || physicalPattern)
+              : (physicalLinePayoutRole || pendingPhysicalRole)));
+
+    const visiblePayout = guaranteedRoleExpected
+      ? (guaranteedPhysicalRole
+          ? accountingReturnForRole(guaranteedPhysicalRole)
+          : 0)
       : (physicalLinePayoutRole
           ? accountingReturnForRole(physicalLinePayoutRole)
           : (naviMiss ? accountingReturnForRole(physicalPattern) : payout));
@@ -1945,10 +2009,14 @@
       ? (roleLabels[physicalPattern] || physicalPattern)
       : (naviMiss
           ? 'ナビ外し / ' + (roleLabels[physicalPattern] || physicalPattern)
-          : (physicalLinePayoutRole
-              ? (roleLabels[physicalLinePayoutRole] || physicalLinePayoutRole)
-              : (pendingBellNaviActive
-                  ? '🔔 押し順ベル'
+          : (guaranteedRoleExpected
+              ? (guaranteedPhysicalRole
+                  ? (pendingBellNaviActive
+                      ? '🔔 押し順ベル'
+                      : (roleLabels[guaranteedPhysicalRole] || guaranteedPhysicalRole))
+                  : (roleLabels[physicalPattern] || physicalPattern))
+              : (physicalLinePayoutRole
+                  ? (roleLabels[physicalLinePayoutRole] || physicalLinePayoutRole)
                   : (roleLabels[pendingPhysicalRole] || pendingPhysicalRole))));
     els.payoutResult.textContent = pendingWasChallenge
       ? ('POINT ' + Number(result.challengePoints ?? state().challengePoints) + '/10')
@@ -1964,6 +2032,10 @@
 
     pushEvents(allEvents);
     showFinalBanner(allEvents, visibleRole, visiblePayout);
+
+    if (guaranteedRoleExpected && !guaranteedPhysicalRole) {
+      els.eventNote.textContent = '成立ライン不成立 / 払出なし';
+    }
 
     if (pendingSyntheticEntry && deferredEntryReveal && pendingEntryAlignFlag) {
       // 「狙え」を出したGだけ、失敗時に次Gへ持ち越すことを表示。
@@ -2058,6 +2130,7 @@
     pendingPressedOrder = [];
     pendingNaviOrderValid = true;
     pendingControl = null;
+    pendingGuaranteedLines = null;
     pendingSyntheticEntry = false;
     pendingEntryAlignFlag = false;
     pendingSyntheticOmen = false;
