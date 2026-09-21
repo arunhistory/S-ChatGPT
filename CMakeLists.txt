@@ -54,3 +54,7 @@ target_link_libraries(slot_v2_sim PRIVATE slot_v2_core)
 
 add_executable(slot_v2_stop_test src/slot-v2/stop_test.cpp)
 target_link_libraries(slot_v2_stop_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_special_test src/slot-v2/special_test.cpp)
+target_link_libraries(slot_v2_special_test PRIVATE slot_v2_core)
