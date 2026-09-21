@@ -542,8 +542,10 @@
   const paintReelArt = (index) => {
     const geo = reelArtGeometry(index);
     if (!geo) return;
-    geo.track.style.transform =
-      'translate3d(0,' + reelArtPhase[index] + 'px,0)';
+
+    // 古いCSSの transform:none !important と競合させない。
+    // 移動量だけCSS変数へ渡し、最終transformはCSS側で一本化する。
+    geo.track.style.setProperty('--reel-art-y', reelArtPhase[index] + 'px');
   };
 
   const renderReelArt = (index, immediate = false) => {
