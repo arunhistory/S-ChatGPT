@@ -17,8 +17,12 @@ Result judge(
     uint8_t middle_pos,
     uint8_t right_pos,
     bool had_substitute,
-    bool had_role_miss
+    bool had_role_miss,
+    bool had_assist_gap
 ) {
+    if (had_assist_gap) {
+        return {internal_role, Status::AssistGap, 0};
+    }
     if (had_substitute) {
         return {internal_role, Status::Substitute, 0};
     }
