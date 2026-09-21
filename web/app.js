@@ -1248,6 +1248,14 @@
     const forcedRole = els.roleTest.value;
     if (forcedRole) els.roleTest.value = '';
 
+    // DEBUGのAT/当たりも、通常時なら「通常当選の行き先テスト」として扱う。
+    // 内部結果だけ強制し、演出は本番と同じくAT/BONUSを最後まで隠す。
+    const forcedNormalDestination = !!forcedRole
+      && !pendingWasAT
+      && !pendingWasBonus
+      && !pendingWasChallenge
+      && (forcedRole === 'hit' || forcedRole === 'at');
+
     pendingSyntheticEntry = false;
     pendingSyntheticOmen = false;
     if (atOmenFlow && atOmenFlow.phase === 'omen') {
@@ -1312,6 +1320,10 @@
                 ? 'slot_spin_challenge_json'
                 : (s0.inAT ? 'slot_spin_at_json' : 'slot_spin_normal_json')));
       pendingRole = deriveRoleFromResult(pendingResult, pendingWasChallenge);
+
+      if (forcedNormalDestination) {
+        pendingEntryAmbiguous = true;
+      }
 
       // 旧WASMのAT当たりは同GでBONUS/EPISODEへ直行するため、
       // その遷移を捕まえて「予兆1G → 当たり入賞G」に分解する。
@@ -1426,7 +1438,7 @@
     }
 
     stageCue(
-      pendingSyntheticEntry && pendingEntryAmbiguous ? 'entry_judge' : pendingRole,
+      pendingEntryAmbiguous ? 'entry_judge' : pendingRole,
       'spin'
     );
 
@@ -1440,8 +1452,8 @@
       clearAutoTimers();
 
       // 通常時からの自然当選は最後のジャッジまでAT/BONUSを伏せる。
-      // DEBUG強制やAT中予兆経由など、既に行き先確定を見せてよい経路は従来の確定演出。
-      if (pendingSyntheticEntry && pendingEntryAmbiguous) {
+      // AT中予兆経由など、既に行き先を見せてよい経路だけ従来の確定演出。
+      if (pendingEntryAmbiguous) {
         runNormalEntryJudgeCinematic(pendingRole);
       } else {
         runBonusEntryCinematic(pendingRole);
