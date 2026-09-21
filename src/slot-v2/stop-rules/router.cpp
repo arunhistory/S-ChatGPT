@@ -3,6 +3,11 @@
 #include "replay.hpp"
 #include "cherry.hpp"
 #include "watermelon.hpp"
+#include "miss.hpp"
+#include "one-medal.hpp"
+#include "weak-chance.hpp"
+#include "strong-chance.hpp"
+#include "penguin.hpp"
 #include "fallback.hpp"
 
 namespace slotv2::stop_rules {
@@ -22,6 +27,22 @@ bool accepts(const stop_shared::Context& ctx, const reel_strip::StripView& strip
 
         case RoleFlag::Watermelon:
             return watermelon::accepts(ctx, strip, candidate);
+
+        case RoleFlag::WeakChance:
+            return weak_chance::accepts(ctx, strip, candidate);
+
+        case RoleFlag::StrongChance:
+            return strong_chance::accepts(ctx, strip, candidate);
+
+        case RoleFlag::PenguinChance:
+            return penguin::accepts(ctx, strip, candidate);
+
+        case RoleFlag::OneMedal:
+            return one_medal::accepts(ctx, strip, candidate);
+
+        case RoleFlag::Miss:
+        case RoleFlag::None:
+            return miss::accepts(ctx, strip, candidate);
 
         default:
             return fallback::accepts(ctx, strip, candidate);
