@@ -24,6 +24,25 @@ bool canStopSafely(const reel_strip::StripView& strip, int pressed) {
     return false;
 }
 
+bool hasBarLandmarkPair(const reel_strip::StripView& strip) {
+    int pairs = 0;
+    for (int bar = 0; bar < strip.size; ++bar) {
+        if (strip.data[bar] != Symbol::Bar) continue;
+        int cherry = bar - 1;
+        int watermelon = bar - 2;
+        while (cherry < 0) cherry += strip.size;
+        while (watermelon < 0) watermelon += strip.size;
+        cherry %= strip.size;
+        watermelon %= strip.size;
+
+        if (strip.data[cherry] == Symbol::Cherry
+            && strip.data[watermelon] == Symbol::Watermelon) {
+            ++pairs;
+        }
+    }
+    return pairs == 2;
+}
+
 bool canReachSymbolSafely(const reel_strip::StripView& strip, int pressed, Symbol symbol) {
     for (int slip = 0; slip <= kMaxSlip; ++slip) {
         int p = pressed - slip;
@@ -54,6 +73,7 @@ uint32_t validateLeft() {
     if (cherryHide) out |= LeftCherryHidePossible;
     if (bell) out |= LeftBellGuaranteed;
     if (replay) out |= LeftReplayGuaranteed;
+    if (hasBarLandmarkPair(strip)) out |= LeftBarLandmarkPair;
     return out;
 }
 
