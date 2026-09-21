@@ -15,6 +15,7 @@ SRC="$ROOT/src/slot-v2"
   -Wl,--export=slot_v2_freeze_active \
   -Wl,--export=slot_v2_stop \
   -Wl,--export=slot_v2_stopped_position \
+  -Wl,--export=slot_v2_validate_left \
   -Wl,--initial-memory=131072 -Wl,--max-memory=16777216 \
   -o "$ROOT/web/slot-v2.wasm" \
   "$SRC/shared/memory.cpp" \
@@ -23,6 +24,7 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/main-lottery/index.cpp" \
   "$SRC/lever/index.cpp" \
   "$SRC/reel-strip/index.cpp" \
+  "$SRC/reel-validator/index.cpp" \
   "$SRC/stop-candidate/index.cpp" \
   "$SRC/stop-rules/common.cpp" \
   "$SRC/stop-rules/bell.cpp" \
