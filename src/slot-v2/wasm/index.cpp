@@ -87,7 +87,8 @@ uint32_t slot_v2_stop(uint32_t reel, uint32_t pressed_position) {
             g_session.position[1],
             g_session.position[2],
             slotv2::session::hadSubstitute(g_session),
-            slotv2::session::hadRoleMiss(g_session)
+            slotv2::session::hadRoleMiss(g_session),
+            slotv2::session::hadAssistGap(g_session)
         );
     }
 
@@ -116,6 +117,12 @@ __attribute__((visibility("default")))
 uint32_t slot_v2_complete_special() {
     slotv2::session::completeSpecial(g_session);
     return static_cast<uint32_t>(g_session.phase);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_stop_sequence(uint32_t order_index) {
+    if (order_index >= g_session.stop_count || order_index > 2u) return 0xffffffffu;
+    return static_cast<uint32_t>(g_session.stop_sequence[order_index]);
 }
 
 __attribute__((visibility("default")))
