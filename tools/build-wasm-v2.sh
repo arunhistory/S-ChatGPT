@@ -17,6 +17,8 @@ SRC="$ROOT/src/slot-v2"
   -Wl,--export=slot_v2_stopped_position \
   -Wl,--export=slot_v2_acquisition \
   -Wl,--export=slot_v2_validate_left \
+  -Wl,--export=slot_v2_visible_symbol \
+  -Wl,--export=slot_v2_symbol_at \
   -Wl,--initial-memory=131072 -Wl,--max-memory=16777216 \
   -o "$ROOT/web/slot-v2.wasm" \
   "$SRC/shared/memory.cpp" \
@@ -26,6 +28,7 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/lever/index.cpp" \
   "$SRC/reel-strip/index.cpp" \
   "$SRC/reel-validator/index.cpp" \
+  "$SRC/reel-read/index.cpp" \
   "$SRC/stop-candidate/index.cpp" \
   "$SRC/stop-rules/common.cpp" \
   "$SRC/stop-rules/bell.cpp" \
