@@ -23,8 +23,23 @@ export const enum RoleFlag {
   PenguinChance,
 }
 
+export const enum StopStatus {
+  Ok = 0,
+  StripUndefined = 1,
+  NoLegalCandidate = 2,
+  InvalidReel = 3,
+  SpecialControlPending = 4,
+  RoleMissed = 5,
+}
+
 export interface LeverResult {
   special: SpecialHit;
   role: RoleFlag;
   mainLotteryRan: boolean;
+}
+
+export interface StopResult {
+  finalPosition: ReelPosition;
+  slip: number;
+  status: StopStatus;
 }
