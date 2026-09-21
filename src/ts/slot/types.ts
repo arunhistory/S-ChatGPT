@@ -43,3 +43,17 @@ export interface StopResult {
   slip: number;
   status: StopStatus;
 }
+
+
+export const enum AcquisitionStatus {
+  NotReady = 0,
+  Acquired = 1,
+  Missed = 2,
+  NoPayoutRole = 3,
+}
+
+export interface AcquisitionResult {
+  internalRole: RoleFlag;
+  status: AcquisitionStatus;
+  medals: number;
+}
