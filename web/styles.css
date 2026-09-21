@@ -908,3 +908,34 @@ body{height:100dvh;min-height:0;padding:4px;overflow:hidden}
   box-shadow:none !important;
   backface-visibility:hidden;
 }
+
+
+/* ===== Endless reel belt v3 =====
+   画像を上下へ積んで継ぐ方式を廃止。
+   21コマを再構成した1周分の背景をrepeat-yし、background-positionだけ連続移動する。 */
+.reel-art-track{
+  position:absolute !important;
+  inset:0 !important;
+  left:0 !important;
+  top:0 !important;
+  width:100% !important;
+  min-width:0 !important;
+  height:100% !important;
+  transform:none !important;
+  transition:none !important;
+  animation:none !important;
+  background-repeat:repeat-y !important;
+  background-position-x:center !important;
+  will-change:background-position;
+  line-height:0;
+}
+.reel.spinning .reel-art-track,
+.reel.spinning.reverse-spinning .reel-art-track{
+  transform:none !important;
+  transition:none !important;
+  animation:none !important;
+  filter:blur(.45px);
+}
+.reel-art-track img{
+  display:none !important;
+}
