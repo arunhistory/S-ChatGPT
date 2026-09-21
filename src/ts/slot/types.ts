@@ -1,3 +1,9 @@
+export const enum ATTier {
+  Lower = 0,
+  Middle = 1,
+  Upper = 2,
+}
+
 export const enum MachineArea {
   Normal = 0,
   CZ = 1,
