@@ -127,6 +127,26 @@ int64_t slot_v2_point_count() {
 }
 
 __attribute__((visibility("default")))
+uint32_t slot_v2_at_active() {
+    return slotv2::runtime::atActive(g_runtime);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_at_tier() {
+    return slotv2::runtime::atTier(g_runtime);
+}
+
+__attribute__((visibility("default")))
+int32_t slot_v2_at_games_left() {
+    return slotv2::runtime::atGamesLeft(g_runtime);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_special_committed() {
+    return slotv2::runtime::specialCommitted(g_runtime);
+}
+
+__attribute__((visibility("default")))
 uint32_t slot_v2_last_special() {
     return slotv2::runtime::lastSpecial(g_runtime);
 }
