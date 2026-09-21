@@ -562,10 +562,10 @@
       return mod(reelPositions[index],reelStrips[index].length);
     }
 
-    // 赤ライン中央を基準に、現在流れて来ている次のコマをSTOP入力位置にする。
+    // 赤ライン中央に最も近い図柄を、その瞬間に押した位置として扱う。
+    // BARを赤ライン中央で押したなら、内部基準も必ずそのBARになる。
     const raw = 1 - (reelArtPhase[index] / geo.cellHeight);
-    const p = reelArtDirection[index] >= 0 ? Math.floor(raw + 1e-7) : Math.ceil(raw - 1e-7);
-    return mod(p,reelStrips[index].length);
+    return mod(Math.round(raw),reelStrips[index].length);
   };
 
   const paintReelArt = (index) => {
@@ -904,7 +904,10 @@
 
   const targetForRole = (role, index, threeMedalLine = null) => {
     switch (role) {
-      // 通常当選の左・中は共通で🟥7。右リールだけがAT=🟥7 / 当たり=BAR。
+      // 入賞図柄は配列どおりに引き込む。
+      // 左BAR(4)→赤7(0)=4コマ、中BAR(6)→赤7(3)=3コマ、
+      // 右BAR(12)→赤7(11)=1コマなので、BARを目印に押せる配置をそのまま活かす。
+      // BONUSは🟥7・🟥7・BAR、ATは🟥7・🟥7・🟥7。
       case 'freeze': return { row:1, kind:'alt-seven' };
       case 'at': return { row:1, kind:'seven' };
       case 'tier_up': return { row:1, kind:'bar' };
@@ -976,15 +979,14 @@
     mod(base - slip, reelStrips[index].length);
 
   const chooseAssistSubstitutePosition = (index, base) => {
-    // 成立役はレバーONで既に確定済み。ここでは停止表示だけを代用形へ落とす。
-    const safeKinds = ['chance','bar','miss'];
-    for (const kind of safeKinds) {
-      for (let slip = 0; slip <= 4; slip++) {
-        const candidate = slipPosition(index, base, slip);
-        if (visibleKind(index, candidate, 1) === kind) {
-          pendingControl.substituteUsed[index] = true;
-          return candidate;
-        }
+    // 代用停止も押下位置から0〜4コマ。最小スベリを最優先する。
+    // BAR/CHANCE/×のどれかへ無理に大きく滑らせない。
+    const safeKinds = new Set(['chance','bar','miss']);
+    for (let slip = 0; slip <= 4; slip++) {
+      const candidate = slipPosition(index,base,slip);
+      if (safeKinds.has(visibleKind(index,candidate,1))) {
+        pendingControl.substituteUsed[index] = true;
+        return candidate;
       }
     }
     pendingControl.substituteUsed[index] = true;
@@ -1067,16 +1069,18 @@
   };
 
   const chooseNormalMissPosition = (index, base) => {
+    const willAllStop = reelStopped.filter(Boolean).length === 2;
+
+    // 通常ハズレの1・2停止目は押した位置をそのまま使う。
+    // BARやその周辺の配置を「目印」として作ったリール配列を崩さない。
+    if (!willAllStop) return base;
+
+    // 最終停止だけ、ハズレなのに偶然役が完成する場合に限り0〜4コマで蹴る。
     for (let slip = 0; slip <= 4; slip++) {
-      const candidate = slipPosition(index, base, slip);
-      if (!missCenterSafe(index, candidate)) continue;
-
-      const test = [...reelPositions];
-      test[index] = candidate;
-      const willAllStop = reelStopped.filter(Boolean).length === 2;
-      if (willAllStop && classifyPattern(test) !== 'miss') continue;
-
-      return candidate;
+      const candidate = slipPosition(index,base,slip);
+      const test=[...reelPositions];
+      test[index]=candidate;
+      if (classifyPattern(test)==='miss') return candidate;
     }
 
     return base;
@@ -1801,6 +1805,41 @@
           ? accountingReturnForRole(physicalLinePayoutRole)
           : (naviMiss ? accountingReturnForRole(physicalPattern) : payout));
     let allEvents = [...(result.events || [])];
+
+    // AT/BONUS/FREEZEの入賞ゲームは、図柄が実際に揃って初めて開始表示へ進む。
+    // 目押しを外した場合は内部当選を保持し、WASMをもう1G進めず同じ入賞ゲームを再試行する。
+    const entryRole = pendingRole === 'hit'
+      || pendingRole === 'at'
+      || pendingRole === 'freeze'
+      || pendingRole === 'tier_up';
+    const entrySucceeded = !pendingSyntheticEntry
+      || !entryRole
+      || physicalPattern === pendingRole;
+
+    if (pendingSyntheticEntry && entryRole && !entrySucceeded) {
+      deferredEntryReveal = {
+        role: pendingRole,
+        events: allEvents,
+        ambiguous: pendingEntryAmbiguous
+      };
+
+      els.roleResult.textContent = '図柄揃わず';
+      els.payoutResult.textContent = 'RETRY';
+      els.eventTitle.textContent = pendingRole === 'hit'
+        ? '🟥7 🟥7 BAR を狙え'
+        : (pendingRole === 'freeze' ? '🟦7を狙え' : '🟥7を狙え');
+      els.eventNote.textContent = '内部当選は継続 / BARを目印に最大4コマ引き込み';
+      els.eventBanner.className = 'event-banner hot';
+
+      render(displayState(state()));
+      clearBellNavi();
+
+      if (autoEnabled) {
+        clearAutoTimers();
+        autoTimers.push(setTimeout(beginGame,450));
+      }
+      return;
+    }
 
     // 通常時は、実停止5ラインで新たに成立したベル/リプレイも差枚へ反映。
     // AT/BONUSは内部純増会計済みなので二重加算しない。
