@@ -144,6 +144,7 @@
   let reelArtPhase = [0, 0, 0];
   let reelArtDirection = [1, 1, 1]; // +1=下向き / -1=上向き
   let reelArtReady = [false, false, false];
+  let reelGridCache = [null, null, null];
   let autoEnabled = false;
   let autoTimers = [];
 
@@ -488,6 +489,88 @@
     }
   };
 
+  const detectReelGrid = (index, source) => {
+    if (reelGridCache[index]) return reelGridCache[index];
+
+    const sampleW = 96;
+    const sampleH = source.naturalHeight;
+    const scan = document.createElement('canvas');
+    scan.width = sampleW;
+    scan.height = sampleH;
+    const sctx = scan.getContext('2d', { willReadFrequently:true });
+    sctx.drawImage(source,0,0,sampleW,sampleH);
+
+    const pixels = sctx.getImageData(0,0,sampleW,sampleH).data;
+    const row = new Float32Array(sampleH);
+
+    // 絵柄中央を避け、左右のレール内側を読む。横罫線だけを拾いやすい帯。
+    const bands = [
+      [Math.floor(sampleW*0.30),Math.floor(sampleW*0.38)],
+      [Math.floor(sampleW*0.62),Math.floor(sampleW*0.70)]
+    ];
+
+    for (let y=0;y<sampleH;y++) {
+      let sum=0,count=0;
+      for (const [x0,x1] of bands) {
+        for (let x=x0;x<=x1;x++) {
+          const p=(y*sampleW+x)*4;
+          sum += pixels[p]*0.299 + pixels[p+1]*0.587 + pixels[p+2]*0.114;
+          count++;
+        }
+      }
+      row[y]=sum/Math.max(1,count);
+    }
+
+    const edge = new Float32Array(sampleH-1);
+    for (let y=0;y<sampleH-1;y++) edge[y]=Math.abs(row[y+1]-row[y]);
+
+    let bestOffset=0;
+    let bestStep=sampleH/21.6;
+    let bestScore=-Infinity;
+    const minStep=sampleH/23.0;
+    const maxStep=sampleH/20.5;
+    const maxOffset=sampleH*0.035;
+
+    for (let step=minStep;step<=maxStep;step+=0.25) {
+      for (let off=0;off<=maxOffset;off+=0.5) {
+        const last=off+21*step;
+        if (last>=sampleH-2) continue;
+        let score=0;
+        for (let n=0;n<=21;n++) {
+          const y=Math.round(off+n*step);
+          let local=0;
+          for (let d=-2;d<=2;d++) {
+            const yy=y+d;
+            if (yy>=0 && yy<edge.length) local=Math.max(local,edge[yy]);
+          }
+          score+=local;
+        }
+        if (score>bestScore) {
+          bestScore=score;
+          bestOffset=off;
+          bestStep=step;
+        }
+      }
+    }
+
+    const bounds=[];
+    for (let n=0;n<=21;n++) {
+      const pred=Math.round(bestOffset+n*bestStep);
+      let bestY=pred,bestE=-1;
+      for (let d=-4;d<=4;d++) {
+        const y=pred+d;
+        if (y>=0 && y<edge.length && edge[y]>bestE) {
+          bestE=edge[y];
+          bestY=y;
+        }
+      }
+      bounds.push(bestY);
+    }
+
+    reelGridCache[index]={ bounds };
+    return reelGridCache[index];
+  };
+
   const reelArtGeometry = (index) => {
     const track = reelArtTracks[index];
     if (!track) return null;
@@ -503,34 +586,28 @@
     const height = reels[index].clientHeight;
     if (!width || !height) return null;
 
-    const dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
-    const pixelW = Math.max(1, Math.round(width * dpr));
-    const pixelH = Math.max(1, Math.round(height * dpr));
-    if (canvas.width !== pixelW || canvas.height !== pixelH) {
-      canvas.width = pixelW;
-      canvas.height = pixelH;
+    const dpr = Math.min(2,Math.max(1,window.devicePixelRatio||1));
+    const pixelW=Math.max(1,Math.round(width*dpr));
+    const pixelH=Math.max(1,Math.round(height*dpr));
+    if (canvas.width!==pixelW || canvas.height!==pixelH) {
+      canvas.width=pixelW;
+      canvas.height=pixelH;
     }
-    canvas.style.width = width + 'px';
-    canvas.style.height = height + 'px';
+    canvas.style.width=width+'px';
+    canvas.style.height=height+'px';
 
-    const cellHeight = height / 3;
-    const stripHeight = cellHeight * 21;
+    const cellHeight=height/3;
+    const stripHeight=cellHeight*21;
 
-    // 外側の白余白を切り、青いレールを含む中央帯だけ使う。
-    const sx = source.naturalWidth * 0.285;
-    const sw = source.naturalWidth * 0.430;
-
-    // 上下の丸い「リール終端」を除外して、21コマだけを等分する。
-    const sy0 = source.naturalHeight * 0.014;
-    const sy1 = source.naturalHeight * 0.986;
-    const srcCellHeight = (sy1 - sy0) / 21;
+    // 横は白余白を捨て、レール本体だけ。
+    const sx=source.naturalWidth*0.300;
+    const sw=source.naturalWidth*0.400;
+    const grid=detectReelGrid(index,source);
 
     return {
-      track, source, canvas,
-      ctx: canvas.getContext('2d'),
-      width, height, dpr,
-      cellHeight, stripHeight,
-      sx, sw, sy0, srcCellHeight
+      track,source,canvas,ctx:canvas.getContext('2d'),
+      width,height,dpr,cellHeight,stripHeight,sx,sw,
+      bounds:grid.bounds
     };
   };
 
@@ -543,11 +620,23 @@
     return -(topLogical * geo.cellHeight);
   };
 
+
+  const pressedPositionAtPayline = (index) => {
+    const geo = reelArtGeometry(index);
+    if (!geo || !Number.isFinite(reelArtPhase[index])) {
+      return mod(reelPositions[index],reelStrips[index].length);
+    }
+
+    // canvas上でメイン有効ライン(中央)に最も近い絵柄をSTOP入力位置とする。
+    const raw = 1 - (reelArtPhase[index] / geo.cellHeight);
+    return mod(Math.round(raw),reelStrips[index].length);
+  };
+
   const paintReelArt = (index) => {
     const geo = reelArtGeometry(index);
     if (!geo || !geo.ctx) return;
 
-    const {ctx, source, width, height, dpr, cellHeight, sx, sw, sy0, srcCellHeight} = geo;
+    const {ctx, source, width, height, dpr, cellHeight, sx, sw, bounds} = geo;
 
     ctx.setTransform(dpr,0,0,dpr,0,0);
     ctx.clearRect(0,0,width,height);
@@ -565,14 +654,14 @@
 
     for (let k = firstK; k <= lastK; k++) {
       const logical = mod(k,21);
-      const sy = sy0 + logical * srcCellHeight;
+      const sy = bounds[logical];
+      const srcCellHeight = Math.max(1,bounds[logical+1]-bounds[logical]);
       const dy = phase + k * cellHeight;
 
-      // 1px弱重ねて、Retina/iPhoneのサブピクセル境界でも白線を出さない。
       ctx.drawImage(
         source,
         sx, sy, sw, srcCellHeight,
-        -0.5, dy - 0.6, width + 1, cellHeight + 1.2
+        -0.5,dy-0.6,width+1,cellHeight+1.2
       );
     }
   };
@@ -618,8 +707,8 @@
     }
     normalizeReelArtPhase(index);
 
-    // 通常は下向き。フリーズ逆回転だけ上向き。
-    const secondsPerCell = direction > 0 ? 0.115 : 0.090;
+    // 通常は下向き。急加速させず、視認できる速度で連続回転。
+    const secondsPerCell = direction > 0 ? 0.180 : 0.135;
     const speed = geo.cellHeight / secondsPerCell;
     let last = performance.now();
 
@@ -852,6 +941,7 @@
   const targetForRole = (role, index, threeMedalLine = null) => {
     switch (role) {
       // 通常当選の左・中は共通で🟥7。右リールだけがAT=🟥7 / 当たり=BAR。
+      case 'freeze': return { row:1, kind:'alt-seven' };
       case 'at': return { row:1, kind:'seven' };
       case 'tier_up': return { row:1, kind:'bar' };
       case 'hit': return { row:1, kind:index === 2 ? 'bar' : 'seven' };
@@ -918,12 +1008,15 @@
     };
   };
 
+  const slipPosition = (index, base, slip) =>
+    mod(base - slip, reelStrips[index].length);
+
   const chooseAssistSubstitutePosition = (index, base) => {
     // 成立役はレバーONで既に確定済み。ここでは停止表示だけを代用形へ落とす。
     const safeKinds = ['chance','bar','miss'];
     for (const kind of safeKinds) {
       for (let slip = 0; slip <= 4; slip++) {
-        const candidate = mod(base + slip, reelStrips[index].length);
+        const candidate = slipPosition(index, base, slip);
         if (visibleKind(index, candidate, 1) === kind) {
           pendingControl.substituteUsed[index] = true;
           return candidate;
@@ -937,66 +1030,35 @@
   const guaranteedPayoutRoles = new Set(['bell9','bell15','three_medal','replay']);
 
   const chooseGuaranteedPayoutPosition = (index, target, base) => {
-    const strip = reelStrips[index];
-
-    // ベル/REPLAY成立時は代用停止なし。
-    // まず実機同様に0〜4コマで引き込み、それで届かなければ
-    // 成立役制御として正規図柄位置まで収束させる。
+    // STOPを押した位置から、回転方向へ0〜4コマだけ引き込む。
+    // 5コマ以上先へワープさせる制御は禁止。
     for (let slip = 0; slip <= 4; slip++) {
-      const candidate = mod(base + slip, strip.length);
+      const candidate = slipPosition(index, base, slip);
       if (candidateMatchesTarget(index, candidate, target)) return candidate;
     }
-
-    for (let advance = 5; advance < strip.length + 5; advance++) {
-      const candidate = mod(base + advance, strip.length);
-      if (candidateMatchesTarget(index, candidate, target)) return candidate;
-    }
-
-    // リール配列破損時だけ現在位置を維持。正常配列では到達しない。
     return base;
   };
 
   const chooseAimAssistedPosition = (index, target, base) => {
-    const strip = reelStrips[index];
-
-    // 押した瞬間に狙い図柄が4コマ圏外なら、目押しアシストで有効STOP位相を少し先へ送る。
-    // その有効位相からの停止自体は必ず0〜4コマの範囲に収める。
-    for (let advance = 1; advance < strip.length; advance++) {
-      const assistedBase = mod(base + advance, strip.length);
-      for (let slip = 0; slip <= 4; slip++) {
-        const candidate = mod(assistedBase + slip, strip.length);
-        if (candidateMatchesTarget(index, candidate, target)) {
-          pendingControl.aimAssistUsed[index] = true;
-          return candidate;
-        }
+    for (let slip = 0; slip <= 4; slip++) {
+      const candidate = slipPosition(index, base, slip);
+      if (candidateMatchesTarget(index, candidate, target)) {
+        pendingControl.aimAssistUsed[index] = slip > 0;
+        return candidate;
       }
     }
-
     return base;
   };
 
   const chooseNavigatedBellPosition = (index, base) => {
     const target = { row:1, kind:'bell' };
-    const strip = reelStrips[index];
 
-    // AT押し順ナビに正しく従った停止は取りこぼし不可。
-    // まず通常の0〜4コマ引き込み、それで届かなければ有効位相を補正して
-    // 必ず中段ベルへ着地させる。成立/純増はWASM側でレバーON時に確定済み。
     for (let slip = 0; slip <= 4; slip++) {
-      const candidate = mod(base + slip, strip.length);
+      const candidate = slipPosition(index, base, slip);
       if (candidateMatchesTarget(index, candidate, target)) return candidate;
     }
 
-    for (let advance = 1; advance < strip.length; advance++) {
-      const assistedBase = mod(base + advance, strip.length);
-      for (let slip = 0; slip <= 4; slip++) {
-        const candidate = mod(assistedBase + slip, strip.length);
-        if (candidateMatchesTarget(index, candidate, target)) return candidate;
-      }
-    }
-
-    // リール配列にベルが存在する限りここには来ないが、壊れた配列でも
-    // 他役へ誤停止させず現在位置を維持する。
+    // レバーONの成立フラグは維持するが、停止表示は4コマを超えて飛ばさない。
     return base;
   };
 
@@ -1008,27 +1070,17 @@
   };
 
   const chooseMiddleCherryPosition = (index, base) => {
-    const strip = reelStrips[index];
-
     if (index === 0) {
-      // レバーON時点で中段チェリー成立済み。左中段🍒は取りこぼさせない。
       for (let slip = 0; slip <= 4; slip++) {
-        const candidate = mod(base + slip, strip.length);
+        const candidate = slipPosition(index, base, slip);
         if (visibleKind(0, candidate, 1) === 'cherry') return candidate;
       }
-      // 4コマ圏外でも成立役制御として中段🍒位置へ収束させる。
-      return findExactPosition(0, 'cherry', 1);
+      return base;
     }
 
     if (index === 1) {
-      // 中リールは上中下すべてREPLAY禁止。
       for (let slip = 0; slip <= 4; slip++) {
-        const candidate = mod(base + slip, strip.length);
-        if (middleCherryMiddleReelSafe(candidate)) return candidate;
-      }
-      // 4コマ圏内に無ければ、成立役制御として最寄りの安全窓へ収束。
-      for (let advance = 1; advance < strip.length; advance++) {
-        const candidate = mod(base + advance, strip.length);
+        const candidate = slipPosition(index, base, slip);
         if (middleCherryMiddleReelSafe(candidate)) return candidate;
       }
     }
@@ -1051,27 +1103,8 @@
   };
 
   const chooseNormalMissPosition = (index, base) => {
-    const strip = reelStrips[index];
-
-    // ハズレ成立Gは1停止目から安全目へ制御する。
-    // まず実機的な0〜4コマ範囲で候補を探す。
     for (let slip = 0; slip <= 4; slip++) {
-      const candidate = mod(base + slip, strip.length);
-      if (!missCenterSafe(index, candidate)) continue;
-
-      const test = [...reelPositions];
-      test[index] = candidate;
-
-      // 最終停止なら成立役っぽい完成形・ベル/REPLAY払出まで完全に排除。
-      const willAllStop = reelStopped.filter(Boolean).length === 2;
-      if (willAllStop && classifyPattern(test) !== 'miss') continue;
-
-      return candidate;
-    }
-
-    // 4コマ内に安全位置が無い場合も、ハズレなのに煽り目を出すより安全目を優先する。
-    for (let advance = 5; advance < strip.length + 5; advance++) {
-      const candidate = mod(base + advance, strip.length);
+      const candidate = slipPosition(index, base, slip);
       if (!missCenterSafe(index, candidate)) continue;
 
       const test = [...reelPositions];
@@ -1105,9 +1138,11 @@
     return role === 'at' ? pair.seven : pair.bar;
   };
 
-  const chooseStopPosition = (index, navigatedBell = false, naviMiss = false) => {
+  const chooseStopPosition = (index, navigatedBell = false, naviMiss = false, pressedBase = null) => {
     const strip = reelStrips[index];
-    const base = mod(reelPositions[index], strip.length);
+    const base = pressedBase === null
+      ? mod(reelPositions[index], strip.length)
+      : mod(pressedBase, strip.length);
 
     if (navigatedBell) {
       return chooseNavigatedBellPosition(index, base);
@@ -1119,17 +1154,7 @@
       return base;
     }
 
-    // 青7フリーズのみ0〜4コマ制御の外。押下位置を無視して中段へ強制揃い。
     if (!pendingControl) return base;
-
-    if (pendingControl.role === 'freeze') {
-      return findExactPosition(index, 'alt-seven', 1);
-    }
-
-    if (pendingEntryAmbiguous && index === 2
-        && (pendingControl.role === 'at' || pendingControl.role === 'hit')) {
-      return chooseAmbiguousRightJudgePosition(pendingControl.role);
-    }
 
     // strong_cherry は現行ゲーム仕様上「中段チェリー」。
     // レバーONで成立確定しているため、汎用取りこぼし/代用制御を通さない。
@@ -1150,7 +1175,7 @@
       }
 
       for (let slip = 0; slip <= 4; slip++) {
-        const candidate = mod(base + slip, strip.length);
+        const candidate = slipPosition(index, base, slip);
         if (candidateMatchesTarget(index, candidate, target)) return candidate;
       }
 
@@ -1173,7 +1198,7 @@
     const willAllStop = reelStopped.filter(Boolean).length === 2;
     if (willAllStop) {
       for (let slip = 0; slip <= 4; slip++) {
-        const candidate = mod(base + slip, strip.length);
+        const candidate = slipPosition(index, base, slip);
         const test = [...reelPositions];
         test[index] = candidate;
         if (physicalRole === 'miss' && classifyPattern(test) === 'miss') return candidate;
@@ -1203,9 +1228,9 @@
     startReelArtMotion(index, 1);
 
     reelTimers[index] = setInterval(() => {
-      reelPositions[index] = mod(reelPositions[index] + 1, reelStrips[index].length);
+      reelPositions[index] = mod(reelPositions[index] - 1, reelStrips[index].length);
       renderReel(index);
-    }, 115);
+    }, 180);
   };
 
   const startReverseReelMotion = (index) => {
@@ -1220,9 +1245,9 @@
     startReelArtMotion(index, -1);
 
     reelTimers[index] = setInterval(() => {
-      reelPositions[index] = mod(reelPositions[index] - 1, reelStrips[index].length);
+      reelPositions[index] = mod(reelPositions[index] + 1, reelStrips[index].length);
       renderReel(index);
-    }, 90);
+    }, 135);
   };
 
   const stopAllReelTimers = () => {
@@ -1390,49 +1415,17 @@
     const navigatedBell = isBellNavi && pendingNaviOrderValid && index === expectedIndex;
     const naviMiss = isBellNavi && !pendingNaviOrderValid;
 
+    const pressedBase = pressedPositionAtPayline(index);
+
     if (reelTimers[index]) {
       clearInterval(reelTimers[index]);
       reelTimers[index] = null;
     }
 
-    const finalPosition = chooseStopPosition(index, navigatedBell, naviMiss);
+    // 内部のtimer位相ではなく、押した瞬間にメイン有効ライン上にいた位置を基準にする。
+    reelPositions[index] = pressedBase;
+    const finalPosition = chooseStopPosition(index,navigatedBell,naviMiss,pressedBase);
 
-    // 通常当選の右リールは🟥7とBARが隣接しているため、
-    // 最後だけ一瞬タメて「どっちに止まるか」をリールそのもので見せる。
-    if (pendingEntryAmbiguous && index === 2) {
-      stops[index].disabled = true;
-      stops[index].classList.remove('active','nav-first');
-      reels[index].classList.add('judging-stop');
-
-      const pair = rightJudgePair();
-      const nearPosition = pair
-        ? (pendingRole === 'at' ? pair.bar : pair.seven)
-        : findExactPosition(index, pendingRole === 'at' ? 'bar' : 'seven', 1);
-      reelPositions[index] = nearPosition;
-      reels[index].classList.remove('spinning','reverse-spinning');
-      renderReel(index);
-      settleReelArt(index);
-
-      entryCinematicActive = true;
-      autoTimers.push(setTimeout(() => {
-        reelPositions[index] = finalPosition;
-        reelStopped[index] = true;
-        reels[index].classList.remove('spinning','reverse-spinning','judging-stop');
-        renderReel(index);
-        settleReelArt(index);
-        entryCinematicActive = false;
-
-        // ここで初めてAT/BONUSの答えを公開する。
-        if (pendingRole === 'at') {
-          showMachineCinematic('RESULT', 'AT 突入！', '🟥7 🟥7 🟥7', 'gold judge-result');
-        } else {
-          showMachineCinematic('RESULT', 'BONUS！', '🟥7 🟥7 BAR', 'red judge-result');
-        }
-        autoTimers.push(setTimeout(hideMachineCinematic, 650));
-        if (reelStopped.every(Boolean)) finishGame();
-      }, 280));
-      return;
-    }
 
     reelPositions[index] = finalPosition;
     reelStopped[index] = true;
@@ -1442,6 +1435,15 @@
     settleReelArt(index);
     stops[index].classList.remove('active','nav-first');
     stops[index].disabled = true;
+
+    if (pendingEntryAmbiguous && index===2) {
+      if (pendingRole==='at') {
+        showMachineCinematic('RESULT','AT 突入！','🟥7 🟥7 🟥7','gold judge-result');
+      } else if (pendingRole==='hit') {
+        showMachineCinematic('RESULT','BONUS！','🟥7 🟥7 BAR','red judge-result');
+      }
+      autoTimers.push(setTimeout(hideMachineCinematic,650));
+    }
 
     if (reelStopped.every(Boolean)) finishGame();
   };
