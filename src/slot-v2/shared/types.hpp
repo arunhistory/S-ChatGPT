@@ -7,6 +7,11 @@ static constexpr uint32_t kRngSpace = 134217728u; // 2^27
 static constexpr int kReelSize = 21;
 static constexpr int kMaxSlip = 4;
 
+enum class CommandStatus : uint8_t {
+    Ok = 0,
+    RejectedPhase = 1
+};
+
 enum class SpecialHit : uint8_t {
     None = 0,
     MiddleATStock = 1, // 1/8192
@@ -45,6 +50,7 @@ enum class Symbol : uint8_t {
 };
 
 struct LeverResult {
+    CommandStatus command_status{CommandStatus::Ok};
     SpecialHit special{SpecialHit::None};
     RoleFlag role{RoleFlag::None};
     bool main_lottery_ran{false};
