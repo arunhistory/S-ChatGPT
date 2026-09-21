@@ -1,5 +1,6 @@
 #include "index.hpp"
 #include "../reel-strip/index.hpp"
+#include "../assist-target/index.hpp"
 
 namespace slotv2::reel_validator {
 namespace {
@@ -74,6 +75,48 @@ uint32_t validateLeft() {
     if (replay) out |= LeftReplayGuaranteed;
     if (hasBarLandmarkPair(strip)) out |= LeftBarLandmarkPair;
     return out;
+}
+
+uint32_t validateAssist(ReelId reel) {
+    const auto strip = reel_strip::get(reel);
+    if (!strip.data || strip.size != kReelSize) return 0;
+
+    bool bell = true;
+    bool replay = true;
+
+    for (int pressed = 0; pressed < strip.size; ++pressed) {
+        bool bellHere = false;
+        bool replayHere = false;
+
+        for (int slip = 0; slip <= kMaxSlip; ++slip) {
+            int p = pressed - slip;
+            while (p < 0) p += strip.size;
+            p %= strip.size;
+
+            const auto symbol = strip.data[p];
+            bellHere = bellHere || assist_target::accepts(RoleFlag::Bell9, reel, symbol);
+            replayHere = replayHere || assist_target::accepts(RoleFlag::Replay, reel, symbol);
+        }
+
+        bell = bell && bellHere;
+        replay = replay && replayHere;
+    }
+
+    uint32_t out = AssistStripDefined;
+    if (bell) out |= AssistBellGuaranteed;
+    if (replay) out |= AssistReplayGuaranteed;
+    return out;
+}
+
+uint32_t readyMask() {
+    uint32_t mask = 0;
+    for (uint8_t i = 0; i < 3u; ++i) {
+        const auto strip = reel_strip::get(static_cast<ReelId>(i));
+        if (strip.data && strip.size == kReelSize) {
+            mask |= (1u << i);
+        }
+    }
+    return mask;
 }
 
 } // namespace slotv2::reel_validator
