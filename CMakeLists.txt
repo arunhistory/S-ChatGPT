@@ -54,6 +54,9 @@ add_library(slot_v2_core
   src/slot-v2/acquisition/index.cpp
   src/slot-v2/normal-progress/index.cpp
   src/slot-v2/runtime/index.cpp
+  src/slot-v2/cz-state/index.cpp
+  src/slot-v2/bonus-state/index.cpp
+  src/slot-v2/at-state/index.cpp
   src/slot-v2/stock/index.cpp
   src/slot-v2/section/index.cpp
 )
@@ -88,3 +91,7 @@ target_link_libraries(slot_v2_bell_navigation_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_progress_test src/slot-v2/progress_test.cpp)
 target_link_libraries(slot_v2_progress_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_state_modules_test src/slot-v2/state_modules_test.cpp)
+target_link_libraries(slot_v2_state_modules_test PRIVATE slot_v2_core)
