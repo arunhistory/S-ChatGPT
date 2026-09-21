@@ -19,6 +19,7 @@
   };
 
   const reels = [$('#reel1'), $('#reel2'), $('#reel3')];
+  const reelArtTracks = [$('#reelArt1'), $('#reelArt2'), $('#reelArt3')];
   const stops = [...document.querySelectorAll('.stop')];
   const history = [];
 
@@ -445,6 +446,27 @@
     return strip[mod(position + offset, strip.length)];
   };
 
+  const renderReelArt = (index) => {
+    const track = reelArtTracks[index];
+    if (!track) return;
+
+    const reelHeight = reels[index].clientHeight;
+    if (!reelHeight) return;
+
+    const cellHeight = reelHeight / 3;
+    const stripHeight = cellHeight * 21;
+    const topIndex = mod(reelPositions[index] - 1, 21);
+
+    [...track.querySelectorAll('img')].forEach((img) => {
+      img.style.height = stripHeight + 'px';
+    });
+
+    // 3枚重ねの中央コピーを基準にし、既存21コマpositionと完全同期。
+    // 上段=position-1 / 中段=position / 下段=position+1。
+    track.style.transform =
+      'translate3d(0,' + (-(stripHeight + topIndex * cellHeight)) + 'px,0)';
+  };
+
   const renderReel = (index) => {
     const position = reelPositions[index];
     const spans = [...reels[index].querySelectorAll(':scope > span')];
@@ -453,7 +475,13 @@
       el.dataset.kind = symbol.kind;
       el.innerHTML = symbol.html;
     });
+    renderReelArt(index);
   };
+
+
+  window.addEventListener('resize', () => {
+    for (let i = 0; i < 3; i++) renderReelArt(i);
+  });
 
   const centerKind = (index, position = reelPositions[index]) => visibleKind(index, position, 1);
 
