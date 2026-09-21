@@ -97,6 +97,36 @@ uint32_t slot_v2_validate_left() {
 }
 
 __attribute__((visibility("default")))
+uint32_t slot_v2_machine_area() {
+    return slotv2::runtime::machineArea(g_runtime);
+}
+
+__attribute__((visibility("default")))
+int64_t slot_v2_section_diff() {
+    return slotv2::runtime::sectionDiff(g_runtime);
+}
+
+__attribute__((visibility("default")))
+int64_t slot_v2_section_minimum() {
+    return slotv2::runtime::sectionMinimum(g_runtime);
+}
+
+__attribute__((visibility("default")))
+uint64_t slot_v2_section_count() {
+    return slotv2::runtime::sectionCount(g_runtime);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_stock_count() {
+    return slotv2::runtime::stockCount(g_runtime);
+}
+
+__attribute__((visibility("default")))
+int64_t slot_v2_point_count() {
+    return slotv2::runtime::pointCount(g_runtime);
+}
+
+__attribute__((visibility("default")))
 uint32_t slot_v2_last_special() {
     return slotv2::runtime::lastSpecial(g_runtime);
 }
