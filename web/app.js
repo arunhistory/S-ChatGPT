@@ -819,6 +819,26 @@
     return base;
   };
 
+  const rightJudgePair = () => {
+    const strip = reelStrips[2];
+    for (let i = 0; i < strip.length; i++) {
+      const next = mod(i + 1, strip.length);
+      if (strip[i] === 'seven' && strip[next] === 'bar') {
+        return { seven:i, bar:next };
+      }
+      if (strip[i] === 'bar' && strip[next] === 'seven') {
+        return { seven:next, bar:i };
+      }
+    }
+    return null;
+  };
+
+  const chooseAmbiguousRightJudgePosition = (role) => {
+    const pair = rightJudgePair();
+    if (!pair) return findExactPosition(2, role === 'at' ? 'seven' : 'bar', 1);
+    return role === 'at' ? pair.seven : pair.bar;
+  };
+
   const chooseStopPosition = (index, navigatedBell = false, naviMiss = false) => {
     const strip = reelStrips[index];
     const base = mod(reelPositions[index], strip.length);
@@ -838,6 +858,11 @@
 
     if (pendingControl.role === 'freeze') {
       return findExactPosition(index, 'alt-seven', 1);
+    }
+
+    if (pendingEntryAmbiguous && index === 2
+        && (pendingControl.role === 'at' || pendingControl.role === 'hit')) {
+      return chooseAmbiguousRightJudgePosition(pendingControl.role);
     }
 
     // strong_cherry は現行ゲーム仕様上「中段チェリー」。
@@ -1100,8 +1125,11 @@
       stops[index].classList.remove('active','nav-first');
       reels[index].classList.add('judging-stop');
 
-      const nearKind = pendingRole === 'at' ? 'bar' : 'seven';
-      reelPositions[index] = findExactPosition(index, nearKind, 1);
+      const pair = rightJudgePair();
+      const nearPosition = pair
+        ? (pendingRole === 'at' ? pair.bar : pair.seven)
+        : findExactPosition(index, pendingRole === 'at' ? 'bar' : 'seven', 1);
+      reelPositions[index] = nearPosition;
       renderReel(index);
 
       entryCinematicActive = true;
