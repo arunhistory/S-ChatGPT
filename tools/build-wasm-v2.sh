@@ -62,6 +62,9 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/acquisition/index.cpp" \
   "$SRC/normal-progress/index.cpp" \
   "$SRC/runtime/index.cpp" \
+  "$SRC/cz-state/index.cpp" \
+  "$SRC/bonus-state/index.cpp" \
+  "$SRC/at-state/index.cpp" \
   "$SRC/stock/index.cpp" \
   "$SRC/section/index.cpp" \
   "$SRC/line/index.cpp" \
