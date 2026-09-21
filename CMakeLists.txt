@@ -24,6 +24,17 @@ add_library(slot_v2_core
   src/slot-v2/lever/index.cpp
   src/slot-v2/reel-strip/index.cpp
   src/slot-v2/stop-candidate/index.cpp
+  src/slot-v2/stop-rules/common.cpp
+  src/slot-v2/stop-rules/bell.cpp
+  src/slot-v2/stop-rules/replay.cpp
+  src/slot-v2/stop-rules/cherry.cpp
+  src/slot-v2/stop-rules/watermelon.cpp
+  src/slot-v2/stop-rules/fallback.cpp
+  src/slot-v2/stop-rules/router.cpp
+  src/slot-v2/stop-first/index.cpp
+  src/slot-v2/stop-second/index.cpp
+  src/slot-v2/stop-third/index.cpp
+  src/slot-v2/stop-controller/index.cpp
   src/slot-v2/freeze/index.cpp
 )
 target_include_directories(slot_v2_core PUBLIC src/slot-v2)
