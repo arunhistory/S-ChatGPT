@@ -51,6 +51,7 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/stop-rules/miss.cpp" \
   "$SRC/role-policy/index.cpp" \
   "$SRC/navigation/index.cpp" \
+  "$SRC/bell-navigation/index.cpp" \
   "$SRC/assist-integrity/index.cpp" \
   "$SRC/assist-target/index.cpp" \
   "$SRC/stop-first/index.cpp" \
