@@ -649,8 +649,9 @@
     }
     normalizeReelArtPhase(index);
 
-    // 通常は下向き。急加速させず、視認できる速度で連続回転。
-    const secondsPerCell = direction > 0 ? 0.120 : 0.095;
+    // 実機寄りの高速回転。通常は約37.5ms/1コマ、逆回転は約32ms/1コマ。
+    // 4コマ引き込みでも約150msなので、目押しアシストとして機能する速度にする。
+    const secondsPerCell = direction > 0 ? 0.0375 : 0.032;
     const speed = geo.cellHeight / secondsPerCell;
     let last = performance.now();
 
@@ -708,15 +709,16 @@
     }
 
     const from=current;
-    // 0コマならほぼ即停止、4コマでも約150ms以内。
-    const duration=Math.max(45,Math.min(150,48+cells*20));
+    // 回転速度を保ったまま0〜4コマだけ引き込む。
+    // 4コマなら約150ms。停止時だけ不自然にスロー化させない。
+    const duration=Math.max(35,Math.min(160,cells*37.5+18));
     const started=performance.now();
 
-    // 前半は回転速度を保ち、最後だけ短く減速する。
+    // ほぼ一定速で滑り、最後の約18%だけ軽く減速。
     const stopCurve=(t)=>{
-      if(t<=0.72) return (t/0.72)*0.84;
-      const u=(t-0.72)/0.28;
-      return 0.84+0.16*(1-Math.pow(1-u,2));
+      if(t<=0.82) return (t/0.82)*0.90;
+      const u=(t-0.82)/0.18;
+      return 0.90+0.10*(1-Math.pow(1-u,2));
     };
 
     const frame=(now)=>{
@@ -1192,7 +1194,7 @@
     reelTimers[index] = setInterval(() => {
       reelPositions[index] = mod(reelPositions[index] - 1, reelStrips[index].length);
       renderReel(index);
-    }, 120);
+    }, 38);
   };
 
   const startReverseReelMotion = (index) => {
@@ -1209,7 +1211,7 @@
     reelTimers[index] = setInterval(() => {
       reelPositions[index] = mod(reelPositions[index] + 1, reelStrips[index].length);
       renderReel(index);
-    }, 95);
+    }, 32);
   };
 
   const stopAllReelTimers = () => {
