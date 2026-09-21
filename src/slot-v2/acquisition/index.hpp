@@ -9,7 +9,8 @@ enum class Status : uint8_t {
     Acquired = 1,
     Missed = 2,
     NoPayoutRole = 3,
-    Substitute = 4
+    Substitute = 4,
+    AssistGap = 5
 };
 
 struct Result {
@@ -26,7 +27,8 @@ Result judge(
     uint8_t middle_pos,
     uint8_t right_pos,
     bool had_substitute,
-    bool had_role_miss
+    bool had_role_miss,
+    bool had_assist_gap
 );
 
 } // namespace slotv2::acquisition
