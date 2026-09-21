@@ -523,20 +523,26 @@
     const cellHeight=height/3;
     const stripHeight=cellHeight*21;
 
-    // 元画像は21コマが最初から等間隔に並んでいる。
-    // コマごとの切り刻みはせず、レール本体を丸ごと1本として扱う。
-    const sy0=source.naturalHeight*0.0054;
-    const sy1=source.naturalHeight*0.9935;
-    const sh=sy1-sy0;
+    // 実画像で測った「21コマ本体」の上下端。
+    // 左/中は512x1536系、右は724x2172系だが比率で持つので実PNGサイズに依存しない。
+    const verticalBand=[
+      { top:8/1536,  bottom:1483/1536 },
+      { top:8/1536,  bottom:1482/1536 },
+      { top:11/2172, bottom:2058/2172 }
+    ][index];
 
-    // 右リールだけ元画像の横比率が少し広い。
+    const sy0=source.naturalHeight*verticalBand.top;
+    const sy1=source.naturalHeight*verticalBand.bottom;
+    const srcCellHeight=(sy1-sy0)/21;
+
+    // 白余白は捨て、レール本体だけを使う。
     const sx=source.naturalWidth*(index===2 ? 0.275 : 0.300);
     const sw=source.naturalWidth*(index===2 ? 0.450 : 0.400);
 
     return {
       track,source,canvas,ctx:canvas.getContext('2d'),
       width,height,dpr,cellHeight,stripHeight,
-      sx,sw,sy0,sh
+      sx,sw,sy0,srcCellHeight
     };
   };
 
@@ -566,7 +572,11 @@
     const geo = reelArtGeometry(index);
     if (!geo || !geo.ctx) return;
 
-    const {ctx,source,width,height,dpr,stripHeight,sx,sw,sy0,sh}=geo;
+    const {
+      ctx,source,width,height,dpr,cellHeight,
+      sx,sw,sy0,srcCellHeight
+    }=geo;
+
     ctx.setTransform(dpr,0,0,dpr,0,0);
     ctx.clearRect(0,0,width,height);
     ctx.fillStyle='#f7f9fc';
@@ -574,21 +584,25 @@
     ctx.imageSmoothingEnabled=true;
     ctx.imageSmoothingQuality='high';
 
-    // 位相だけを動かし、元の21コマ縦画像そのものを繰り返す。
-    let y=reelArtPhase[index];
-    while (y>0) y-=stripHeight;
-    while (y<=-stripHeight) y+=stripHeight;
+    const phase=reelArtPhase[index];
+    const firstK=Math.floor((-phase)/cellHeight)-2;
+    const lastK=firstK+8;
 
     try {
-      for (let n=-1;n<=2;n++) {
-        const dy=y+n*stripHeight;
+      for(let k=firstK;k<=lastK;k++){
+        const logical=mod(k,21);
+        const sy=sy0+logical*srcCellHeight;
+        const dy=phase+k*cellHeight;
+
+        // 各コマの中心を destination cell の中心へ固定。
+        // 0.7pxだけ重ねてRetinaの境界線も消す。
         ctx.drawImage(
           source,
-          sx,sy0,sw,sh,
-          -0.5,dy-0.5,width+1,stripHeight+1
+          sx,sy,sw,srcCellHeight,
+          -0.5,dy-0.7,width+1,cellHeight+1.4
         );
       }
-    } catch (err) {
+    } catch(err) {
       geo.track.classList.remove('canvas-ready');
       geo.canvas.style.display='none';
     }
@@ -636,7 +650,7 @@
     normalizeReelArtPhase(index);
 
     // 通常は下向き。急加速させず、視認できる速度で連続回転。
-    const secondsPerCell = direction > 0 ? 0.180 : 0.135;
+    const secondsPerCell = direction > 0 ? 0.120 : 0.095;
     const speed = geo.cellHeight / secondsPerCell;
     let last = performance.now();
 
@@ -663,67 +677,66 @@
   const settleReelArt = (index, pressedBase, finalPosition) => {
     cancelReelArtFrame(index);
 
-    const geo = reelArtGeometry(index);
-    if (!geo) return;
+    const geo=reelArtGeometry(index);
+    if(!geo) return;
 
-    const exact = targetReelArtPhase(index);
-    if (exact === null) return;
+    const exact=targetReelArtPhase(index);
+    if(exact===null) return;
 
-    const current = reelArtPhase[index];
-    const cycle = geo.stripHeight;
-    const dir = reelArtDirection[index] >= 0 ? 1 : -1;
+    const current=reelArtPhase[index];
+    const cycle=geo.stripHeight;
+    const dir=reelArtDirection[index]>=0 ? 1 : -1;
 
-    // STOPを押した位置から最終停止位置までの滑りは最大4コマ。
-    const slip = dir > 0
-      ? mod(pressedBase - finalPosition, 21)
-      : mod(finalPosition - pressedBase, 21);
-    const safeSlip = Math.min(slip, 4);
-
-    // exactと同じ絵柄位置は21コマごとに存在する。
-    // 現在の回転方向を維持したまま、4コマ以内で到達する同位相だけを選ぶ。
-    let target = exact;
-    if (dir > 0) {
-      while (target < current) target += cycle;
-      while ((target - current) / geo.cellHeight > safeSlip + 1.05 && target - cycle >= current) {
-        target -= cycle;
-      }
-    } else {
-      while (target > current) target -= cycle;
-      while ((current - target) / geo.cellHeight > safeSlip + 1.05 && target + cycle <= current) {
-        target += cycle;
-      }
+    // exact と同じ停止位置を、現在の回転方向の「次に来る位置」へ展開する。
+    // finalPosition は pressedBase から最大4コマなので、ここで21コマ一周することはない。
+    let target=exact;
+    if(dir>0){
+      while(target<current) target+=cycle;
+    }else{
+      while(target>current) target-=cycle;
     }
 
-    const from = current;
-    const distance = Math.abs(target - from);
-    const duration = Math.max(
-      70,
-      Math.min(230, 70 + (distance / geo.cellHeight) * 35)
-    );
-    const started = performance.now();
-    const easeOut = t => 1 - Math.pow(1 - t, 3);
+    const cells=Math.abs(target-current)/geo.cellHeight;
 
-    const frame = (now) => {
-      const t = Math.min(1, (now - started) / duration);
-      reelArtPhase[index] = from + (target - from) * easeOut(t);
-      paintReelArt(index);
-
-      if (t < 1) {
-        reelArtFrames[index] = requestAnimationFrame(frame);
-        return;
-      }
-
-      reelArtFrames[index] = null;
-
-      // 最終フレームはアニメ用位相を捨て、
-      // 文字リールと同じ reelPositions から算出した exact に必ず一致させる。
-      // これで赤ライン中央 = 中段図柄中央がズレない。
-      reelArtPhase[index] = exact;
+    // 通常なら residual + 0〜4コマ = 最大5コマ未満。
+    // ここを超えたら停止制御の整合が壊れているので、見た目を一周させず即exactへ合わせる。
+    if(cells>5.05){
+      reelArtPhase[index]=exact;
       normalizeReelArtPhase(index);
       paintReelArt(index);
+      return;
+    }
+
+    const from=current;
+    // 0コマならほぼ即停止、4コマでも約150ms以内。
+    const duration=Math.max(45,Math.min(150,48+cells*20));
+    const started=performance.now();
+
+    // 前半は回転速度を保ち、最後だけ短く減速する。
+    const stopCurve=(t)=>{
+      if(t<=0.72) return (t/0.72)*0.84;
+      const u=(t-0.72)/0.28;
+      return 0.84+0.16*(1-Math.pow(1-u,2));
     };
 
-    reelArtFrames[index] = requestAnimationFrame(frame);
+    const frame=(now)=>{
+      const t=Math.min(1,(now-started)/duration);
+      const p=stopCurve(t);
+      reelArtPhase[index]=from+(target-from)*p;
+      paintReelArt(index);
+
+      if(t<1){
+        reelArtFrames[index]=requestAnimationFrame(frame);
+      }else{
+        reelArtFrames[index]=null;
+        // target 自体が exact と同位相なので、ここでの補正移動は発生しない。
+        reelArtPhase[index]=target;
+        normalizeReelArtPhase(index);
+        paintReelArt(index);
+      }
+    };
+
+    reelArtFrames[index]=requestAnimationFrame(frame);
   };
 
   const renderReel = (index) => {
@@ -1179,7 +1192,7 @@
     reelTimers[index] = setInterval(() => {
       reelPositions[index] = mod(reelPositions[index] - 1, reelStrips[index].length);
       renderReel(index);
-    }, 180);
+    }, 120);
   };
 
   const startReverseReelMotion = (index) => {
@@ -1196,7 +1209,7 @@
     reelTimers[index] = setInterval(() => {
       reelPositions[index] = mod(reelPositions[index] + 1, reelStrips[index].length);
       renderReel(index);
-    }, 135);
+    }, 95);
   };
 
   const stopAllReelTimers = () => {
