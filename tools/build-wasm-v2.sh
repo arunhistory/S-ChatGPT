@@ -74,6 +74,7 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/cz-state/index.cpp" \
   "$SRC/bonus-state/index.cpp" \
   "$SRC/at-state/index.cpp" \
+  "$SRC/at-lottery/index.cpp" \
   "$SRC/stock/index.cpp" \
   "$SRC/section/index.cpp" \
   "$SRC/line/index.cpp" \
