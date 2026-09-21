@@ -22,6 +22,7 @@ export interface SlotWasmV2 {
   slot_v2_phase(): number;
   slot_v2_special_result(): number;
   slot_v2_complete_special(): number;
+  slot_v2_stop_sequence(orderIndex: number): number;
   slot_v2_stopped_position(reel: number): number;
   slot_v2_acquisition(): number;
   slot_v2_symbol_at(reel: number, position: number): number;
@@ -131,4 +132,14 @@ export function readSpecialResult(wasm: SlotWasmV2): SpecialResult {
 
 export function completeSpecial(wasm: SlotWasmV2): SessionPhase {
   return wasm.slot_v2_complete_special() as SessionPhase;
+}
+
+
+export function readStopSequence(
+  wasm: SlotWasmV2,
+  orderIndex: 0 | 1 | 2,
+): ReelId | null {
+  const value = wasm.slot_v2_stop_sequence(orderIndex) >>> 0;
+  if (value === 0xffffffff) return null;
+  return value as ReelId;
 }
