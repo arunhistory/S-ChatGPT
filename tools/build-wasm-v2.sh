@@ -17,6 +17,9 @@ SRC="$ROOT/src/slot-v2"
   -Wl,--export=slot_v2_stopped_position \
   -Wl,--export=slot_v2_acquisition \
   -Wl,--export=slot_v2_validate_left \
+  -Wl,--export=slot_v2_complete_special \
+  -Wl,--export=slot_v2_special_result \
+  -Wl,--export=slot_v2_phase \
   -Wl,--export=slot_v2_visible_symbol \
   -Wl,--export=slot_v2_symbol_at \
   -Wl,--initial-memory=131072 -Wl,--max-memory=16777216 \
@@ -24,6 +27,7 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/shared/memory.cpp" \
   "$SRC/shared/rng.cpp" \
   "$SRC/special-lottery/index.cpp" \
+  "$SRC/special-result/index.cpp" \
   "$SRC/main-lottery/index.cpp" \
   "$SRC/lever/index.cpp" \
   "$SRC/reel-strip/index.cpp" \
