@@ -874,3 +874,22 @@ body{height:100dvh;min-height:0;padding:4px;overflow:hidden}
   from{transform:translate3d(0,-33.3333333%,0)}
   to{transform:translate3d(0,-66.6666667%,0)}
 }
+
+
+/* ===== Reel speed correction =====
+   4連結ストリップの25% = 21コマ1周。
+   通常は約15コマ/秒、逆回転は少し速め。 */
+.reel.spinning .reel-art-track{
+  animation:reelArtDown 1.40s linear infinite !important;
+}
+.reel.spinning.reverse-spinning .reel-art-track{
+  animation:reelArtUp 1.18s linear infinite !important;
+}
+@keyframes reelArtDown{
+  from{transform:translate3d(0,-50%,0)}
+  to{transform:translate3d(0,-25%,0)}
+}
+@keyframes reelArtUp{
+  from{transform:translate3d(0,-25%,0)}
+  to{transform:translate3d(0,-50%,0)}
+}
