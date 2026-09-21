@@ -61,6 +61,7 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/freeze/index.cpp" \
   "$SRC/acquisition/index.cpp" \
   "$SRC/normal-progress/index.cpp" \
+  "$SRC/runtime/index.cpp" \
   "$SRC/stock/index.cpp" \
   "$SRC/section/index.cpp" \
   "$SRC/line/index.cpp" \
