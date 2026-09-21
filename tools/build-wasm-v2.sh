@@ -15,6 +15,7 @@ SRC="$ROOT/src/slot-v2"
   -Wl,--export=slot_v2_freeze_active \
   -Wl,--export=slot_v2_stop \
   -Wl,--export=slot_v2_stopped_position \
+  -Wl,--export=slot_v2_acquisition \
   -Wl,--export=slot_v2_validate_left \
   -Wl,--initial-memory=131072 -Wl,--max-memory=16777216 \
   -o "$ROOT/web/slot-v2.wasm" \
@@ -38,6 +39,9 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/stop-third/index.cpp" \
   "$SRC/stop-controller/index.cpp" \
   "$SRC/freeze/index.cpp" \
+  "$SRC/acquisition/index.cpp" \
+  "$SRC/line/index.cpp" \
+  "$SRC/session/index.cpp" \
   "$SRC/wasm/index.cpp"
 
 echo "Built web/slot-v2.wasm from Edge Function-style C++ programs."
