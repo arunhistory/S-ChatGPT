@@ -4,6 +4,7 @@
 #include "../stop-shared/index.hpp"
 #include "../freeze/index.hpp"
 #include "../special-result/index.hpp"
+#include "../bell-navigation/index.hpp"
 
 namespace slotv2::session {
 
@@ -19,6 +20,8 @@ struct State {
     LeverResult lever{};
     special_result::Result special{};
     freeze::Directive freeze{};
+    bell_navigation::Plan bell_navigation{};
+    bool navigation_correct{true};
     bool stopped[3]{false,false,false};
     uint8_t position[3]{0,0,0};
     ReelId stop_sequence[3]{ReelId::Left, ReelId::Left, ReelId::Left};
@@ -38,6 +41,7 @@ bool begin(
     special_result::Result special,
     freeze::Directive freeze
 );
+void setBellNavigation(State& state, const bell_navigation::Plan& plan);
 bool canStop(const State& state, ReelId reel);
 stop_shared::Context makeStopContext(
     const State& state,
