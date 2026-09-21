@@ -26,6 +26,7 @@ add_library(slot_v2_core
   src/slot-v2/reel-strip/index.cpp
   src/slot-v2/reel-validator/index.cpp
   src/slot-v2/reel-read/index.cpp
+  src/slot-v2/reel-candidate/index.cpp
   src/slot-v2/stop-candidate/index.cpp
   src/slot-v2/stop-rules/common.cpp
   src/slot-v2/stop-rules/bell.cpp
@@ -95,3 +96,7 @@ target_link_libraries(slot_v2_progress_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_state_modules_test src/slot-v2/state_modules_test.cpp)
 target_link_libraries(slot_v2_state_modules_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_reel_candidate_test src/slot-v2/reel_candidate_test.cpp)
+target_link_libraries(slot_v2_reel_candidate_test PRIVATE slot_v2_core)
