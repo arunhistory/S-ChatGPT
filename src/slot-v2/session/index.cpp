@@ -26,6 +26,7 @@ bool begin(
     for (int i = 0; i < 3; ++i) {
         state.stopped[i] = false;
         state.position[i] = 0;
+        state.stop_sequence[i] = ReelId::Left;
         state.stop_status[i] = stop_shared::ResolveStatus::NoLegalCandidate;
     }
 
@@ -65,7 +66,8 @@ void acceptStop(State& state, ReelId reel, const stop_shared::Result& result) {
 
     if (result.status != stop_shared::ResolveStatus::Ok
         && result.status != stop_shared::ResolveStatus::RoleMissed
-        && result.status != stop_shared::ResolveStatus::SubstituteStop) {
+        && result.status != stop_shared::ResolveStatus::SubstituteStop
+        && result.status != stop_shared::ResolveStatus::AssistGap) {
         return;
     }
 
@@ -73,7 +75,10 @@ void acceptStop(State& state, ReelId reel, const stop_shared::Result& result) {
     state.stopped[i] = true;
     state.position[i] = result.final_position;
     state.stop_status[i] = result.status;
-    if (state.stop_count < 3u) ++state.stop_count;
+    if (state.stop_count < 3u) {
+        state.stop_sequence[state.stop_count] = reel;
+        ++state.stop_count;
+    }
 
     if (state.stop_count == 3u) {
         state.phase = Phase::Complete;
@@ -90,6 +95,13 @@ bool hadSubstitute(const State& state) {
 bool hadRoleMiss(const State& state) {
     for (int i = 0; i < 3; ++i) {
         if (state.stop_status[i] == stop_shared::ResolveStatus::RoleMissed) return true;
+    }
+    return false;
+}
+
+bool hadAssistGap(const State& state) {
+    for (int i = 0; i < 3; ++i) {
+        if (state.stop_status[i] == stop_shared::ResolveStatus::AssistGap) return true;
     }
     return false;
 }
