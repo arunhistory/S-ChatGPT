@@ -15,8 +15,17 @@ Result judge(
     RoleFlag internal_role,
     uint8_t left_pos,
     uint8_t middle_pos,
-    uint8_t right_pos
+    uint8_t right_pos,
+    bool had_substitute,
+    bool had_role_miss
 ) {
+    if (had_substitute) {
+        return {internal_role, Status::Substitute, 0};
+    }
+    if (had_role_miss) {
+        return {internal_role, Status::Missed, 0};
+    }
+
     const auto line = line::read(left_pos, middle_pos, right_pos);
     if (!line.ready) return {internal_role, Status::NotReady, 0};
 
