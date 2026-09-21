@@ -8,6 +8,7 @@ import {
   SpecialHit,
   StopResult,
   StopStatus,
+  Symbol,
 } from "../types";
 
 export interface SlotWasmV2 {
@@ -16,6 +17,8 @@ export interface SlotWasmV2 {
   slot_v2_stop(reel: number, pressedPosition: number): number;
   slot_v2_stopped_position(reel: number): number;
   slot_v2_acquisition(): number;
+  slot_v2_symbol_at(reel: number, position: number): number;
+  slot_v2_visible_symbol(reel: number, centerPosition: number, rowOffset: number): number;
   slot_v2_validate_left(): number;
   slot_v2_last_special(): number;
   slot_v2_last_role(): number;
@@ -77,4 +80,26 @@ export function readAcquisition(wasm: SlotWasmV2): AcquisitionResult {
     internalRole: ((packed >>> 8) & 0xff) as RoleFlag,
     medals: (packed >>> 16) & 0xffff,
   };
+}
+
+
+export function readSymbolAt(
+  wasm: SlotWasmV2,
+  reel: ReelId,
+  position: ReelPosition,
+): Symbol {
+  return wasm.slot_v2_symbol_at(reel, position) as Symbol;
+}
+
+export function readVisibleSymbol(
+  wasm: SlotWasmV2,
+  reel: ReelId,
+  centerPosition: ReelPosition,
+  rowOffset: -1 | 0 | 1,
+): Symbol {
+  return wasm.slot_v2_visible_symbol(
+    reel,
+    centerPosition,
+    rowOffset,
+  ) as Symbol;
 }
