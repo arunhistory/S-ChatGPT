@@ -49,6 +49,7 @@ export const enum StopStatus {
   SpecialControlPending = 4,
   RoleMissed = 5,
   SubstituteStop = 6,
+  AssistGap = 7,
 }
 
 export interface LeverResult {
@@ -78,6 +79,7 @@ export const enum AcquisitionStatus {
   Missed = 2,
   NoPayoutRole = 3,
   Substitute = 4,
+  AssistGap = 5,
 }
 
 export interface AcquisitionResult {
