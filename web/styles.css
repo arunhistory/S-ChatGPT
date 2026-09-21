@@ -1080,3 +1080,13 @@ body{height:100dvh;min-height:0;padding:4px;overflow:hidden}
   transform:translateY(-50%) !important;
   height:2px;
 }
+
+
+/* ===== Reel/payline center calibration v8 ===== */
+.reel-window{
+  align-items:center !important;
+}
+.reel-window .payline{
+  top:50% !important;
+  transform:translateY(-50%) !important;
+}
