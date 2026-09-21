@@ -40,7 +40,7 @@
   // 🍉=2/2/1, 🍒=2/1/0, 🔔=2/2/2
   // 右11〜13は 青7→赤7→BAR
   const reelStrips = [
-    ['seven','replay','miss','cherry','bar','replay','bell','watermelon','miss','alt-seven','replay','penguin','cherry','bar','miss','replay','bell','chance','watermelon','miss','replay'],
+    ['seven','replay','miss','cherry','bar','replay','bell','penguin','miss','alt-seven','replay','watermelon','cherry','bar','miss','replay','bell','chance','watermelon','miss','replay'],
     ['bell','replay','miss','seven','watermelon','replay','bar','miss','penguin','replay','alt-seven','miss','cherry','replay','bar','watermelon','miss','chance','bell','replay','miss'],
     ['replay','miss','bell','penguin','replay','bar','miss','replay','watermelon','chance','alt-seven','seven','bar','replay','miss','bell','replay','bar','miss','replay','miss']
   ];
