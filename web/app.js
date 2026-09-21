@@ -118,6 +118,7 @@
   let gameActive = false;
   let pendingResult = null;
   let pendingRole = 'miss';
+  let pendingPhysicalRole = 'miss';
   let pendingPayout = 0;
   let pendingWasAT = false;
   let pendingWasBonus = false;
@@ -904,10 +905,8 @@
 
   const targetForRole = (role, index, threeMedalLine = null) => {
     switch (role) {
-      // 入賞図柄は配列どおりに引き込む。
-      // 左BAR(4)→赤7(0)=4コマ、中BAR(6)→赤7(3)=3コマ、
-      // 右BAR(12)→赤7(11)=1コマなので、BARを目印に押せる配置をそのまま活かす。
-      // BONUSは🟥7・🟥7・BAR、ATは🟥7・🟥7・🟥7。
+      // ここは「その図柄を明示的に狙わせる演出」用の停止目。
+      // 通常の内部AT/BONUS当選はこの表を使わず、成立した物理役の制御を使う。
       case 'freeze': return { row:1, kind:'alt-seven' };
       case 'at': return { row:1, kind:'seven' };
       case 'tier_up': return { row:1, kind:'bar' };
@@ -952,7 +951,7 @@
 
   // 🟥7当選系は、STOP入力そのものを狙える位相へ補正する目押しアシスト。
   // 青7フリーズのような無条件強制停止とは分け、補正後も0〜4コマ引き込みで停止させる。
-  const aimAssistRoles = new Set(['at','hit']);
+  const aimAssistRoles = new Set();
 
   const buildSpinControl = (role, result) => {
     // 3枚役は「反対斜め / 上段 / 下段」の3停止形のいずれか。
@@ -1273,11 +1272,11 @@
     showMachineCinematic('HIT', '当たり', '右リールで決まる', 'judge');
 
     autoTimers.push(setTimeout(() => {
-      showMachineCinematic('TARGET', '🟥7を狙え', '左・中は🟥7　右は…？', 'judge target');
+      showMachineCinematic('TARGET', 'STOPでジャッジ', '内部結果は最終停止で告知', 'judge target');
       els.stageScreen.classList.add('omen-purple');
       els.effectLayer.className = 'effect-layer purple';
-      els.eventTitle.textContent = '🟥7を狙え';
-      els.eventNote.textContent = '右リールの 🟥7 / BAR で行き先決定';
+      els.eventTitle.textContent = 'STOPでジャッジ';
+      els.eventNote.textContent = 'リールは成立役どおりに停止 / 行き先は内部結果で告知';
       entryCinematicActive = false;
       unlockEntryStops();
     }, 850));
@@ -1304,12 +1303,12 @@
     autoTimers.push(setTimeout(() => {
       showMachineCinematic(
         'TARGET',
-        '🟥7を狙え',
-        isAT ? '🟥7 🟥7 🟥7' : '🟥7 🟥7 BAR',
+        'STOP',
+        isAT ? 'AT内部当選' : 'BONUS内部当選',
         isAT ? 'gold target' : 'red target'
       );
-      els.eventTitle.textContent = '🟥7を狙え';
-      els.eventNote.textContent = 'STOPボタンで図柄を揃えろ';
+      els.eventTitle.textContent = 'STOP';
+      els.eventNote.textContent = '内部当選済み / リールは成立役どおりに停止';
       entryCinematicActive = false;
       unlockEntryStops();
     }, 900));
@@ -1404,16 +1403,17 @@
     stops[index].classList.remove('active','nav-first');
     stops[index].disabled = true;
 
-    if (pendingEntryAmbiguous && index===2) {
-      if (pendingRole==='at') {
-        showMachineCinematic('RESULT','AT 突入！','🟥7 🟥7 🟥7','gold judge-result');
-      } else if (pendingRole==='hit') {
-        showMachineCinematic('RESULT','BONUS！','🟥7 🟥7 BAR','red judge-result');
+    if (reelStopped.every(Boolean)) {
+      if (pendingEntryAmbiguous) {
+        if (pendingRole==='at') {
+          showMachineCinematic('RESULT','AT 突入！','内部当選','gold judge-result');
+        } else if (pendingRole==='hit') {
+          showMachineCinematic('RESULT','BONUS！','内部当選','red judge-result');
+        }
+        autoTimers.push(setTimeout(hideMachineCinematic,650));
       }
-      autoTimers.push(setTimeout(hideMachineCinematic,650));
+      finishGame();
     }
-
-    if (reelStopped.every(Boolean)) finishGame();
   };
 
   const isPremium = (type) => ['freeze','upper_special_zone'].includes(type);
@@ -1714,8 +1714,14 @@
                   ? accountingReturnForRole(forcedRole)
                   : Number(pendingResult.reelPayout || 0))));
 
-    // 成立役・停止制御表・押し順をこの時点で固定する。
-    pendingControl = buildSpinControl(pendingRole, pendingResult);
+    // レバーONで内部結果(pendingRole)はここまでに確定済み。
+    // リール停止制御は別物。AT/BONUSの内部当選を赤7/BARへ強制変換せず、
+    // そのゲームで実際に成立している物理役(reelRole)だけを0〜4コマ制御する。
+    pendingPhysicalRole = pendingResult.reelRole || pendingRole;
+    if (pendingEntryReplayRole && pendingRole !== 'freeze') {
+      pendingPhysicalRole = pendingResult.reelRole || 'replay';
+    }
+    pendingControl = buildSpinControl(pendingPhysicalRole, pendingResult);
     pendingBellNaviActive = (pendingWasAT || pendingWasBonus)
       && pendingRole === 'bell9'
       && Number.isInteger(pendingControl.navOrder)
@@ -1806,40 +1812,6 @@
           : (naviMiss ? accountingReturnForRole(physicalPattern) : payout));
     let allEvents = [...(result.events || [])];
 
-    // AT/BONUS/FREEZEの入賞ゲームは、図柄が実際に揃って初めて開始表示へ進む。
-    // 目押しを外した場合は内部当選を保持し、WASMをもう1G進めず同じ入賞ゲームを再試行する。
-    const entryRole = pendingRole === 'hit'
-      || pendingRole === 'at'
-      || pendingRole === 'freeze'
-      || pendingRole === 'tier_up';
-    const entrySucceeded = !pendingSyntheticEntry
-      || !entryRole
-      || physicalPattern === pendingRole;
-
-    if (pendingSyntheticEntry && entryRole && !entrySucceeded) {
-      deferredEntryReveal = {
-        role: pendingRole,
-        events: allEvents,
-        ambiguous: pendingEntryAmbiguous
-      };
-
-      els.roleResult.textContent = '図柄揃わず';
-      els.payoutResult.textContent = 'RETRY';
-      els.eventTitle.textContent = pendingRole === 'hit'
-        ? '🟥7 🟥7 BAR を狙え'
-        : (pendingRole === 'freeze' ? '🟦7を狙え' : '🟥7を狙え');
-      els.eventNote.textContent = '内部当選は継続 / BARを目印に最大4コマ引き込み';
-      els.eventBanner.className = 'event-banner hot';
-
-      render(displayState(state()));
-      clearBellNavi();
-
-      if (autoEnabled) {
-        clearAutoTimers();
-        autoTimers.push(setTimeout(beginGame,450));
-      }
-      return;
-    }
 
     // 通常時は、実停止5ラインで新たに成立したベル/リプレイも差枚へ反映。
     // AT/BONUSは内部純増会計済みなので二重加算しない。
@@ -1880,6 +1852,9 @@
     }
     if (aimAssistUsed) {
       els.eventNote.textContent += ' / 目押しアシスト';
+    }
+    if (pendingPhysicalRole !== pendingRole && pendingEntryReplayRole) {
+      els.eventNote.textContent += ' / 内部結果と停止役は別管理';
     }
     if (!naviMiss && !physicalLinePayoutRole && physicalPattern !== pendingRole && !assistSubstitute && !aimAssistUsed && pendingRole !== 'one_medal') {
       els.eventNote.textContent += ' / 取りこぼし停止';
@@ -1944,6 +1919,7 @@
     gameActive = false;
     pendingResult = null;
     pendingRole = 'miss';
+    pendingPhysicalRole = 'miss';
     pendingPayout = 0;
     pendingWasAT = false;
     pendingWasBonus = false;
