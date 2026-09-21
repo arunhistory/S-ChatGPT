@@ -1,12 +1,29 @@
 #include "index.hpp"
 #include "../stop-first/index.hpp"
+#include "../role-policy/index.hpp"
+#include "../assist-integrity/index.hpp"
 
 namespace slotv2::stop_third {
 
 stop_shared::Result resolve(const stop_shared::Context& ctx) {
-    // 最終停止での中段1ライン入賞保護は、中・右配列確定後にここへ限定実装する。
-    // 停止後に内部フラグを書き換える処理は置かない。
-    return stop_first::resolve(ctx);
+    const auto result = stop_first::resolve(ctx);
+
+    if (role_policy::stopPolicy(ctx.role) != role_policy::StopPolicy::Assist) {
+        return result;
+    }
+
+    // 最終停止でも、前停止で崩れたアシスト役を別結果へ書き換えない。
+    if (!assist_integrity::stoppedCompatible(ctx)
+        && (result.status == stop_shared::ResolveStatus::Ok
+            || result.status == stop_shared::ResolveStatus::AssistGap)) {
+        return {
+            stop_shared::ResolveStatus::AssistGap,
+            result.final_position,
+            result.slip
+        };
+    }
+
+    return result;
 }
 
 } // namespace slotv2::stop_third
