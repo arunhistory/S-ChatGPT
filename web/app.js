@@ -649,9 +649,9 @@
     }
     normalizeReelArtPhase(index);
 
-    // 実機寄りの高速回転。通常は約37.5ms/1コマ、逆回転は約32ms/1コマ。
-    // 4コマ引き込みでも約150msなので、目押しアシストとして機能する速度にする。
-    const secondsPerCell = direction > 0 ? 0.0375 : 0.032;
+    // 少しだけ速度を落とす。通常は約42ms/1コマ、逆回転は約36ms/1コマ。
+    // 高速感は残しつつ、絵柄を追える程度に調整する。
+    const secondsPerCell = direction > 0 ? 0.042 : 0.036;
     const speed = geo.cellHeight / secondsPerCell;
     let last = performance.now();
 
@@ -711,7 +711,7 @@
     const from=current;
     // 回転速度を保ったまま0〜4コマだけ引き込む。
     // 4コマなら約150ms。停止時だけ不自然にスロー化させない。
-    const duration=Math.max(35,Math.min(160,cells*37.5+18));
+    const duration=Math.max(38,Math.min(175,cells*42+18));
     const started=performance.now();
 
     // ほぼ一定速で滑り、最後の約18%だけ軽く減速。
@@ -1194,7 +1194,7 @@
     reelTimers[index] = setInterval(() => {
       reelPositions[index] = mod(reelPositions[index] - 1, reelStrips[index].length);
       renderReel(index);
-    }, 38);
+    }, 42);
   };
 
   const startReverseReelMotion = (index) => {
@@ -1211,7 +1211,7 @@
     reelTimers[index] = setInterval(() => {
       reelPositions[index] = mod(reelPositions[index] + 1, reelStrips[index].length);
       renderReel(index);
-    }, 32);
+    }, 36);
   };
 
   const stopAllReelTimers = () => {
