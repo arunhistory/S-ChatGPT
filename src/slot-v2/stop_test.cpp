@@ -1,6 +1,7 @@
 #include <iostream>
 #include "shared/types.hpp"
 #include "reel-strip/index.hpp"
+#include "reel-validator/index.hpp"
 #include "stop-controller/index.hpp"
 
 namespace {
@@ -48,8 +49,17 @@ int main() {
     ok = checkRole(slotv2::RoleFlag::OneMedal, false, true) && ok;
     ok = checkRole(slotv2::RoleFlag::Watermelon, false, true) && ok;
 
+    const uint32_t validator = slotv2::reel_validator::validateLeft();
+    const uint32_t required =
+        slotv2::reel_validator::LeftCherryHidePossible |
+        slotv2::reel_validator::LeftBellGuaranteed |
+        slotv2::reel_validator::LeftReplayGuaranteed |
+        slotv2::reel_validator::LeftBarLandmarkPair;
+
+    ok = ok && ((validator & required) == required);
+
     if (!ok) {
-        std::cerr << "slot_v2_stop_test: FAILED\n";
+        std::cerr << "slot_v2_stop_test: FAILED validator=" << validator << "\n";
         return 1;
     }
 
