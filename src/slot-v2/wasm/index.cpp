@@ -4,6 +4,7 @@
 #include "../lever/index.hpp"
 #include "../freeze/index.hpp"
 #include "../stop-controller/index.hpp"
+#include "../reel-validator/index.hpp"
 
 namespace {
 slotv2::Rng g_rng;
@@ -82,6 +83,11 @@ __attribute__((visibility("default")))
 uint32_t slot_v2_stopped_position(uint32_t reel) {
     if (reel > 2u || !g_stopped[reel]) return 0xffffffffu;
     return static_cast<uint32_t>(g_position[reel]);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_validate_left() {
+    return slotv2::reel_validator::validateLeft();
 }
 
 __attribute__((visibility("default")))
