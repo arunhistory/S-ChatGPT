@@ -34,6 +34,12 @@ add_library(slot_v2_core
   src/slot-v2/stop-rules/watermelon.cpp
   src/slot-v2/stop-rules/fallback.cpp
   src/slot-v2/stop-rules/router.cpp
+  src/slot-v2/stop-rules/penguin.cpp
+  src/slot-v2/stop-rules/strong-chance.cpp
+  src/slot-v2/stop-rules/weak-chance.cpp
+  src/slot-v2/stop-rules/one-medal.cpp
+  src/slot-v2/stop-rules/miss.cpp
+  src/slot-v2/role-policy/index.cpp
   src/slot-v2/stop-first/index.cpp
   src/slot-v2/stop-second/index.cpp
   src/slot-v2/stop-third/index.cpp
