@@ -666,48 +666,64 @@
     const geo = reelArtGeometry(index);
     if (!geo) return;
 
-    const current=reelArtPhase[index];
-    const h=geo.cellHeight;
-    const dir=reelArtDirection[index] >= 0 ? 1 : -1;
-    let target=current;
+    const exact = targetReelArtPhase(index);
+    if (exact === null) return;
 
-    if (dir>0) {
-      const raw=1-(current/h);
-      const nextBase=Math.floor(raw+1e-7);
-      const residual=raw-nextBase;
-      const slip=mod(pressedBase-finalPosition,21);
-      const safeSlip=slip<=4 ? slip : 0;
-      target=current+(residual+safeSlip)*h;
+    const current = reelArtPhase[index];
+    const cycle = geo.stripHeight;
+    const dir = reelArtDirection[index] >= 0 ? 1 : -1;
+
+    // STOPを押した位置から最終停止位置までの滑りは最大4コマ。
+    const slip = dir > 0
+      ? mod(pressedBase - finalPosition, 21)
+      : mod(finalPosition - pressedBase, 21);
+    const safeSlip = Math.min(slip, 4);
+
+    // exactと同じ絵柄位置は21コマごとに存在する。
+    // 現在の回転方向を維持したまま、4コマ以内で到達する同位相だけを選ぶ。
+    let target = exact;
+    if (dir > 0) {
+      while (target < current) target += cycle;
+      while ((target - current) / geo.cellHeight > safeSlip + 1.05 && target - cycle >= current) {
+        target -= cycle;
+      }
     } else {
-      const raw=1-(current/h);
-      const nextBase=Math.ceil(raw-1e-7);
-      const residual=nextBase-raw;
-      const slip=mod(finalPosition-pressedBase,21);
-      const safeSlip=slip<=4 ? slip : 0;
-      target=current-(residual+safeSlip)*h;
+      while (target > current) target -= cycle;
+      while ((current - target) / geo.cellHeight > safeSlip + 1.05 && target + cycle <= current) {
+        target += cycle;
+      }
     }
 
-    const distance=Math.abs(target-current);
-    const cells=distance/h;
-    const duration=Math.max(70,Math.min(260,70+cells*38));
-    const from=current;
-    const started=performance.now();
-    const easeOut=t=>1-Math.pow(1-t,3);
+    const from = current;
+    const distance = Math.abs(target - from);
+    const duration = Math.max(
+      70,
+      Math.min(230, 70 + (distance / geo.cellHeight) * 35)
+    );
+    const started = performance.now();
+    const easeOut = t => 1 - Math.pow(1 - t, 3);
 
-    const frame=(now)=>{
-      const t=Math.min(1,(now-started)/duration);
-      reelArtPhase[index]=from+(target-from)*easeOut(t);
+    const frame = (now) => {
+      const t = Math.min(1, (now - started) / duration);
+      reelArtPhase[index] = from + (target - from) * easeOut(t);
       paintReelArt(index);
-      if(t<1){
-        reelArtFrames[index]=requestAnimationFrame(frame);
-      }else{
-        reelArtFrames[index]=null;
-        reelArtPhase[index]=target;
-        normalizeReelArtPhase(index);
-        paintReelArt(index);
+
+      if (t < 1) {
+        reelArtFrames[index] = requestAnimationFrame(frame);
+        return;
       }
+
+      reelArtFrames[index] = null;
+
+      // 最終フレームはアニメ用位相を捨て、
+      // 文字リールと同じ reelPositions から算出した exact に必ず一致させる。
+      // これで赤ライン中央 = 中段図柄中央がズレない。
+      reelArtPhase[index] = exact;
+      normalizeReelArtPhase(index);
+      paintReelArt(index);
     };
-    reelArtFrames[index]=requestAnimationFrame(frame);
+
+    reelArtFrames[index] = requestAnimationFrame(frame);
   };
 
   const renderReel = (index) => {
