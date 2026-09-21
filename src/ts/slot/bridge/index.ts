@@ -1,11 +1,15 @@
 import {
   AcquisitionResult,
   AcquisitionStatus,
+  CommandStatus,
+  EntryTarget,
   LeverResult,
   ReelId,
   ReelPosition,
   RoleFlag,
+  SessionPhase,
   SpecialHit,
+  SpecialResult,
   StopResult,
   StopStatus,
   Symbol,
@@ -15,6 +19,9 @@ export interface SlotWasmV2 {
   slot_v2_reset(seedLo: number, seedHi: number): void;
   slot_v2_lever(): number;
   slot_v2_stop(reel: number, pressedPosition: number): number;
+  slot_v2_phase(): number;
+  slot_v2_special_result(): number;
+  slot_v2_complete_special(): number;
   slot_v2_stopped_position(reel: number): number;
   slot_v2_acquisition(): number;
   slot_v2_symbol_at(reel: number, position: number): number;
@@ -30,6 +37,7 @@ export function decodeLeverResult(packed: number): LeverResult {
     role: (packed & 0xff) as RoleFlag,
     special: ((packed >>> 8) & 0xff) as SpecialHit,
     mainLotteryRan: ((packed >>> 16) & 1) === 1,
+    commandStatus: ((packed >>> 24) & 0xff) as CommandStatus,
   };
 }
 
@@ -104,4 +112,23 @@ export function readVisibleSymbol(
     centerPosition,
     rowOffset,
   ) as Symbol;
+}
+
+
+export function readSessionPhase(wasm: SlotWasmV2): SessionPhase {
+  return wasm.slot_v2_phase() as SessionPhase;
+}
+
+export function readSpecialResult(wasm: SlotWasmV2): SpecialResult {
+  const packed = wasm.slot_v2_special_result() >>> 0;
+  return {
+    hit: (packed & 0xff) as SpecialHit,
+    target: ((packed >>> 8) & 0xff) as EntryTarget,
+    stock: (packed >>> 16) & 0xff,
+    freeze: ((packed >>> 24) & 1) === 1,
+  };
+}
+
+export function completeSpecial(wasm: SlotWasmV2): SessionPhase {
+  return wasm.slot_v2_complete_special() as SessionPhase;
 }
