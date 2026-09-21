@@ -138,9 +138,11 @@
   let reelTimers = [null, null, null];
   let reelStopped = [true, true, true];
   let reelPositions = [0, 0, 0];
-  // 画像リールは同一ストリップ3枚を連結し、中央コピー付近を基準に連続移動する。
-  // logical position は従来通り0..20、visual top position はラップさせず滑らかに進める。
-  let reelVisualTopPositions = [20, 20, 20];
+  // 見た目のリール回転は内部の70ms抽選/停止位置更新とは分離する。
+  // 通常回転は画像を下向き、フリーズ逆回転だけ上向きに連続移動させる。
+  let reelArtFrames = [null, null, null];
+  let reelArtY = [null, null, null];
+  let reelArtDirection = [1, 1, 1]; // +1=下向き / -1=上向き
   let autoEnabled = false;
   let autoTimers = [];
 
@@ -449,62 +451,148 @@
     return strip[mod(position + offset, strip.length)];
   };
 
-  const renderReelArt = (index, immediate = false) => {
+  const reelArtGeometry = (index) => {
     const track = reelArtTracks[index];
-    if (!track) return;
+    if (!track) return null;
 
     const reelHeight = reels[index].clientHeight;
-    if (!reelHeight) return;
+    if (!reelHeight) return null;
 
     const cellHeight = reelHeight / 3;
     const stripHeight = cellHeight * 21;
-    const logicalTop = mod(reelPositions[index] - 1, 21);
 
     [...track.querySelectorAll('img')].forEach((img) => {
-      // 横幅を潰さない。生成画像の左右余白はoverflowで自然にクロップする。
       img.style.height = stripHeight + 'px';
       img.style.width = 'auto';
     });
 
-    let visualTop = reelVisualTopPositions[index];
-    const currentMod = mod(visualTop, 21);
-    const reverse = reels[index].classList.contains('reverse-spinning');
-    const spinning = reels[index].classList.contains('spinning');
+    return { track, cellHeight, stripHeight };
+  };
+
+  const exactReelArtY = (index) => {
+    const geo = reelArtGeometry(index);
+    if (!geo) return null;
+    const topIndex = mod(reelPositions[index] - 1, 21);
+    return -(geo.stripHeight + topIndex * geo.cellHeight);
+  };
+
+  const renderReelArt = (index, immediate = false) => {
+    // 回転中はrequestAnimationFrame側が描画を担当する。
+    if (reelArtFrames[index] !== null && !immediate) return;
+
+    const geo = reelArtGeometry(index);
+    if (!geo) return;
+
+    const y = exactReelArtY(index);
+    if (y === null) return;
+
+    reelArtY[index] = y;
+    geo.track.classList.toggle('reel-art-no-transition', immediate);
+    geo.track.style.transform = 'translate3d(0,' + y + 'px,0)';
 
     if (immediate) {
-      visualTop = 21 + logicalTop;
-    } else if (spinning) {
-      // 通常回転/逆回転とも常に同じ向きへ1コマずつ連続移動させる。
-      const delta = reverse
-        ? -mod(currentMod - logicalTop, 21)
-        : mod(logicalTop - currentMod, 21);
-      visualTop += delta;
+      void geo.track.offsetHeight;
+      geo.track.classList.remove('reel-art-no-transition');
+    }
+  };
+
+  const cancelReelArtFrame = (index) => {
+    if (reelArtFrames[index] !== null) {
+      cancelAnimationFrame(reelArtFrames[index]);
+      reelArtFrames[index] = null;
+    }
+  };
+
+  const startReelArtMotion = (index, direction) => {
+    cancelReelArtFrame(index);
+
+    const geo = reelArtGeometry(index);
+    if (!geo) return;
+
+    reelArtDirection[index] = direction;
+    if (reelArtY[index] === null) {
+      reelArtY[index] = exactReelArtY(index);
+    }
+
+    geo.track.classList.add('reel-art-no-transition');
+
+    let last = performance.now();
+    const speed = geo.cellHeight / 0.07; // 旧70ms/1コマ相当。ただし描画は毎フレーム。
+
+    const frame = (now) => {
+      const currentGeo = reelArtGeometry(index);
+      if (!currentGeo) {
+        reelArtFrames[index] = requestAnimationFrame(frame);
+        return;
+      }
+
+      const dt = Math.min(0.04, Math.max(0, (now - last) / 1000));
+      last = now;
+
+      // +1は画面上で下へ流れる。逆回転(-1)だけ上へ流れる。
+      reelArtY[index] += direction * speed * dt;
+
+      // 同一21コマ画像の繰り返しなので、1周分ずらしても見た目は連続。
+      while (reelArtY[index] > -currentGeo.stripHeight) {
+        reelArtY[index] -= currentGeo.stripHeight;
+      }
+      while (reelArtY[index] < -3 * currentGeo.stripHeight) {
+        reelArtY[index] += currentGeo.stripHeight;
+      }
+
+      currentGeo.track.style.transform =
+        'translate3d(0,' + reelArtY[index] + 'px,0)';
+
+      reelArtFrames[index] = requestAnimationFrame(frame);
+    };
+
+    reelArtFrames[index] = requestAnimationFrame(frame);
+  };
+
+  const settleReelArt = (index) => {
+    cancelReelArtFrame(index);
+
+    const geo = reelArtGeometry(index);
+    if (!geo) return;
+
+    const base = exactReelArtY(index);
+    if (base === null) return;
+
+    const current = reelArtY[index] ?? base;
+    const candidates = [
+      base - 2 * geo.stripHeight,
+      base - geo.stripHeight,
+      base,
+      base + geo.stripHeight,
+      base + 2 * geo.stripHeight
+    ];
+
+    let target;
+    if (reelArtDirection[index] >= 0) {
+      // 通常回転は下方向を保ったまま停止位置へ入る。
+      const forward = candidates.filter(v => v >= current - 0.5);
+      target = forward.length ? Math.min(...forward) : Math.max(...candidates);
     } else {
-      // 停止時も現在位置から前方向へ最短の同一図柄位置に着地。
-      visualTop += mod(logicalTop - currentMod, 21);
+      // 逆回転時だけ上方向を保ったまま停止位置へ入る。
+      const backward = candidates.filter(v => v <= current + 0.5);
+      target = backward.length ? Math.max(...backward) : Math.min(...candidates);
     }
 
-    // 3コピーの中央付近へ戻す。21コマ分の差は画像が同一なので見た目は変わらない。
-    if (visualTop > 41 || visualTop < 20) {
-      const rebased = visualTop > 41 ? visualTop - 21 : visualTop + 21;
-      track.classList.add('reel-art-no-transition');
-      const oldY = -(reelVisualTopPositions[index] * cellHeight);
-      track.style.transform = 'translate3d(0,' + oldY + 'px,0)';
-      void track.offsetHeight;
-      reelVisualTopPositions[index] = rebased;
-      track.style.transform = 'translate3d(0,' + (-(rebased * cellHeight)) + 'px,0)';
-      void track.offsetHeight;
-      track.classList.remove('reel-art-no-transition');
-      visualTop = rebased;
-    }
+    geo.track.classList.remove('reel-art-no-transition');
+    reelArtY[index] = target;
+    geo.track.style.transform = 'translate3d(0,' + target + 'px,0)';
 
-    reelVisualTopPositions[index] = visualTop;
-    if (immediate) track.classList.add('reel-art-no-transition');
-    track.style.transform = 'translate3d(0,' + (-(visualTop * cellHeight)) + 'px,0)';
-    if (immediate) {
-      void track.offsetHeight;
-      track.classList.remove('reel-art-no-transition');
-    }
+    // 停止アニメ後、中央コピーへ無音で戻す。
+    setTimeout(() => {
+      if (!reelStopped[index] || reelArtFrames[index] !== null) return;
+      const latest = exactReelArtY(index);
+      if (latest === null) return;
+      geo.track.classList.add('reel-art-no-transition');
+      reelArtY[index] = latest;
+      geo.track.style.transform = 'translate3d(0,' + latest + 'px,0)';
+      void geo.track.offsetHeight;
+      geo.track.classList.remove('reel-art-no-transition');
+    }, 110);
   };
 
   const renderReel = (index) => {
@@ -520,7 +608,9 @@
 
 
   window.addEventListener('resize', () => {
-    for (let i = 0; i < 3; i++) renderReelArt(i, true);
+    for (let i = 0; i < 3; i++) {
+      if (reelArtFrames[i] === null) renderReelArt(i, true);
+    }
   });
 
   reelArtTracks.forEach((track, index) => {
@@ -999,9 +1089,13 @@
 
   const startReelMotion = (index) => {
     reelStopped[index] = false;
+    reels[index].classList.remove('reverse-spinning');
     reels[index].classList.add('spinning');
     stops[index].disabled = false;
     stops[index].classList.add('active');
+
+    // 通常時は必ず見た目が下向きに流れる。
+    startReelArtMotion(index, 1);
 
     reelTimers[index] = setInterval(() => {
       reelPositions[index] = mod(reelPositions[index] + 1, reelStrips[index].length);
@@ -1015,6 +1109,9 @@
     stops[index].disabled = true;
     stops[index].classList.remove('active');
 
+    // フリーズなどの逆回転演出だけ上向き。
+    startReelArtMotion(index, -1);
+
     reelTimers[index] = setInterval(() => {
       reelPositions[index] = mod(reelPositions[index] - 1, reelStrips[index].length);
       renderReel(index);
@@ -1027,6 +1124,7 @@
         clearInterval(reelTimers[i]);
         reelTimers[i] = null;
       }
+      cancelReelArtFrame(i);
       reels[i].classList.remove('spinning','reverse-spinning');
     }
   };
@@ -1204,14 +1302,17 @@
         ? (pendingRole === 'at' ? pair.bar : pair.seven)
         : findExactPosition(index, pendingRole === 'at' ? 'bar' : 'seven', 1);
       reelPositions[index] = nearPosition;
+      reels[index].classList.remove('spinning','reverse-spinning');
       renderReel(index);
+      settleReelArt(index);
 
       entryCinematicActive = true;
       autoTimers.push(setTimeout(() => {
         reelPositions[index] = finalPosition;
-        renderReel(index);
         reelStopped[index] = true;
-        reels[index].classList.remove('spinning','judging-stop');
+        reels[index].classList.remove('spinning','reverse-spinning','judging-stop');
+        renderReel(index);
+        settleReelArt(index);
         entryCinematicActive = false;
 
         // ここで初めてAT/BONUSの答えを公開する。
@@ -1227,10 +1328,11 @@
     }
 
     reelPositions[index] = finalPosition;
-    renderReel(index);
     reelStopped[index] = true;
 
-    reels[index].classList.remove('spinning');
+    reels[index].classList.remove('spinning','reverse-spinning');
+    renderReel(index);
+    settleReelArt(index);
     stops[index].classList.remove('active','nav-first');
     stops[index].disabled = true;
 
@@ -1721,7 +1823,8 @@
     reelTimers.forEach((timer, i) => {
       if (timer) clearInterval(timer);
       reelTimers[i] = null;
-      reels[i].classList.remove('spinning');
+      cancelReelArtFrame(i);
+      reels[i].classList.remove('spinning','reverse-spinning');
       stops[i].classList.remove('active');
       stops[i].disabled = true;
     });
