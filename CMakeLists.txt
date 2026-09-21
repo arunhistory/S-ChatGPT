@@ -40,6 +40,7 @@ add_library(slot_v2_core
   src/slot-v2/stop-rules/one-medal.cpp
   src/slot-v2/stop-rules/miss.cpp
   src/slot-v2/role-policy/index.cpp
+  src/slot-v2/navigation/index.cpp
   src/slot-v2/stop-first/index.cpp
   src/slot-v2/stop-second/index.cpp
   src/slot-v2/stop-third/index.cpp
@@ -64,3 +65,7 @@ target_link_libraries(slot_v2_stop_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_special_test src/slot-v2/special_test.cpp)
 target_link_libraries(slot_v2_special_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_navigation_test src/slot-v2/navigation_test.cpp)
+target_link_libraries(slot_v2_navigation_test PRIVATE slot_v2_core)
