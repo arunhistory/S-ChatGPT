@@ -38,6 +38,8 @@ add_library(slot_v2_core
   src/slot-v2/stop-controller/index.cpp
   src/slot-v2/freeze/index.cpp
   src/slot-v2/session/index.cpp
+  src/slot-v2/line/index.cpp
+  src/slot-v2/acquisition/index.cpp
 )
 target_include_directories(slot_v2_core PUBLIC src/slot-v2)
 
