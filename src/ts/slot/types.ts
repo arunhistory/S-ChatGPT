@@ -48,6 +48,7 @@ export const enum StopStatus {
   InvalidReel = 3,
   SpecialControlPending = 4,
   RoleMissed = 5,
+  SubstituteStop = 6,
 }
 
 export interface LeverResult {
