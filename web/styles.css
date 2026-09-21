@@ -893,3 +893,18 @@ body{height:100dvh;min-height:0;padding:4px;overflow:hidden}
   from{transform:translate3d(0,-25%,0)}
   to{transform:translate3d(0,-50%,0)}
 }
+
+
+/* ===== Seamless reel strip join ===== */
+.reel-art-track{
+  line-height:0;
+  backface-visibility:hidden;
+  transform-style:preserve-3d;
+}
+.reel-art-track img{
+  display:block !important;
+  border:0 !important;
+  outline:0 !important;
+  box-shadow:none !important;
+  backface-visibility:hidden;
+}
