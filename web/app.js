@@ -480,7 +480,21 @@
     track.innerHTML = '';
     track.appendChild(fragment);
     reelArtReady[index] = true;
+  };
+
+  const bootReelArtIfNeeded = (index) => {
+    prepareReelBelt(index);
+    if (!reelArtReady[index]) return;
+
     renderReelArt(index, true);
+
+    // レバーONが画像ロード完了より先でも、ロード完了した瞬間に画像回転を追従開始。
+    if (reels[index].classList.contains('spinning') && reelArtFrames[index] === null) {
+      startReelArtMotion(
+        index,
+        reels[index].classList.contains('reverse-spinning') ? -1 : 1
+      );
+    }
   };
 
   const reelArtGeometry = (index) => {
@@ -666,10 +680,10 @@
     const img = track?.querySelector('img');
     if (!img) return;
 
-    if (img.complete) {
-      prepareReelBelt(index);
+    if (img.complete && img.naturalWidth > 0) {
+      bootReelArtIfNeeded(index);
     } else {
-      img.addEventListener('load', () => prepareReelBelt(index), { once:true });
+      img.addEventListener('load', () => bootReelArtIfNeeded(index), { once:true });
       img.addEventListener('error', () => {
         // 読み込み失敗時は下の既存文字リールを見せ、画面自体を消さない。
         track.closest('.reel-art')?.classList.add('reel-art-failed');
@@ -1146,6 +1160,8 @@
   };
 
   const startReelMotion = (index) => {
+    prepareReelBelt(index);
+
     reelStopped[index] = false;
     reels[index].classList.remove('reverse-spinning');
     reels[index].classList.add('spinning');
@@ -1153,6 +1169,7 @@
     stops[index].classList.add('active');
 
     // 通常時は必ず見た目が下向きに流れる。
+    // まだ画像ロード前なら、loadイベント側のbootReelArtIfNeededが起動を引き継ぐ。
     startReelArtMotion(index, 1);
 
     reelTimers[index] = setInterval(() => {
@@ -1162,6 +1179,8 @@
   };
 
   const startReverseReelMotion = (index) => {
+    prepareReelBelt(index);
+
     reelStopped[index] = false;
     reels[index].classList.add('spinning','reverse-spinning');
     stops[index].disabled = true;
