@@ -523,21 +523,20 @@
     const cellHeight=height/3;
     const stripHeight=cellHeight*21;
 
-    // 横は白余白を捨て、レール本体だけ。
-    const sx=source.naturalWidth*0.300;
-    const sw=source.naturalWidth*0.400;
+    // 元画像は21コマが最初から等間隔に並んでいる。
+    // コマごとの切り刻みはせず、レール本体を丸ごと1本として扱う。
+    const sy0=source.naturalHeight*0.0054;
+    const sy1=source.naturalHeight*0.9935;
+    const sh=sy1-sy0;
 
-    // 生成済み3本とも21コマ等間隔。上下の丸い終端だけ除いて固定分割する。
-    // ブラウザ上で画像を読み戻さないので、CORS/tainted canvasで消滅しない。
-    const top=source.naturalHeight*0.0052;
-    const bottom=source.naturalHeight*0.9935;
-    const step=(bottom-top)/21;
-    const bounds=Array.from({length:22},(_,n)=>top+step*n);
+    // 右リールだけ元画像の横比率が少し広い。
+    const sx=source.naturalWidth*(index===2 ? 0.275 : 0.300);
+    const sw=source.naturalWidth*(index===2 ? 0.450 : 0.400);
 
     return {
       track,source,canvas,ctx:canvas.getContext('2d'),
-      width,height,dpr,cellHeight,stripHeight,sx,sw,
-      bounds
+      width,height,dpr,cellHeight,stripHeight,
+      sx,sw,sy0,sh
     };
   };
 
@@ -557,49 +556,41 @@
       return mod(reelPositions[index],reelStrips[index].length);
     }
 
-    // canvas上でメイン有効ライン(中央)に最も近い絵柄をSTOP入力位置とする。
+    // 赤ライン中央を基準に、現在流れて来ている次のコマをSTOP入力位置にする。
     const raw = 1 - (reelArtPhase[index] / geo.cellHeight);
-    return mod(Math.round(raw),reelStrips[index].length);
+    const p = reelArtDirection[index] >= 0 ? Math.floor(raw + 1e-7) : Math.ceil(raw - 1e-7);
+    return mod(p,reelStrips[index].length);
   };
 
   const paintReelArt = (index) => {
     const geo = reelArtGeometry(index);
     if (!geo || !geo.ctx) return;
 
-    const {ctx, source, width, height, dpr, cellHeight, sx, sw, bounds} = geo;
-
+    const {ctx,source,width,height,dpr,stripHeight,sx,sw,sy0,sh}=geo;
     ctx.setTransform(dpr,0,0,dpr,0,0);
     ctx.clearRect(0,0,width,height);
-    ctx.fillStyle = '#f7f9fc';
+    ctx.fillStyle='#f7f9fc';
     ctx.fillRect(0,0,width,height);
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+    ctx.imageSmoothingEnabled=true;
+    ctx.imageSmoothingQuality='high';
 
-    const phase = reelArtPhase[index];
-
-    // 画面に見える範囲だけ描画。
-    // kは無限リール上のコマ番号で、mod(k,21)により永久に循環する。
-    const firstK = Math.floor((-phase) / cellHeight) - 2;
-    const lastK = firstK + 8;
+    // 位相だけを動かし、元の21コマ縦画像そのものを繰り返す。
+    let y=reelArtPhase[index];
+    while (y>0) y-=stripHeight;
+    while (y<=-stripHeight) y+=stripHeight;
 
     try {
-      for (let k = firstK; k <= lastK; k++) {
-        const logical = mod(k,21);
-        const sy = bounds[logical];
-        const srcCellHeight = Math.max(1,bounds[logical+1]-bounds[logical]);
-        const dy = phase + k * cellHeight;
-
+      for (let n=-1;n<=2;n++) {
+        const dy=y+n*stripHeight;
         ctx.drawImage(
           source,
-          sx, sy, sw, srcCellHeight,
-          -0.5,dy-0.6,width+1,cellHeight+1.2
+          sx,sy0,sw,sh,
+          -0.5,dy-0.5,width+1,stripHeight+1
         );
       }
     } catch (err) {
-      // 最悪でもリールそのものは消さない。
       geo.track.classList.remove('canvas-ready');
       geo.canvas.style.display='none';
-      return;
     }
   };
 
@@ -669,49 +660,54 @@
     reelArtFrames[index] = requestAnimationFrame(frame);
   };
 
-  const settleReelArt = (index) => {
+  const settleReelArt = (index, pressedBase, finalPosition) => {
     cancelReelArtFrame(index);
 
     const geo = reelArtGeometry(index);
     if (!geo) return;
 
-    const base = targetReelArtPhase(index);
-    if (base === null) return;
+    const current=reelArtPhase[index];
+    const h=geo.cellHeight;
+    const dir=reelArtDirection[index] >= 0 ? 1 : -1;
+    let target=current;
 
-    const cycle = geo.stripHeight;
-    const current = reelArtPhase[index];
-
-    // 同じ停止位置は21コマごとに無限に存在する。
-    // 今の移動方向を反転させず、次に来る同一停止位置へ入れる。
-    let target = base;
-    if (reelArtDirection[index] >= 0) {
-      while (target < current) target += cycle;
+    if (dir>0) {
+      const raw=1-(current/h);
+      const nextBase=Math.floor(raw+1e-7);
+      const residual=raw-nextBase;
+      const slip=mod(pressedBase-finalPosition,21);
+      const safeSlip=slip<=4 ? slip : 0;
+      target=current+(residual+safeSlip)*h;
     } else {
-      while (target > current) target -= cycle;
+      const raw=1-(current/h);
+      const nextBase=Math.ceil(raw-1e-7);
+      const residual=nextBase-raw;
+      const slip=mod(finalPosition-pressedBase,21);
+      const safeSlip=slip<=4 ? slip : 0;
+      target=current-(residual+safeSlip)*h;
     }
 
-    const distance = Math.abs(target-current);
-    const duration = Math.max(90,Math.min(300,90+(distance/geo.cellHeight)*22));
-    const from = current;
-    const started = performance.now();
-    const easeOut = t => 1-Math.pow(1-t,3);
+    const distance=Math.abs(target-current);
+    const cells=distance/h;
+    const duration=Math.max(70,Math.min(260,70+cells*38));
+    const from=current;
+    const started=performance.now();
+    const easeOut=t=>1-Math.pow(1-t,3);
 
-    const frame = (now) => {
-      const t = Math.min(1,(now-started)/duration);
-      reelArtPhase[index] = from + (target-from)*easeOut(t);
+    const frame=(now)=>{
+      const t=Math.min(1,(now-started)/duration);
+      reelArtPhase[index]=from+(target-from)*easeOut(t);
       paintReelArt(index);
-
-      if (t < 1) {
-        reelArtFrames[index] = requestAnimationFrame(frame);
-      } else {
-        reelArtFrames[index] = null;
-        reelArtPhase[index] = target;
+      if(t<1){
+        reelArtFrames[index]=requestAnimationFrame(frame);
+      }else{
+        reelArtFrames[index]=null;
+        reelArtPhase[index]=target;
         normalizeReelArtPhase(index);
         paintReelArt(index);
       }
     };
-
-    reelArtFrames[index] = requestAnimationFrame(frame);
+    reelArtFrames[index]=requestAnimationFrame(frame);
   };
 
   const renderReel = (index) => {
@@ -1369,7 +1365,7 @@
 
     reels[index].classList.remove('spinning','reverse-spinning');
     renderReel(index);
-    settleReelArt(index);
+    settleReelArt(index,pressedBase,finalPosition);
     stops[index].classList.remove('active','nav-first');
     stops[index].disabled = true;
 
