@@ -461,9 +461,16 @@
     const cellHeight = reelHeight / 3;
     const stripHeight = cellHeight * 21;
 
+    const seamTrim = stripHeight * 0.0075;
     [...track.querySelectorAll('img')].forEach((img) => {
-      img.style.height = stripHeight + 'px';
+      // 生成画像の上下端には「リールの終端」が描かれているため、
+      // その端だけ表示外へ逃がして21コマ帯として継ぎ目なく連結する。
+      // heightをtrim分だけ増やし、負marginで実効高さはstripHeightのまま維持。
+      img.style.height = (stripHeight + seamTrim * 2) + 'px';
       img.style.width = 'auto';
+      img.style.marginTop = (-seamTrim) + 'px';
+      img.style.marginBottom = (-seamTrim) + 'px';
+      img.style.clipPath = 'inset(' + seamTrim + 'px 0 ' + seamTrim + 'px 0)';
     });
 
     return { track, cellHeight, stripHeight };
