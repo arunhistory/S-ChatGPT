@@ -1,3 +1,10 @@
+export const enum MachineArea {
+  Normal = 0,
+  CZ = 1,
+  Bonus = 2,
+  AT = 3,
+}
+
 export const enum CommandStatus {
   Ok = 0,
   RejectedPhase = 1,
