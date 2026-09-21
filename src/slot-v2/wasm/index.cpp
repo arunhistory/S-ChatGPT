@@ -85,7 +85,9 @@ uint32_t slot_v2_stop(uint32_t reel, uint32_t pressed_position) {
             g_session.lever.role,
             g_session.position[0],
             g_session.position[1],
-            g_session.position[2]
+            g_session.position[2],
+            slotv2::session::hadSubstitute(g_session),
+            slotv2::session::hadRoleMiss(g_session)
         );
     }
 
