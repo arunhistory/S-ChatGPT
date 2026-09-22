@@ -84,6 +84,7 @@ add_library(slot_v2_core
   src/slot-v2/stock-count-lottery/index.cpp
   src/slot-v2/stock/index.cpp
   src/slot-v2/section/index.cpp
+  src/slot-v2/section-reward/index.cpp
 )
 target_include_directories(slot_v2_core PUBLIC src/slot-v2)
 
@@ -176,3 +177,7 @@ target_link_libraries(slot_v2_catalog_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_normal_cz_cycle_test src/slot-v2/normal_cz_cycle_test.cpp)
 target_link_libraries(slot_v2_normal_cz_cycle_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_section_reward_test src/slot-v2/section_reward_test.cpp)
+target_link_libraries(slot_v2_section_reward_test PRIVATE slot_v2_core)
