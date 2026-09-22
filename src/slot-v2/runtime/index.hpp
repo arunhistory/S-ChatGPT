@@ -23,6 +23,7 @@
 #include "../upper-comeback-cycle/index.hpp"
 #include "../at-single-transition/index.hpp"
 #include "../normal-at-trigger/index.hpp"
+#include "../normal-hit-entry/index.hpp"
 
 namespace slotv2::runtime {
 
@@ -49,6 +50,7 @@ struct State {
     upper_comeback_cycle::Result upper_comeback_cycle{};
     at_single_transition::Result at_single_transition{};
     normal_at_trigger::Result normal_at_trigger{};
+    normal_hit_entry::Result normal_hit_entry{};
 };
 
 void reset(State& state, uint64_t seed);
@@ -59,6 +61,11 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position);
 bool recordCZResult(State& state, bool hit);
 void recordNormalHit(State& state, bool was_at);
 bool consumeNextHitAT(State& state);
+
+// 本抽選側が「通常当たり」を確定した後だけ呼ぶ。
+// BONUS/ATのどちらを選ぶか自体は未確定仕様なので、TSには公開しない。
+normal_hit_entry::Result resolveNormalHitAsBonus(State& state);
+normal_hit_entry::Result resolveNormalHitAsAT(State& state);
 
 // C++内部会計。TSへ変更権限を出さない。
 accounting::Result applyBet(State& state, int medals);
