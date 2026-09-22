@@ -12,6 +12,7 @@
 #include "../at-window/index.hpp"
 #include "../bonus-cycle/index.hpp"
 #include "../upper-comeback-cycle/index.hpp"
+#include "../at-single-transition/index.hpp"
 
 namespace slotv2::runtime {
 namespace {
@@ -84,6 +85,7 @@ void reset(State& state, uint64_t seed) {
     state.at_window = {};
     state.bonus_cycle = {};
     state.upper_comeback_cycle = {};
+    state.at_single_transition = {};
 }
 
 uint32_t lever(State& state) {
@@ -281,6 +283,13 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
             state.machine.normal_progress,
             state.pending
         );
+
+        state.at_single_transition =
+            at_single_transition::apply(
+                state.machine,
+                state.pending,
+                state.at_resolution
+            );
     }
 
     return static_cast<uint32_t>(result.final_position)
@@ -589,6 +598,11 @@ uint32_t upperComebackPacked(const State& state) {
         | (last.hit ? (1u << 2) : 0u)
         | (static_cast<uint32_t>(current.games_left) << 8)
         | (static_cast<uint32_t>(last.games_before) << 16);
+}
+
+uint32_t atSingleTransitionPacked(const State& state) {
+    return (state.at_single_transition.applied ? 1u : 0u)
+        | (state.at_single_transition.special_started ? (1u << 1) : 0u);
 }
 
 } // namespace slotv2::runtime
