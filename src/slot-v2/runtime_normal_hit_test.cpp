@@ -76,7 +76,7 @@ int main() {
         );
     }
 
-    // Special mode stays unresolved rather than inventing a BONUS transition.
+    // Special-mode normal hit is a regular BONUS and uses the same entry wait.
     {
         slotv2::runtime::State state{};
         slotv2::runtime::reset(state, 0x5555ULL);
@@ -84,10 +84,11 @@ int main() {
 
         const auto r = slotv2::runtime::resolveNormalHitAsBonus(state);
 
-        ok = ok && r.outcome
-            == slotv2::normal_hit_entry::Outcome::UnresolvedSpecialMode;
+        ok = ok && r.outcome == slotv2::normal_hit_entry::Outcome::Bonus;
         ok = ok && state.machine.area == slotv2::machine_state::Area::Normal;
-        ok = ok && !state.machine.entry_gate.active;
+        ok = ok && state.machine.entry_gate.active;
+        ok = ok && state.machine.entry_gate.bonus_kind
+            == slotv2::bonus_state::Kind::Regular;
     }
 
     if (!ok) {
