@@ -145,8 +145,6 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/special-zone-pending/index.cpp" \
   "$SRC/upper-special/index.cpp" \
   "$SRC/upper-special-transition/index.cpp" \
-  "$SRC/upper-special/index.cpp" \
-  "$SRC/upper-special-transition/index.cpp" \
   "$SRC/upper-comeback/index.cpp" \
   "$SRC/upper-comeback-cycle/index.cpp" \
   "$SRC/upper-comeback-transition/index.cpp" \
@@ -156,7 +154,6 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/bonus-upgrade/index.cpp" \
   "$SRC/stock-lottery/index.cpp" \
   "$SRC/stock-count-lottery/index.cpp" \
-  "$SRC/stock-restart-lottery/index.cpp" \
   "$SRC/stock/index.cpp" \
   "$SRC/section/index.cpp" \
   "$SRC/section-reward/index.cpp" \
