@@ -15,6 +15,7 @@ SRC="$ROOT/src/slot-v2"
   -Wl,--export=slot_v2_bonus_state \
   -Wl,--export=slot_v2_upper_comeback \
   -Wl,--export=slot_v2_at_single_transition \
+  -Wl,--export=slot_v2_normal_at_trigger \
   -Wl,--export=slot_v2_section_reward \
   -Wl,--export=slot_v2_at_window \
   -Wl,--export=slot_v2_section_transition \
@@ -97,6 +98,7 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/freeze/index.cpp" \
   "$SRC/acquisition/index.cpp" \
   "$SRC/normal-progress/index.cpp" \
+  "$SRC/normal-at-trigger/index.cpp" \
   "$SRC/cz-cycle/index.cpp" \
   "$SRC/cz-finalize/index.cpp" \
   "$SRC/normal-state/index.cpp" \
