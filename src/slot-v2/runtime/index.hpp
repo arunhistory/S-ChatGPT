@@ -12,6 +12,9 @@
 #include "../at-cycle/index.hpp"
 #include "../at-resolution/index.hpp"
 #include "../normal-mode/index.hpp"
+#include "../normal-route/index.hpp"
+#include "../normal-ceiling/index.hpp"
+#include "../normal-ceiling-transition/index.hpp"
 #include "../progress-event/index.hpp"
 #include "../cz-cycle/index.hpp"
 #include "../cz-finalize/index.hpp"
@@ -53,6 +56,10 @@ struct State {
     at_internal_transition::Result at_internal_transition{};
     at_window_transition::Result at_window_transition{};
     normal_mode::Mode normal_mode{normal_mode::Mode::NormalA};
+    normal_route::State normal_route{};
+    normal_ceiling::Reward normal_ceiling_reward{normal_ceiling::Reward::None};
+    normal_ceiling_transition::Result normal_ceiling_transition{};
+    bool ceiling_freeze_pending{false};
     cz_cycle::Result cz_cycle{};
     cz_finalize::Result cz_finalize{};
     cz_reward::Result cz_reward{};
@@ -128,6 +135,8 @@ uint32_t pendingEvents(const State& state);
 uint32_t atCyclePacked(const State& state);
 uint32_t atResolutionPacked(const State& state);
 uint32_t normalMode(const State& state);
+uint32_t normalRoutePacked(const State& state);
+uint32_t normalCeilingTransitionPacked(const State& state);
 uint32_t normalActualGames(const State& state);
 uint32_t normalDisplayGames(const State& state);
 uint32_t czCyclePacked(const State& state);
