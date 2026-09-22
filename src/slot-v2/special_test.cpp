@@ -2,6 +2,7 @@
 #include "special-lottery/index.hpp"
 #include "special-result/index.hpp"
 #include "session/index.hpp"
+#include "freeze/index.hpp"
 
 int main() {
     bool ok = true;
@@ -83,10 +84,26 @@ int main() {
         const auto freeze = slotv2::freeze::begin(lever.special);
 
         ok = ok && slotv2::session::begin(s, lever, special, freeze);
-        ok = ok && s.phase == slotv2::session::Phase::SpecialPending;
-        ok = ok && !slotv2::session::canLever(s);
+        ok = ok && s.phase == slotv2::session::Phase::Stopping;
+        ok = ok && s.freeze.active;
 
-        slotv2::session::completeSpecial(s);
+        const uint8_t expected[3]{9u, 14u, 10u};
+        for (uint8_t reel = 0u; reel < 3u; ++reel) {
+            const auto forced = slotv2::freeze::forceStop(
+                static_cast<slotv2::ReelId>(reel),
+                0u
+            );
+            ok = ok && forced.status
+                == slotv2::stop_shared::ResolveStatus::Ok;
+            ok = ok && forced.final_position == expected[reel];
+
+            slotv2::session::acceptStop(
+                s,
+                static_cast<slotv2::ReelId>(reel),
+                forced
+            );
+        }
+
         ok = ok && s.phase == slotv2::session::Phase::Complete;
         ok = ok && slotv2::session::canLever(s);
     }
