@@ -107,6 +107,7 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/normal-hit-entry/index.cpp" \
   "$SRC/cz-cycle/index.cpp" \
   "$SRC/cz-finalize/index.cpp" \
+  "$SRC/cz-reward/index.cpp" \
   "$SRC/normal-state/index.cpp" \
   "$SRC/normal-progress-view/index.cpp" \
   "$SRC/ceiling-catalog/index.cpp" \
