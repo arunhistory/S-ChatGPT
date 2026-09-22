@@ -90,6 +90,9 @@ add_library(slot_v2_core
   src/slot-v2/at-stock-restart/index.cpp
   src/slot-v2/section-transition/index.cpp
   src/slot-v2/at-pending/index.cpp
+  src/slot-v2/at-add-games/index.cpp
+  src/slot-v2/at-internal-transition/index.cpp
+  src/slot-v2/at-window-transition/index.cpp
   src/slot-v2/at-event/index.cpp
   src/slot-v2/special-zone/index.cpp
   src/slot-v2/special-zone-pending/index.cpp
@@ -97,12 +100,14 @@ add_library(slot_v2_core
   src/slot-v2/upper-special-transition/index.cpp
   src/slot-v2/upper-comeback/index.cpp
   src/slot-v2/upper-comeback-cycle/index.cpp
+  src/slot-v2/upper-comeback-transition/index.cpp
   src/slot-v2/revival-cycle/index.cpp
   src/slot-v2/revival-lottery/index.cpp
   src/slot-v2/revival-state/index.cpp
   src/slot-v2/bonus-upgrade/index.cpp
   src/slot-v2/stock-lottery/index.cpp
   src/slot-v2/stock-count-lottery/index.cpp
+  src/slot-v2/stock-restart-lottery/index.cpp
   src/slot-v2/stock/index.cpp
   src/slot-v2/section/index.cpp
   src/slot-v2/section-reward/index.cpp
@@ -178,6 +183,9 @@ target_link_libraries(slot_v2_game_finalize_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_at_cycle_test src/slot-v2/at_cycle_test.cpp)
 target_link_libraries(slot_v2_at_cycle_test PRIVATE slot_v2_core)
+
+add_executable(slot_v2_at_transition_test src/slot-v2/at_transition_test.cpp)
+target_link_libraries(slot_v2_at_transition_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_at_stock_restart_test src/slot-v2/at_stock_restart_test.cpp)
 target_link_libraries(slot_v2_at_stock_restart_test PRIVATE slot_v2_core)
