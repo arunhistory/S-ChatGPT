@@ -5,14 +5,13 @@
 namespace slotv2::reel_validator {
 namespace {
 
-bool hasVisible(const reel_strip::StripView& strip, int center, Symbol symbol) {
-    for (int d = -1; d <= 1; ++d) {
-        int p = center + d;
-        while (p < 0) p += strip.size;
-        p %= strip.size;
-        if (strip.data[p] == symbol) return true;
-    }
-    return false;
+bool centerOrLowerCherry(const reel_strip::StripView& strip, int center) {
+    int c = center;
+    while (c < 0) c += strip.size;
+    c %= strip.size;
+    const int lower = (c + 1) % strip.size;
+    return strip.data[c] == Symbol::Cherry
+        || strip.data[lower] == Symbol::Cherry;
 }
 
 bool canStopSafely(const reel_strip::StripView& strip, int pressed) {
@@ -20,7 +19,7 @@ bool canStopSafely(const reel_strip::StripView& strip, int pressed) {
         int p = pressed - slip;
         while (p < 0) p += strip.size;
         p %= strip.size;
-        if (!hasVisible(strip, p, Symbol::Cherry)) return true;
+        if (!centerOrLowerCherry(strip, p)) return true;
     }
     return false;
 }
@@ -48,7 +47,7 @@ bool canReachSymbolSafely(const reel_strip::StripView& strip, int pressed, Symbo
         int p = pressed - slip;
         while (p < 0) p += strip.size;
         p %= strip.size;
-        if (strip.data[p] == symbol && !hasVisible(strip, p, Symbol::Cherry)) return true;
+        if (strip.data[p] == symbol && !centerOrLowerCherry(strip, p)) return true;
     }
     return false;
 }
@@ -94,8 +93,13 @@ uint32_t validateAssist(ReelId reel) {
             p %= strip.size;
 
             const auto symbol = strip.data[p];
-            bellHere = bellHere || assist_target::accepts(RoleFlag::Bell9, reel, symbol);
-            replayHere = replayHere || assist_target::accepts(RoleFlag::Replay, reel, symbol);
+            const bool left_safe =
+                reel != ReelId::Left || !centerOrLowerCherry(strip, p);
+
+            bellHere = bellHere
+                || (left_safe && assist_target::accepts(RoleFlag::Bell9, reel, symbol));
+            replayHere = replayHere
+                || (left_safe && assist_target::accepts(RoleFlag::Replay, reel, symbol));
         }
 
         bell = bell && bellHere;
@@ -126,8 +130,7 @@ uint32_t assistFailureMask(ReelId reel, RoleFlag role) {
                 continue;
             }
 
-            if (reel == ReelId::Left
-                && hasVisible(strip, p, Symbol::Cherry)) {
+            if (reel == ReelId::Left && centerOrLowerCherry(strip, p)) {
                 continue;
             }
 
@@ -135,9 +138,7 @@ uint32_t assistFailureMask(ReelId reel, RoleFlag role) {
             break;
         }
 
-        if (!found) {
-            failures |= (1u << pressed);
-        }
+        if (!found) failures |= (1u << pressed);
     }
 
     return failures;
