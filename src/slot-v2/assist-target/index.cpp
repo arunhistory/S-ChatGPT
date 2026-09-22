@@ -14,6 +14,15 @@ bool accepts(RoleFlag role, ReelId reel, Symbol symbol) {
         case RoleFlag::Replay:
             return symbol == Symbol::Replay;
 
+        case RoleFlag::EntryAT:
+            return symbol == Symbol::Red7;
+
+        case RoleFlag::EntryBonus:
+            if (reel == ReelId::Right) {
+                return symbol == Symbol::Bar;
+            }
+            return symbol == Symbol::Red7;
+
         default:
             return false;
     }
