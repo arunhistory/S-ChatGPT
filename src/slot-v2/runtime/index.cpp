@@ -8,6 +8,8 @@
 #include "../at-pending/index.hpp"
 #include "../section-flow/index.hpp"
 #include "../cz-finalize/index.hpp"
+#include "../section-transition/index.hpp"
+#include "../at-window/index.hpp"
 
 namespace slotv2::runtime {
 namespace {
@@ -49,6 +51,12 @@ void handleSection(
         state.last_section_flow,
         state.pending
     );
+
+    state.last_section_transition = section_transition::apply(
+        state.machine,
+        state.pending,
+        state.last_section_flow
+    );
 }
 
 } // namespace
@@ -70,6 +78,8 @@ void reset(State& state, uint64_t seed) {
     state.cz_finalize = {};
     state.at_hit_stock_gained = false;
     state.last_section_flow = {};
+    state.last_section_transition = {};
+    state.at_window = {};
 }
 
 uint32_t lever(State& state) {
@@ -127,6 +137,8 @@ uint32_t lever(State& state) {
         state.at_resolution,
         state.pending
     );
+
+    state.at_window = at_window::inspect(state.machine);
 
     if (state.at_cycle.active && state.at_cycle.window_empty_after_game) {
         pending_event::add(
@@ -444,6 +456,24 @@ uint32_t sectionRewardPacked(const State& state) {
     return (r.cut ? 1u : 0u)
         | (static_cast<uint32_t>(r.preference_level) << 8)
         | (static_cast<uint32_t>(r.reward.kind) << 16);
+}
+
+uint32_t sectionTransitionPacked(const State& state) {
+    const auto& r = state.last_section_transition;
+    // bit0 applied / bit1 tier-changed / bit2 special-started / bit3 upper-special-pending
+    // 8..15 before tier / 16..23 after tier
+    return (r.applied ? 1u : 0u)
+        | (r.tier_changed ? (1u << 1) : 0u)
+        | (r.special_started ? (1u << 2) : 0u)
+        | (r.upper_special_pending ? (1u << 3) : 0u)
+        | (static_cast<uint32_t>(r.before) << 8)
+        | (static_cast<uint32_t>(r.after) << 16);
+}
+
+uint32_t atWindowPacked(const State& state) {
+    // 0..7 status / 8..31 stock count
+    return static_cast<uint32_t>(state.at_window.status)
+        | ((state.at_window.stock_count & 0x00ffffffu) << 8);
 }
 
 } // namespace slotv2::runtime
