@@ -251,6 +251,11 @@ uint32_t slot_v2_section_transition() {
 }
 
 __attribute__((visibility("default")))
+uint32_t slot_v2_special_zone_result() {
+    return slotv2::runtime::specialZoneResultPacked(g_runtime);
+}
+
+__attribute__((visibility("default")))
 uint32_t slot_v2_special_zone() {
     return slotv2::runtime::specialZonePacked(g_runtime);
 }
