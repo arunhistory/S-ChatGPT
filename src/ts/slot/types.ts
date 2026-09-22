@@ -1,3 +1,36 @@
+export const enum NormalMode {
+  NormalA = 0,
+  NormalB = 1,
+  Heaven = 2,
+  SuperHeaven = 3,
+  Special = 4,
+}
+
+export const enum ATEventBit {
+  Hit = 1 << 0,
+  Fall = 1 << 1,
+  AddGames = 1 << 2,
+  Special = 1 << 3,
+  Episode = 1 << 4,
+  UpperSpecial = 1 << 5,
+}
+
+export const enum ATResolutionStatus {
+  None = 0,
+  Single = 1,
+  Multiple = 2,
+}
+
+export const enum ATResolvedEvent {
+  None = 0,
+  Hit = 1,
+  Fall = 2,
+  AddGames = 3,
+  Special = 4,
+  Episode = 5,
+  UpperSpecial = 6,
+}
+
 export const enum PendingEvent {
   BellFiveAT = 1 << 0,
   CZThreeMissHit = 1 << 1,
