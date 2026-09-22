@@ -16,7 +16,7 @@ import {
   StopStatus,
   StockProfile,
   Symbol,
-} from "../types";
+} from "../types.js";
 
 export interface SlotWasmV2 {
   slot_v2_reset(seedLo: number, seedHi: number): void;
@@ -31,6 +31,7 @@ export interface SlotWasmV2 {
   slot_v2_symbol_at(reel: number, position: number): number;
   slot_v2_visible_symbol(reel: number, centerPosition: number, rowOffset: number): number;
   slot_v2_validate_left(): number;
+  slot_v2_preflight(): number;
   slot_v2_validate_reel(reel: number): number;
   slot_v2_reel_ready_mask(): number;
   slot_v2_last_special(): number;
