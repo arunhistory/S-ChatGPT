@@ -65,6 +65,7 @@ export interface SlotWasmV2 {
   slot_v2_bonus_state(): number;
   slot_v2_bonus_cycle(): number;
   slot_v2_upper_comeback(): number;
+  slot_v2_at_single_transition(): number;
   slot_v2_at_window(): number;
   slot_v2_at_cycle(): number;
   slot_v2_at_resolution(): number;
@@ -600,5 +601,22 @@ export function readUpperComeback(
     lastHit: (packed & (1 << 2)) !== 0,
     gamesLeft: (packed >>> 8) & 0xff,
     lastGamesBefore: (packed >>> 16) & 0xff,
+  };
+}
+
+
+export interface ATSingleTransitionSnapshot {
+  applied: boolean;
+  specialStarted: boolean;
+}
+
+export function readATSingleTransition(
+  wasm: SlotWasmV2,
+): ATSingleTransitionSnapshot {
+  const packed = wasm.slot_v2_at_single_transition() >>> 0;
+
+  return {
+    applied: (packed & 1) !== 0,
+    specialStarted: (packed & (1 << 1)) !== 0,
   };
 }
