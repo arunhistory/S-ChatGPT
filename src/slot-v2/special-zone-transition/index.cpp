@@ -36,10 +36,11 @@ Result apply(
             return {};
         }
 
-        entry_gate::queueBonus(
-            machine.entry_gate,
-            bonus_state::Kind::Regular,
-            true
+        if (machine.at_omen.active) return {};
+
+        at_omen::start(
+            machine.at_omen,
+            false
         );
 
         machine.special_zone.pending_add_games = 0u;
@@ -50,7 +51,7 @@ Result apply(
         );
 
         return {
-            Outcome::BonusQueued,
+            Outcome::BonusOmenStarted,
             0u
         };
     }
