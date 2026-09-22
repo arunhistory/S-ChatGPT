@@ -6,6 +6,7 @@
 #include "../normal-state/index.hpp"
 #include "../normal-high/index.hpp"
 #include "../at-state/index.hpp"
+#include "../at-omen/index.hpp"
 #include "../bonus-state/index.hpp"
 #include "../cz-state/index.hpp"
 #include "../special-zone/index.hpp"
@@ -32,6 +33,7 @@ struct State {
     stock::State stock{};
     normal_progress::State normal_progress{};
     at_state::State at{};
+    at_omen::State at_omen{};
     bonus_state::State bonus{};
     Area bonus_return_area{Area::Normal};
     bool bonus_return_valid{false};
