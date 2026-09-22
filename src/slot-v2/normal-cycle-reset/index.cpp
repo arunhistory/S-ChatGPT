@@ -9,6 +9,7 @@ void apply(
     normal_route::State& route
 ) {
     normal_state::reset(machine.normal);
+    normal_high::reset(machine.normal_high);
     machine.normal_progress.bell9_streak = 0u;
     normal_route::rerollBase(
         rng,
