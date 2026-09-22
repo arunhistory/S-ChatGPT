@@ -6,6 +6,7 @@ import {
   EntryTarget,
   LeverResult,
   MachineArea,
+  PendingEvent,
   ReelId,
   ReelPosition,
   RoleFlag,
@@ -47,6 +48,7 @@ export interface SlotWasmV2 {
   slot_v2_section_count(): bigint;
   slot_v2_stock_count(): number;
   slot_v2_point_count(): bigint;
+  slot_v2_pending_events(): number;
   slot_v2_bell_navigation(): number;
   slot_v2_bell_navigation_next(): number;
   slot_v2_bell_navigation_correct(): number;
@@ -245,5 +247,26 @@ export function readBellNavigation(
     orderIndex: active ? ((packed >>> 8) & 0xff) : null,
     nextReel: active && nextRaw !== 0xffffffff ? (nextRaw as ReelId) : null,
     correctSoFar: active && wasm.slot_v2_bell_navigation_correct() !== 0,
+  };
+}
+
+
+export interface PendingEventSnapshot {
+  rawBits: number;
+  bellFiveAT: boolean;
+  czThreeMissHit: boolean;
+  nextHitAT: boolean;
+}
+
+export function readPendingEvents(
+  wasm: SlotWasmV2,
+): PendingEventSnapshot {
+  const bits = wasm.slot_v2_pending_events() >>> 0;
+
+  return {
+    rawBits: bits,
+    bellFiveAT: (bits & PendingEvent.BellFiveAT) !== 0,
+    czThreeMissHit: (bits & PendingEvent.CZThreeMissHit) !== 0,
+    nextHitAT: (bits & PendingEvent.NextHitAT) !== 0,
   };
 }
