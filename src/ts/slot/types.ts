@@ -92,6 +92,7 @@ export const enum MachineArea {
   CZ = 1,
   Bonus = 2,
   AT = 3,
+  Revival = 4,
 }
 
 export const enum BonusKind {
@@ -109,6 +110,13 @@ export const enum SpecialZoneHitResult {
   None = 0,
   AddGames = 1,
   Bonus = 2,
+}
+
+export const enum RevivalOutcome {
+  None = 0,
+  Running = 1,
+  Revived = 2,
+  Failed = 3,
 }
 
 export const enum BonusTransitionOutcome {
