@@ -2,9 +2,13 @@
 
 namespace slotv2::stop_rules::penguin {
 
-bool accepts(const stop_shared::Context&, const reel_strip::StripView&, uint8_t) {
-    // 代用停止対応役。正式停止形が決まるまでは「直取得」と判定しない。
-    return false;
+bool accepts(
+    const stop_shared::Context& ctx,
+    const reel_strip::StripView& strip,
+    uint8_t candidate
+) {
+    if (!leftCherrySafe(ctx, strip, candidate)) return false;
+    return centerIs(strip, candidate, Symbol::Penguin);
 }
 
 } // namespace slotv2::stop_rules::penguin
