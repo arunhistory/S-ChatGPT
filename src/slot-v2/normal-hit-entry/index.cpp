@@ -9,12 +9,6 @@ Result enterBonus(
     if (machine.area != machine_state::Area::Normal) return {};
 
     const auto policy = bonus_entry_policy::forMode(mode);
-    if (policy.status != bonus_entry_policy::Status::Resolved) {
-        return {
-            Outcome::UnresolvedSpecialMode,
-            policy.kind
-        };
-    }
 
     entry_gate::queueBonus(
         machine.entry_gate,
