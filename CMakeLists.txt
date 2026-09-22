@@ -107,7 +107,6 @@ add_library(slot_v2_core
   src/slot-v2/bonus-upgrade/index.cpp
   src/slot-v2/stock-lottery/index.cpp
   src/slot-v2/stock-count-lottery/index.cpp
-  src/slot-v2/stock-restart-lottery/index.cpp
   src/slot-v2/stock/index.cpp
   src/slot-v2/section/index.cpp
   src/slot-v2/section-reward/index.cpp
