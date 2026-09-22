@@ -29,6 +29,7 @@
 #include "../normal-ceiling-transition/index.hpp"
 #include "../normal-cycle-reset/index.hpp"
 #include "../normal-role-trigger/index.hpp"
+#include "../at-cold/index.hpp"
 #include "../normal-flow/index.hpp"
 #include "../normal-flow-transition/index.hpp"
 #include "../entry-gate-transition/index.hpp"
@@ -591,6 +592,11 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
 
             if (state.entry_gate_transition.outcome
                 == entry_gate_transition::Outcome::ATStarted) {
+                at_cold::reroll(
+                    state.rng,
+                    state.machine.at
+                );
+
                 normal_cycle_reset::apply(
                     state.rng,
                     state.machine,
@@ -720,6 +726,14 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
                         state.machine.revival,
                         state.revival_game
                     );
+
+                if (state.revival_finalize.outcome
+                    == revival_cycle::Outcome::Revived) {
+                    at_cold::reroll(
+                        state.rng,
+                        state.machine.at
+                    );
+                }
 
                 if (state.revival_finalize.outcome
                     == revival_cycle::Outcome::Failed) {
