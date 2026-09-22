@@ -14,6 +14,7 @@ const REQUIRED_EXPORTS = [
   "slot_v2_visible_symbol",
   "slot_v2_validate_left",
   "slot_v2_validate_reel",
+  "slot_v2_assist_failure_mask",
   "slot_v2_reel_ready_mask",
   "slot_v2_preflight",
   "slot_v2_last_special",
