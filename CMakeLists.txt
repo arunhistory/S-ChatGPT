@@ -160,3 +160,7 @@ target_link_libraries(slot_v2_progress_event_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_flow_modules_test src/slot-v2/flow_modules_test.cpp)
 target_link_libraries(slot_v2_flow_modules_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_runtime_progress_test src/slot-v2/runtime_progress_test.cpp)
+target_link_libraries(slot_v2_runtime_progress_test PRIVATE slot_v2_core)
