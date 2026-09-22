@@ -36,17 +36,17 @@ Game beginGame(
 }
 
 FinalizeOutcome finalize(
-    machine_state::State& machine,
+    const at_state::State& at,
+    entry_gate::State& entry,
     State& omen,
     const Game& game
 ) {
-    if (!game.active || !game.ended) return FinalizeOutcome::None;
-    if (machine.area != machine_state::Area::AT || !machine.at.active) {
+    if (!game.active || !game.ended || !at.active) {
         return FinalizeOutcome::None;
     }
 
     entry_gate::queueBonus(
-        machine.entry_gate,
+        entry,
         game.episode
             ? bonus_state::Kind::Episode
             : bonus_state::Kind::Regular,
