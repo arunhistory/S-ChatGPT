@@ -24,6 +24,9 @@
 #include "../special-zone-transition/index.hpp"
 #include "../upper-special-transition/index.hpp"
 #include "../normal-hit-entry/index.hpp"
+#include "../normal-route/index.hpp"
+#include "../normal-ceiling/index.hpp"
+#include "../normal-ceiling-transition/index.hpp"
 #include "../entry-gate-transition/index.hpp"
 #include "../revival-cycle/index.hpp"
 
@@ -91,7 +94,14 @@ void reset(State& state, uint64_t seed) {
     state.at_resolution = {};
     state.at_internal_transition = {};
     state.at_window_transition = {};
-    state.normal_mode = normal_mode::drawBase(state.rng);
+    normal_route::rerollBase(
+        state.rng,
+        state.normal_mode,
+        state.normal_route
+    );
+    state.normal_ceiling_reward = normal_ceiling::Reward::None;
+    state.normal_ceiling_transition = {};
+    state.ceiling_freeze_pending = false;
     state.cz_cycle = {};
     state.cz_finalize = {};
     state.cz_reward = {};
@@ -220,6 +230,8 @@ uint32_t lever(State& state) {
 
     state.at_single_transition = {};
     state.normal_at_trigger = {};
+    state.normal_ceiling_reward = normal_ceiling::Reward::None;
+    state.normal_ceiling_transition = {};
     state.special_zone_result = special_zone::HitResult::None;
     state.special_zone_transition = {};
     state.upper_special_step = {};
@@ -230,8 +242,16 @@ uint32_t lever(State& state) {
     const bool entry_wait_active = state.machine.entry_gate.active;
 
     if (state.machine.area == machine_state::Area::Normal
-        && !entry_wait_active) {
+        && !entry_wait_active
+        && !state.ceiling_freeze_pending) {
         normal_state::onLever(state.machine.normal);
+
+        (void)normal_route::checkSpecialWindow(
+            state.rng,
+            state.normal_mode,
+            state.normal_route,
+            state.machine.normal.actual_games
+        );
 
         state.upper_comeback_cycle =
             upper_comeback_cycle::playOne(
@@ -270,6 +290,15 @@ uint32_t lever(State& state) {
         );
         result.main_lottery_ran = false;
         result.entry_wait = true;
+    } else if (state.ceiling_freeze_pending) {
+        // 1500G Special ceiling was fixed on the previous completed spin.
+        // Feed it into the existing freeze path as the next-game entry.
+        state.ceiling_freeze_pending = false;
+        result.command_status = CommandStatus::Ok;
+        result.special = SpecialHit::Freeze;
+        result.role = RoleFlag::None;
+        result.main_lottery_ran = false;
+        result.entry_wait = false;
     } else {
         // 特殊直撃は通常時だけ。復活チャレンジは通常小役だけを同率で抽選する。
         const bool allow_special =
@@ -280,6 +309,21 @@ uint32_t lever(State& state) {
             state.rng,
             allow_special
         );
+
+        // Ceiling result is also fixed at lever-on, but it is applied only
+        // after the third stop so acquired-role triggers can keep priority.
+        if (result.special == SpecialHit::None
+            && state.machine.area == machine_state::Area::Normal
+            && normal_route::reached(
+                state.normal_route,
+                state.machine.normal.display_games
+            )) {
+            state.normal_ceiling_reward = normal_ceiling::draw(
+                state.rng,
+                state.normal_mode,
+                state.normal_route.ceiling
+            );
+        }
     }
 
     if (revival_game_active && !result.entry_wait) {
@@ -481,6 +525,33 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
                         state.machine,
                         state.pending
                     );
+
+                if (state.normal_ceiling_reward != normal_ceiling::Reward::None) {
+                    // Five-bell or another already-queued entry wins this game.
+                    if (!state.machine.entry_gate.active) {
+                        state.normal_ceiling_transition =
+                            normal_ceiling_transition::apply(
+                                state.machine,
+                                state.pending,
+                                state.normal_mode,
+                                state.normal_ceiling_reward
+                            );
+
+                        if (state.normal_ceiling_transition.outcome
+                            != normal_ceiling_transition::Outcome::None) {
+                            normal_route::consumeCeiling(
+                                state.normal_route
+                            );
+                        }
+
+                        if (state.normal_ceiling_transition.outcome
+                            == normal_ceiling_transition::Outcome::FreezeQueued) {
+                            state.ceiling_freeze_pending = true;
+                        }
+                    }
+
+                    state.normal_ceiling_reward = normal_ceiling::Reward::None;
+                }
             }
 
             state.at_single_transition =
@@ -856,6 +927,22 @@ uint32_t atResolutionPacked(const State& state) {
 
 uint32_t normalMode(const State& state) {
     return static_cast<uint32_t>(state.normal_mode);
+}
+
+uint32_t normalRoutePacked(const State& state) {
+    // 0..7 pattern / 8..23 ceiling / bit24 special-window checked
+    // bit25 ceiling consumed / bit26 freeze queued.
+    return static_cast<uint32_t>(state.normal_route.pattern)
+        | (static_cast<uint32_t>(state.normal_route.ceiling) << 8)
+        | (state.normal_route.special_window_checked ? (1u << 24) : 0u)
+        | (state.normal_route.ceiling_consumed ? (1u << 25) : 0u)
+        | (state.ceiling_freeze_pending ? (1u << 26) : 0u);
+}
+
+uint32_t normalCeilingTransitionPacked(const State& state) {
+    return static_cast<uint32_t>(
+        state.normal_ceiling_transition.outcome
+    );
 }
 
 uint32_t normalActualGames(const State& state) {
