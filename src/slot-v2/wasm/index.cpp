@@ -168,6 +168,16 @@ uint32_t slot_v2_bell_navigation_correct() {
 }
 
 __attribute__((visibility("default")))
+uint32_t slot_v2_at_resolution() {
+    return slotv2::runtime::atResolutionPacked(g_runtime);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_normal_mode() {
+    return slotv2::runtime::normalMode(g_runtime);
+}
+
+__attribute__((visibility("default")))
 uint32_t slot_v2_at_cycle() {
     return slotv2::runtime::atCyclePacked(g_runtime);
 }
