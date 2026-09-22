@@ -38,6 +38,7 @@ const REQUIRED_EXPORTS = [
   "slot_v2_bonus_cycle",
   "slot_v2_upper_comeback",
   "slot_v2_at_single_transition",
+  "slot_v2_normal_at_trigger",
   "slot_v2_bonus_state",
   "slot_v2_normal_mode",
   "slot_v2_ceiling_at",
