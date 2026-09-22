@@ -10,6 +10,7 @@ struct State {
     uint8_t pattern{0};
     uint16_t ceiling{0};
     bool special_window_checked{false};
+    bool ceiling_consumed{false};
 };
 
 uint16_t ceilingFor(
@@ -36,5 +37,7 @@ bool reached(
     const State& state,
     uint32_t display_games
 );
+
+void consumeCeiling(State& state);
 
 } // namespace slotv2::normal_route
