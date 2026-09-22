@@ -140,6 +140,12 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/normal-ceiling-transition/index.cpp" \
   "$SRC/normal-cycle-reset/index.cpp" \
   "$SRC/normal-role-trigger/index.cpp" \
+  "$SRC/setting-profile/index.cpp" \
+  "$SRC/normal-shortening/index.cpp" \
+  "$SRC/normal-high/index.cpp" \
+  "$SRC/normal-raw-lottery/index.cpp" \
+  "$SRC/normal-flow/index.cpp" \
+  "$SRC/normal-flow-transition/index.cpp" \
   "$SRC/at-resolution/index.cpp" \
   "$SRC/at-single-transition/index.cpp" \
   "$SRC/section-flow/index.cpp" \
