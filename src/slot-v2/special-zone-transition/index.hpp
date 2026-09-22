@@ -8,7 +8,7 @@ namespace slotv2::special_zone_transition {
 enum class Outcome : uint8_t {
     None = 0,
     AddGamesApplied = 1,
-    BonusQueued = 2
+    BonusOmenStarted = 2
 };
 
 struct Result {
