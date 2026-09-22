@@ -42,6 +42,7 @@ add_library(slot_v2_core
   src/slot-v2/stop-rules/weak-chance.cpp
   src/slot-v2/stop-rules/one-medal.cpp
   src/slot-v2/stop-rules/miss.cpp
+  src/slot-v2/stop-rules/entry.cpp
   src/slot-v2/role-policy/index.cpp
   src/slot-v2/navigation/index.cpp
   src/slot-v2/bell-navigation/index.cpp
@@ -58,6 +59,8 @@ add_library(slot_v2_core
   src/slot-v2/normal-progress/index.cpp
   src/slot-v2/normal-at-trigger/index.cpp
   src/slot-v2/normal-hit-entry/index.cpp
+  src/slot-v2/entry-gate/index.cpp
+  src/slot-v2/entry-gate-transition/index.cpp
   src/slot-v2/cz-cycle/index.cpp
   src/slot-v2/cz-finalize/index.cpp
   src/slot-v2/cz-reward/index.cpp
@@ -271,6 +274,9 @@ target_link_libraries(slot_v2_special_zone_pending_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_normal_hit_entry_test src/slot-v2/normal_hit_entry_test.cpp)
 target_link_libraries(slot_v2_normal_hit_entry_test PRIVATE slot_v2_core)
+
+add_executable(slot_v2_entry_gate_test src/slot-v2/entry_gate_test.cpp)
+target_link_libraries(slot_v2_entry_gate_test PRIVATE slot_v2_core)
 
 
 add_executable(slot_v2_runtime_normal_hit_test src/slot-v2/runtime_normal_hit_test.cpp)
