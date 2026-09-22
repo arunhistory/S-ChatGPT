@@ -21,6 +21,7 @@ import {
   readSessionPhase,
   readSpecialResult,
   readSpecialZone,
+  readSpecialZoneResult,
   readUpperComeback,
   SlotWasmV2,
 } from "../bridge/index.js";
@@ -29,6 +30,7 @@ import {
   NormalMode,
   SessionPhase,
   SpecialResult,
+  SpecialZoneHitResult,
 } from "../types.js";
 import {
   ATCycleSnapshot,
@@ -75,6 +77,7 @@ export interface SlotV2Snapshot {
   sectionReward: SectionRewardSnapshot;
   sectionTransition: SectionTransitionSnapshot;
   specialZone: SpecialZoneSnapshot;
+  specialZoneResult: SpecialZoneHitResult;
   upperComeback: UpperComebackSnapshot;
 }
 
@@ -106,6 +109,7 @@ export function readSlotV2Snapshot(
     sectionReward: readSectionReward(wasm),
     sectionTransition: readSectionTransition(wasm),
     specialZone: readSpecialZone(wasm),
+    specialZoneResult: readSpecialZoneResult(wasm),
     upperComeback: readUpperComeback(wasm),
   };
 }
