@@ -3,6 +3,7 @@
 #include "../section/index.hpp"
 #include "../stock/index.hpp"
 #include "../normal-progress/index.hpp"
+#include "../normal-state/index.hpp"
 #include "../at-state/index.hpp"
 #include "../bonus-state/index.hpp"
 #include "../cz-state/index.hpp"
@@ -19,6 +20,7 @@ enum class Area : uint8_t {
 struct State {
     Area area{Area::Normal};
     section::State section{};
+    normal_state::State normal{};
     stock::State stock{};
     normal_progress::State normal_progress{};
     at_state::State at{};
