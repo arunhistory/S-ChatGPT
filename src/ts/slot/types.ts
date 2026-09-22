@@ -87,6 +87,17 @@ export const enum MachineArea {
   AT = 3,
 }
 
+export const enum BonusKind {
+  Regular = 0,
+  Episode = 1,
+}
+
+export const enum BonusCycleOutcome {
+  None = 0,
+  Completed = 1,
+  EpisodeUpgradePending = 2,
+}
+
 export const enum CommandStatus {
   Ok = 0,
   RejectedPhase = 1,
