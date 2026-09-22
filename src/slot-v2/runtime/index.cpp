@@ -4,6 +4,7 @@
 #include "../special-result/index.hpp"
 #include "../stop-controller/index.hpp"
 #include "../game-finalize/index.hpp"
+#include "../stock-lottery/index.hpp"
 
 namespace slotv2::runtime {
 
@@ -21,6 +22,7 @@ void reset(State& state, uint64_t seed) {
     state.at_resolution = {};
     state.normal_mode = normal_mode::drawBase(state.rng);
     state.cz_cycle = {};
+    state.at_hit_stock_gained = false;
 }
 
 uint32_t lever(State& state) {
@@ -51,6 +53,14 @@ uint32_t lever(State& state) {
     state.at_resolution = state.at_cycle.active
         ? at_resolution::classify(state.at_cycle.raw)
         : at_resolution::Result{};
+
+    state.at_hit_stock_gained = false;
+    if (state.at_cycle.active
+        && at_event::has(state.at_cycle.raw, at_event::Hit)
+        && stock_lottery::onHit(state.rng)) {
+        stock::add(state.machine.stock, 1u);
+        state.at_hit_stock_gained = true;
+    }
 
     state.cz_cycle =
         (result.special == SpecialHit::None
@@ -281,8 +291,9 @@ uint32_t pendingEvents(const State& state) {
 }
 
 uint32_t atCyclePacked(const State& state) {
-    // bit0 active / bits8..13 raw simultaneous AT event bits.
+    // bit0 active / bit1 hit-derived stock gain / bits8..13 raw simultaneous AT event bits.
     return (state.at_cycle.active ? 1u : 0u)
+        | (state.at_hit_stock_gained ? (1u << 1) : 0u)
         | ((state.at_cycle.raw.bits & 0x3fu) << 8);
 }
 
