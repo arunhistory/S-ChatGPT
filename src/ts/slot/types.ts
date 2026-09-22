@@ -1,3 +1,9 @@
+export const enum PendingEvent {
+  BellFiveAT = 1 << 0,
+  CZThreeMissHit = 1 << 1,
+  NextHitAT = 1 << 2,
+}
+
 export const enum ATTier {
   Lower = 0,
   Middle = 1,
