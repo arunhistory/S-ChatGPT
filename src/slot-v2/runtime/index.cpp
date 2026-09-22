@@ -17,6 +17,7 @@
 #include "../normal-at-trigger/index.hpp"
 #include "../special-zone-pending/index.hpp"
 #include "../normal-hit-entry/index.hpp"
+#include "../revival-cycle/index.hpp"
 
 namespace slotv2::runtime {
 namespace {
@@ -93,7 +94,8 @@ void reset(State& state, uint64_t seed) {
     state.at_single_transition = {};
     state.normal_at_trigger = {};
     state.normal_hit_entry = {};
-    state.normal_hit_entry = {};
+    state.revival_game = {};
+    state.revival_finalize = {};
 }
 
 uint32_t lever(State& state) {
@@ -168,6 +170,8 @@ uint32_t lever(State& state) {
     state.at_single_transition = {};
     state.normal_at_trigger = {};
     state.special_zone_result = special_zone::HitResult::None;
+    state.revival_game = {};
+    state.revival_finalize = {};
 
     if (state.machine.area == machine_state::Area::Normal) {
         normal_state::onLever(state.machine.normal);
@@ -189,7 +193,28 @@ uint32_t lever(State& state) {
         state.upper_comeback_cycle = {};
     }
 
-    auto result = slotv2::lever::pull(state.rng);
+    const bool revival_game_active =
+        state.machine.area == machine_state::Area::Revival
+        && state.machine.revival.active;
+
+    // 特殊直撃は通常時だけ。復活チャレンジは通常小役だけを同率で抽選する。
+    const bool allow_special =
+        state.machine.area == machine_state::Area::Normal
+        && !revival_game_active;
+
+    auto result = slotv2::lever::pull(
+        state.rng,
+        allow_special
+    );
+
+    if (revival_game_active) {
+        state.revival_game = revival_cycle::beginGame(
+            state.rng,
+            state.machine.revival,
+            result.role
+        );
+    }
+
     const auto special = special_result::resolve(result.special);
     const auto freeze = slotv2::freeze::begin(result.special);
 
@@ -349,6 +374,16 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
                 state.pending,
                 state.at_resolution
             );
+
+        if (state.machine.area == machine_state::Area::Revival
+            && state.revival_game.active) {
+            state.revival_finalize =
+                revival_cycle::finalizeGame(
+                    state.machine,
+                    state.machine.revival,
+                    state.revival_game
+                );
+        }
     }
 
     return static_cast<uint32_t>(result.final_position)
@@ -479,6 +514,36 @@ void startUpperComeback(State& state) {
         state.machine.upper_comeback
     );
     state.upper_comeback_cycle = {};
+}
+
+void startRevivalChallenge(
+    State& state,
+    at_state::Tier ended_tier
+) {
+    // 呼出条件は「既存の継続・ストック・引戻しを全て処理した後の完全終了」。
+    at_state::end(state.machine.at);
+    revival_state::start(
+        state.machine.revival,
+        ended_tier
+    );
+    state.machine.area = machine_state::Area::Revival;
+    state.revival_game = {};
+    state.revival_finalize = {};
+
+    (void)pending_event::consume(
+        state.pending,
+        pending_event::ATWindowEmpty
+    );
+    (void)pending_event::consume(
+        state.pending,
+        pending_event::ATStockAvailable
+    );
+}
+
+void recordRevivalHiddenNormalHit(State& state) {
+    revival_state::recordKickedNormalHit(
+        state.machine.revival
+    );
 }
 
 bonus_cycle::Result applyBonusNetGain(State& state, int net_gain) {
@@ -764,6 +829,33 @@ uint32_t normalATTriggerPacked(const State& state) {
 
 uint32_t specialZoneResultPacked(const State& state) {
     return static_cast<uint32_t>(state.special_zone_result);
+}
+
+uint32_t revivalPacked(const State& state) {
+    const auto& r = state.machine.revival;
+    // bit0 active / bit1 hidden-normal-hit / bits8..15 games-left / bits16..23 revive tier
+    return (r.active ? 1u : 0u)
+        | (r.kicked_normal_hit ? (1u << 1) : 0u)
+        | (static_cast<uint32_t>(r.games_left) << 8)
+        | (static_cast<uint32_t>(r.revive_tier) << 16);
+}
+
+uint32_t revivalGamePacked(const State& state) {
+    const auto& g = state.revival_game;
+    // bit0 active / bit1 revival-hit / bits8..15 role / bits16..23 before / bits24..31 after
+    return (g.active ? 1u : 0u)
+        | (g.revival_hit ? (1u << 1) : 0u)
+        | (static_cast<uint32_t>(g.role) << 8)
+        | (static_cast<uint32_t>(g.games_before) << 16)
+        | (static_cast<uint32_t>(g.games_after) << 24);
+}
+
+uint32_t revivalFinalizePacked(const State& state) {
+    const auto& r = state.revival_finalize;
+    // 0..7 outcome / 8..15 revived tier / bit16 stock-added
+    return static_cast<uint32_t>(r.outcome)
+        | (static_cast<uint32_t>(r.tier) << 8)
+        | (r.stock_added ? (1u << 16) : 0u);
 }
 
 } // namespace slotv2::runtime
