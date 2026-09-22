@@ -138,6 +138,9 @@ uint32_t lever(State& state) {
             | (static_cast<uint32_t>(CommandStatus::RejectedPhase) << 24);
     }
 
+    state.at_single_transition = {};
+    state.normal_at_trigger = {};
+
     if (state.machine.area == machine_state::Area::Normal) {
         normal_state::onLever(state.machine.normal);
 
@@ -279,18 +282,20 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
             session::hadAssistGap(state.session)
         );
 
-        (void)game_finalize::apply(
-            state.session.lever.role,
-            state.acquisition,
-            state.machine.normal_progress,
-            state.pending
-        );
-
-        state.normal_at_trigger =
-            normal_at_trigger::applyBellFive(
-                state.machine,
+        if (state.machine.area == machine_state::Area::Normal) {
+            (void)game_finalize::apply(
+                state.session.lever.role,
+                state.acquisition,
+                state.machine.normal_progress,
                 state.pending
             );
+
+            state.normal_at_trigger =
+                normal_at_trigger::applyBellFive(
+                    state.machine,
+                    state.pending
+                );
+        }
 
         state.at_single_transition =
             at_single_transition::apply(
