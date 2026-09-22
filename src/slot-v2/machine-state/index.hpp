@@ -4,6 +4,7 @@
 #include "../stock/index.hpp"
 #include "../normal-progress/index.hpp"
 #include "../normal-state/index.hpp"
+#include "../normal-high/index.hpp"
 #include "../at-state/index.hpp"
 #include "../bonus-state/index.hpp"
 #include "../cz-state/index.hpp"
@@ -27,6 +28,7 @@ struct State {
     Area area{Area::Normal};
     section::State section{};
     normal_state::State normal{};
+    normal_high::State normal_high{};
     stock::State stock{};
     normal_progress::State normal_progress{};
     at_state::State at{};
