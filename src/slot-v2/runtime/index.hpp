@@ -8,6 +8,7 @@
 #include "../accounting/index.hpp"
 #include "../point-ledger/index.hpp"
 #include "../special-apply/index.hpp"
+#include "../pending-event/index.hpp"
 
 namespace slotv2::runtime {
 
@@ -20,6 +21,7 @@ struct State {
     point_ledger::State points{};
     bool special_committed{false};
     special_apply::Result last_special_apply{};
+    pending_event::State pending{};
 };
 
 void reset(State& state, uint64_t seed);
@@ -49,5 +51,6 @@ uint32_t specialCommitted(const State& state);
 uint32_t bellNavigationPacked(const State& state);
 uint32_t bellNavigationNext(const State& state);
 uint32_t bellNavigationCorrect(const State& state);
+uint32_t pendingEvents(const State& state);
 
 } // namespace slotv2::runtime
