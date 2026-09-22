@@ -66,6 +66,13 @@ export const enum CZFinalizeOutcome {
   ThreeMissHitPending = 3,
 }
 
+export const enum ATWindowStatus {
+  NotApplicable = 0,
+  Running = 1,
+  EmptyNoStock = 2,
+  EmptyStockAvailable = 3,
+}
+
 export const enum ATTier {
   Lower = 0,
   Middle = 1,
