@@ -36,6 +36,8 @@ SRC="$ROOT/src/slot-v2"
   -Wl,--export=slot_v2_pending_events \
   -Wl,--export=slot_v2_at_cycle \
   -Wl,--export=slot_v2_normal_mode \
+  -Wl,--export=slot_v2_normal_route \
+  -Wl,--export=slot_v2_normal_ceiling_transition \
   -Wl,--export=slot_v2_at_resolution \
   -Wl,--export=slot_v2_bell_navigation_correct \
   -Wl,--export=slot_v2_bell_navigation_next \
@@ -133,6 +135,9 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/cz-lottery/index.cpp" \
   "$SRC/special-ceiling/index.cpp" \
   "$SRC/normal-mode/index.cpp" \
+  "$SRC/normal-route/index.cpp" \
+  "$SRC/normal-ceiling/index.cpp" \
+  "$SRC/normal-ceiling-transition/index.cpp" \
   "$SRC/at-resolution/index.cpp" \
   "$SRC/at-single-transition/index.cpp" \
   "$SRC/section-flow/index.cpp" \
