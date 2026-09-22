@@ -4,14 +4,14 @@ namespace slotv2::normal_flow {
 
 Result draw(
     Rng& rng,
-    normal_high::State& high,
+    const normal_high::State& high,
     RoleFlag role,
     uint32_t actual_games,
     uint8_t setting
 ) {
     Result out{};
 
-    out.high = normal_high::play(
+    out.high = normal_high::draw(
         rng,
         high,
         role,
