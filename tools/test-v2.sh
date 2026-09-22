@@ -6,7 +6,7 @@ BUILD="$ROOT/.build-slot-v2"
 
 rm -rf "$BUILD"
 cmake -S "$ROOT" -B "$BUILD"
-cmake --build "$BUILD" --target slot_v2_stop_test slot_v2_special_test slot_v2_navigation_test slot_v2_assist_test slot_v2_bell_navigation_test slot_v2_progress_test slot_v2_state_modules_test slot_v2_reel_candidate_test slot_v2_machine_state_test slot_v2_at_lottery_test slot_v2_feature_lottery_test slot_v2_special_apply_test slot_v2_stock_count_lottery_test slot_v2_preflight_test slot_v2_game_finalize_test slot_v2_at_cycle_test slot_v2_progress_event_test slot_v2_flow_modules_test slot_v2_runtime_progress_test slot_v2_catalog_test slot_v2_normal_cz_cycle_test
+cmake --build "$BUILD" --target slot_v2_stop_test slot_v2_special_test slot_v2_navigation_test slot_v2_assist_test slot_v2_bell_navigation_test slot_v2_progress_test slot_v2_state_modules_test slot_v2_reel_candidate_test slot_v2_machine_state_test slot_v2_at_lottery_test slot_v2_feature_lottery_test slot_v2_special_apply_test slot_v2_stock_count_lottery_test slot_v2_preflight_test slot_v2_game_finalize_test slot_v2_at_cycle_test slot_v2_progress_event_test slot_v2_flow_modules_test slot_v2_runtime_progress_test slot_v2_catalog_test slot_v2_normal_cz_cycle_test slot_v2_section_reward_test
 "$BUILD/slot_v2_stop_test"
 "$BUILD/slot_v2_special_test"
 "$BUILD/slot_v2_navigation_test"
@@ -28,5 +28,6 @@ cmake --build "$BUILD" --target slot_v2_stop_test slot_v2_special_test slot_v2_n
 "$BUILD/slot_v2_runtime_progress_test"
 "$BUILD/slot_v2_catalog_test"
 "$BUILD/slot_v2_normal_cz_cycle_test"
+"$BUILD/slot_v2_section_reward_test"
 
 echo "slot v2 native tests passed."
