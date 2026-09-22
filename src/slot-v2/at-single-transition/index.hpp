@@ -14,7 +14,9 @@ struct Result {
 
 // 優先順位不要な「単独成立」だけを処理する。
 // Hit -> 通常BONUS50枚、Episode -> Episode80枚、Special -> 通常特化5G。
-// Fall/AddGames/UpperSpecial は後続仕様が必要なのでpendingのまま。
+// Fall/AddGames are handled by at-internal-transition.
+// UpperSpecial is handled by upper-special-transition.
+// This module owns only Hit/Episode/Special single-event entry routing.
 Result apply(
     machine_state::State& machine,
     pending_event::State& pending,
