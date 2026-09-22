@@ -301,6 +301,8 @@ export interface PendingEventSnapshot {
   bonusComplete: boolean;
   bonusEpisodeUpgrade: boolean;
   upperComebackHit: boolean;
+  specialZoneAddGames: boolean;
+  specialZoneBonus: boolean;
 }
 
 export function readPendingEvents(
@@ -329,6 +331,8 @@ export function readPendingEvents(
     bonusComplete: (bits & PendingEvent.BonusComplete) !== 0,
     bonusEpisodeUpgrade: (bits & PendingEvent.BonusEpisodeUpgrade) !== 0,
     upperComebackHit: (bits & PendingEvent.UpperComebackHit) !== 0,
+    specialZoneAddGames: (bits & PendingEvent.SpecialZoneAddGames) !== 0,
+    specialZoneBonus: (bits & PendingEvent.SpecialZoneBonus) !== 0,
   };
 }
 
