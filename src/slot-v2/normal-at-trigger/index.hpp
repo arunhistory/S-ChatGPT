@@ -6,6 +6,7 @@ namespace slotv2::normal_at_trigger {
 
 struct Result {
     bool started{false};
+    bool guarantee_consumed{false};
     bool from_bell_five{false};
     bool from_next_hit_guarantee{false};
 };
@@ -18,7 +19,7 @@ Result applyBellFive(
 );
 
 // 「通常当たり5連続後の次回AT確定」を、次の通常当たりへ反映。
-// base_was_at=trueなら既にAT当選済みなので保証は消費しない。
+// 次の通常当たりが元々ATでも保証はその当たりで消費する。
 Result applyNextHitGuarantee(
     machine_state::State& machine,
     pending_event::State& pending,
