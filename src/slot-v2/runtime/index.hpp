@@ -10,6 +10,8 @@
 #include "../special-apply/index.hpp"
 #include "../pending-event/index.hpp"
 #include "../at-cycle/index.hpp"
+#include "../at-resolution/index.hpp"
+#include "../normal-mode/index.hpp"
 
 namespace slotv2::runtime {
 
@@ -24,6 +26,8 @@ struct State {
     special_apply::Result last_special_apply{};
     pending_event::State pending{};
     at_cycle::Result at_cycle{};
+    at_resolution::Result at_resolution{};
+    normal_mode::Mode normal_mode{normal_mode::Mode::NormalA};
 };
 
 void reset(State& state, uint64_t seed);
@@ -55,5 +59,7 @@ uint32_t bellNavigationNext(const State& state);
 uint32_t bellNavigationCorrect(const State& state);
 uint32_t pendingEvents(const State& state);
 uint32_t atCyclePacked(const State& state);
+uint32_t atResolutionPacked(const State& state);
+uint32_t normalMode(const State& state);
 
 } // namespace slotv2::runtime
