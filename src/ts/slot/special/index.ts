@@ -1,5 +1,5 @@
-import { SpecialHit } from "../types";
-import { playFreeze, FreezePresentationPort } from "./freeze";
+import { SpecialHit } from "../types.js";
+import { playFreeze, FreezePresentationPort } from "./freeze/index.js";
 
 export interface SpecialPresentationPorts {
   freeze?: FreezePresentationPort;
