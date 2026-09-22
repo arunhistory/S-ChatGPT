@@ -20,6 +20,7 @@
 #include "../section-flow/index.hpp"
 #include "../section-transition/index.hpp"
 #include "../at-window/index.hpp"
+#include "../at-stock-restart/index.hpp"
 #include "../bonus-cycle/index.hpp"
 #include "../bonus-transition/index.hpp"
 #include "../upper-comeback-cycle/index.hpp"
@@ -52,6 +53,7 @@ struct State {
     section_flow::Result last_section_flow{};
     section_transition::Result last_section_transition{};
     at_window::Result at_window{};
+    at_stock_restart::Result at_stock_restart{};
     bonus_cycle::Result bonus_cycle{};
     bonus_transition::Result bonus_transition{};
     upper_comeback_cycle::Result upper_comeback_cycle{};
