@@ -193,6 +193,16 @@ uint32_t slot_v2_normal_mode() {
 }
 
 __attribute__((visibility("default")))
+uint32_t slot_v2_normal_route() {
+    return slotv2::runtime::normalRoutePacked(g_runtime);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_normal_ceiling_transition() {
+    return slotv2::runtime::normalCeilingTransitionPacked(g_runtime);
+}
+
+__attribute__((visibility("default")))
 uint32_t slot_v2_at_cycle() {
     return slotv2::runtime::atCyclePacked(g_runtime);
 }
