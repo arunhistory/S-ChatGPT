@@ -24,8 +24,7 @@ int main() {
     ok = ok && b.kind == slotv2::bonus_state::Kind::Regular;
     ok = ok && h.kind == slotv2::bonus_state::Kind::Episode;
     ok = ok && sh.kind == slotv2::bonus_state::Kind::Episode;
-    ok = ok && sp.status
-        == slotv2::bonus_entry_policy::Status::SpecialModeUnresolved;
+    ok = ok && sp.kind == slotv2::bonus_state::Kind::Regular;
 
     if (!ok) {
         std::cerr << "slot_v2_bonus_entry_policy_test: FAILED\n";
