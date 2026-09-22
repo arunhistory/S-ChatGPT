@@ -99,6 +99,7 @@ add_library(slot_v2_core
   src/slot-v2/at-event/index.cpp
   src/slot-v2/special-zone/index.cpp
   src/slot-v2/special-zone-pending/index.cpp
+  src/slot-v2/special-zone-transition/index.cpp
   src/slot-v2/upper-special/index.cpp
   src/slot-v2/upper-special-transition/index.cpp
   src/slot-v2/upper-comeback/index.cpp
@@ -270,6 +271,9 @@ target_link_libraries(slot_v2_runtime_normal_scope_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_special_zone_pending_test src/slot-v2/special_zone_pending_test.cpp)
 target_link_libraries(slot_v2_special_zone_pending_test PRIVATE slot_v2_core)
+
+add_executable(slot_v2_special_zone_transition_test src/slot-v2/special_zone_transition_test.cpp)
+target_link_libraries(slot_v2_special_zone_transition_test PRIVATE slot_v2_core)
 
 
 add_executable(slot_v2_normal_hit_entry_test src/slot-v2/normal_hit_entry_test.cpp)
