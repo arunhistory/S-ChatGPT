@@ -15,6 +15,8 @@ import {
   readMachineSnapshot,
   readNormalATTrigger,
   readNormalMode,
+  readNormalRoute,
+  readNormalCeilingTransition,
   readNormalProgress,
   readPendingEvents,
   readRevivalFinalize,
@@ -52,6 +54,7 @@ import {
   MachineSnapshot,
   NormalATTriggerSnapshot,
   NormalProgressSnapshot,
+  NormalRouteSnapshot,
   PendingEventSnapshot,
   RevivalFinalizeSnapshot,
   RevivalGameSnapshot,
@@ -77,6 +80,8 @@ export interface SlotV2Snapshot {
   bonusCycle: BonusCycleSnapshot;
   bonusTransition: BonusTransitionSnapshot;
   normalMode: NormalMode;
+  normalRoute: NormalRouteSnapshot;
+  normalCeilingTransition: number;
   normal: NormalProgressSnapshot;
   normalATTrigger: NormalATTriggerSnapshot;
   cz: CZCycleSnapshot;
@@ -113,6 +118,8 @@ export function readSlotV2Snapshot(
     bonusCycle: readBonusCycle(wasm),
     bonusTransition: readBonusTransition(wasm),
     normalMode: readNormalMode(wasm),
+    normalRoute: readNormalRoute(wasm),
+    normalCeilingTransition: readNormalCeilingTransition(wasm),
     normal: readNormalProgress(wasm),
     normalATTrigger: readNormalATTrigger(wasm),
     cz: readCZCycle(wasm),
