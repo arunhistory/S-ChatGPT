@@ -76,6 +76,8 @@ add_library(slot_v2_core
   src/slot-v2/special-ceiling/index.cpp
   src/slot-v2/normal-mode/index.cpp
   src/slot-v2/at-resolution/index.cpp
+  src/slot-v2/section-flow/index.cpp
+  src/slot-v2/at-pending/index.cpp
   src/slot-v2/at-event/index.cpp
   src/slot-v2/special-zone/index.cpp
   src/slot-v2/upper-comeback/index.cpp
@@ -181,3 +183,7 @@ target_link_libraries(slot_v2_normal_cz_cycle_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_section_reward_test src/slot-v2/section_reward_test.cpp)
 target_link_libraries(slot_v2_section_reward_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_flow_pending_test src/slot-v2/flow_pending_test.cpp)
+target_link_libraries(slot_v2_flow_pending_test PRIVATE slot_v2_core)
