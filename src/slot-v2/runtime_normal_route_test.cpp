@@ -71,14 +71,22 @@ bool run1500(uint64_t seed) {
 
     if (second_special != slotv2::SpecialHit::Freeze) return false;
     if (state.machine.normal.actual_games != before_games) return false;
-    if (state.session.phase != slotv2::session::Phase::SpecialPending) return false;
+    if (state.session.phase != slotv2::session::Phase::Stopping) return false;
 
-    (void)slotv2::runtime::completeSpecial(state);
+    // Freeze ignores normal 0-4 slip and forces the exact BLUE777 positions.
+    const auto l = slotv2::runtime::stop(state, 0u, 3u);
+    const auto m = slotv2::runtime::stop(state, 1u, 7u);
+    const auto r = slotv2::runtime::stop(state, 2u, 18u);
+
+    if ((l & 0xffu) != 9u) return false;
+    if ((m & 0xffu) != 14u) return false;
+    if ((r & 0xffu) != 10u) return false;
 
     return state.machine.area == slotv2::machine_state::Area::AT
         && state.machine.at.active
         && state.machine.at.tier == slotv2::at_state::Tier::Upper
         && state.machine.stock.count >= 1u
+        && state.special_committed
         && !state.ceiling_freeze_pending;
 }
 
@@ -88,8 +96,8 @@ int main() {
     bool ok777 = false;
     bool ok1500 = false;
 
-    // Skip the extremely rare seeds where a normal direct special hit wins
-    // priority on the ceiling game.
+    // Skip extremely rare seeds where a direct special hit wins priority
+    // on the same ceiling game.
     for (uint64_t seed = 1u; seed < 10000u && (!ok777 || !ok1500); ++seed) {
         if (!ok777) ok777 = run777(seed);
         if (!ok1500) ok1500 = run1500(seed + 0x10000u);
