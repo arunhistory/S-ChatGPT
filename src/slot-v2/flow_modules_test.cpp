@@ -19,6 +19,8 @@ int main() {
             && one.event == slotv2::at_resolution::Event::Hit
             && one.count == 1u;
 
+        // Classifier still diagnoses invalid legacy multi-bit input, while
+        // the current AT lottery itself never emits this combination.
         raw.bits = slotv2::at_event::Hit | slotv2::at_event::Fall;
         auto many = slotv2::at_resolution::classify(raw);
         ok = ok
@@ -44,32 +46,39 @@ int main() {
     {
         slotv2::Rng rng(0x55667788ULL);
         uint64_t g777 = 0, g1500 = 0;
-        bool seen777[3]{false,false,false};
 
         for (uint64_t i = 0; i < 1000000ULL; ++i) {
             const auto r = slotv2::special_ceiling::draw(rng);
             if (r.ceiling == slotv2::special_ceiling::Ceiling::G1500) {
                 ++g1500;
-                ok = ok && r.freeze;
+                ok = ok
+                    && r.freeze
+                    && r.reward == slotv2::special_ceiling::Reward::Freeze;
             } else {
                 ++g777;
-                const auto v = static_cast<uint8_t>(r.g777_result);
-                ok = ok && v < 3u && !r.freeze;
-                seen777[v] = true;
+                ok = ok
+                    && !r.freeze
+                    && r.reward
+                        == slotv2::special_ceiling::Reward::LowerATWithStock;
             }
         }
 
         ok = ok && g777 > 0 && g1500 > 0;
-        ok = ok && seen777[0] && seen777[1] && seen777[2];
     }
 
     {
-        slotv2::Rng rng(0x99AABBCCULL);
-        uint64_t hits = 0;
-        for (uint64_t i = 0; i < 100000ULL; ++i) {
-            hits += slotv2::cz_lottery::drawBase(rng);
-        }
-        ok = ok && hits > 0;
+        ok = ok && !slotv2::cz_lottery::fromRoll(
+            slotv2::RoleFlag::OneMedal,
+            0u
+        );
+        ok = ok && slotv2::cz_lottery::fromRoll(
+            slotv2::RoleFlag::PenguinChance,
+            999u
+        );
+        ok = ok && slotv2::cz_lottery::fromRoll(
+            slotv2::RoleFlag::StrongCherry,
+            999u
+        );
     }
 
     if (!ok) {
