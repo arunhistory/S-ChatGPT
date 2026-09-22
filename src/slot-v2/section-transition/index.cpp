@@ -39,6 +39,12 @@ Result apply(
             return out;
 
         case section_reward::Kind::Special:
+            if (machine.area != machine_state::Area::AT
+                || !machine.at.active
+                || machine.at.tier != at_state::Tier::Upper) {
+                return out;
+            }
+
             special_zone::start(machine.special_zone);
             out.applied = true;
             out.special_started = true;
@@ -49,6 +55,12 @@ Result apply(
             return out;
 
         case section_reward::Kind::UpperSpecial:
+            if (machine.area != machine_state::Area::AT
+                || !machine.at.active
+                || machine.at.tier != at_state::Tier::Upper) {
+                return out;
+            }
+
             out.upper_special_pending = true;
             return out;
 
