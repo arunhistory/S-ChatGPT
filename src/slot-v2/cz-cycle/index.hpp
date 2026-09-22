@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include "../shared/rng.hpp"
+#include "../shared/types.hpp"
 #include "../cz-state/index.hpp"
 
 namespace slotv2::cz_cycle {
@@ -12,9 +13,8 @@ struct Result {
     bool ended{false};
 };
 
-// CZ中の1ゲーム。
-// 基本1/100のみ。小役補正・AT高確側は未確定なのでここでは加えない。
-// 基本当選した時点でCZはそのゲームで終了する。
-Result playOne(Rng& rng, cz_state::State& state);
+// Ten-game CZ. Breakthrough is determined only from the internally
+// established role for the game.
+Result playOne(Rng& rng, cz_state::State& state, RoleFlag role);
 
 } // namespace slotv2::cz_cycle
