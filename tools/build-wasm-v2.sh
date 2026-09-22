@@ -11,6 +11,9 @@ SRC="$ROOT/src/slot-v2"
   -Wl,--export=slot_v2_reset \
   -Wl,--export=slot_v2_lever \
   -Wl,--export=slot_v2_last_special \
+  -Wl,--export=slot_v2_ceiling_at \
+  -Wl,--export=slot_v2_ceiling_count \
+  -Wl,--export=slot_v2_normal_progress \
   -Wl,--export=slot_v2_pending_events \
   -Wl,--export=slot_v2_at_cycle \
   -Wl,--export=slot_v2_normal_mode \
@@ -81,6 +84,8 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/freeze/index.cpp" \
   "$SRC/acquisition/index.cpp" \
   "$SRC/normal-progress/index.cpp" \
+  "$SRC/normal-progress-view/index.cpp" \
+  "$SRC/ceiling-catalog/index.cpp" \
   "$SRC/game-finalize/index.cpp" \
   "$SRC/pending-event/index.cpp" \
   "$SRC/runtime/index.cpp" \
