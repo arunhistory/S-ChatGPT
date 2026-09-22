@@ -2,6 +2,7 @@
 #include "../runtime/index.hpp"
 #include "../reel-validator/index.hpp"
 #include "../reel-read/index.hpp"
+#include "../preflight/index.hpp"
 
 namespace {
 slotv2::runtime::State g_runtime{};
@@ -78,6 +79,11 @@ uint32_t slot_v2_visible_symbol(uint32_t reel, uint32_t center_position, int32_t
             static_cast<int8_t>(row_offset)
         )
     );
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_preflight() {
+    return slotv2::preflight::check();
 }
 
 __attribute__((visibility("default")))
