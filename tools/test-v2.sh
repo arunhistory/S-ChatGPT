@@ -46,6 +46,7 @@ cmake --build "$BUILD" --target slot_v2_stop_test slot_v2_special_test slot_v2_n
 "$BUILD/slot_v2_special_zone_pending_test"
 "$BUILD/slot_v2_runtime_special_zone_test"
 "$BUILD/slot_v2_upper_special_test"
+"$BUILD/slot_v2_upper_special_test"
 "$BUILD/slot_v2_runtime_revival_test"
 "$BUILD/slot_v2_revival_test"
 "$BUILD/slot_v2_runtime_normal_hit_test"
