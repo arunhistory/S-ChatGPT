@@ -12,6 +12,8 @@ SRC="$ROOT/src/slot-v2"
   -Wl,--export=slot_v2_lever \
   -Wl,--export=slot_v2_last_special \
   -Wl,--export=slot_v2_section_reward \
+  -Wl,--export=slot_v2_at_window \
+  -Wl,--export=slot_v2_section_transition \
   -Wl,--export=slot_v2_cz_cycle \
   -Wl,--export=slot_v2_cz_finalize \
   -Wl,--export=slot_v2_normal_display_games \
@@ -111,6 +113,8 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/normal-mode/index.cpp" \
   "$SRC/at-resolution/index.cpp" \
   "$SRC/section-flow/index.cpp" \
+  "$SRC/at-window/index.cpp" \
+  "$SRC/section-transition/index.cpp" \
   "$SRC/at-pending/index.cpp" \
   "$SRC/at-event/index.cpp" \
   "$SRC/special-zone/index.cpp" \
