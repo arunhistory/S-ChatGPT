@@ -99,6 +99,7 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/acquisition/index.cpp" \
   "$SRC/normal-progress/index.cpp" \
   "$SRC/normal-at-trigger/index.cpp" \
+  "$SRC/normal-hit-entry/index.cpp" \
   "$SRC/cz-cycle/index.cpp" \
   "$SRC/cz-finalize/index.cpp" \
   "$SRC/normal-state/index.cpp" \
