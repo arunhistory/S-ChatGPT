@@ -143,6 +143,12 @@ export const enum EntryTarget {
   UpperAT = 2,
 }
 
+export const enum EntryGateKind {
+  None = 0,
+  Bonus = 1,
+  AT = 2,
+}
+
 export const enum StockProfile {
   None = 0,
   Middle = 1,
