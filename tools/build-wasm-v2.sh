@@ -138,6 +138,8 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/at-event/index.cpp" \
   "$SRC/special-zone/index.cpp" \
   "$SRC/special-zone-pending/index.cpp" \
+  "$SRC/upper-special/index.cpp" \
+  "$SRC/upper-special-transition/index.cpp" \
   "$SRC/upper-comeback/index.cpp" \
   "$SRC/upper-comeback-cycle/index.cpp" \
   "$SRC/revival-cycle/index.cpp" \
