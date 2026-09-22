@@ -27,6 +27,7 @@ struct State {
     Tier tier{Tier::Lower};
     Table table{Table::Normal};
     int games_left{0};
+    bool cold{false};
 };
 
 void start(State& state, Tier tier);
