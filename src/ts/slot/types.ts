@@ -105,6 +105,12 @@ export const enum BonusCycleOutcome {
   EpisodeUpgradePending = 2,
 }
 
+export const enum BonusTransitionOutcome {
+  None = 0,
+  EpisodeStarted = 1,
+  Returned = 2,
+}
+
 export const enum CommandStatus {
   Ok = 0,
   RejectedPhase = 1,
