@@ -1,4 +1,5 @@
 #include "index.hpp"
+#include "../bonus-transition/index.hpp"
 
 namespace slotv2::at_single_transition {
 
@@ -11,27 +12,53 @@ Result apply(
         return {};
     }
 
-    if (resolution.event != at_resolution::Event::Special) {
-        return {};
-    }
-
     if (machine.area != machine_state::Area::AT
-        || !machine.at.active
-        || machine.special_zone.active) {
+        || !machine.at.active) {
         return {};
     }
 
-    special_zone::start(machine.special_zone);
+    switch (resolution.event) {
+        case at_resolution::Event::Hit:
+            bonus_transition::start(
+                machine,
+                bonus_state::Kind::Regular,
+                machine_state::Area::AT
+            );
+            (void)pending_event::consume(
+                pending,
+                pending_event::ATHit
+            );
+            return {true, true, false, false};
 
-    (void)pending_event::consume(
-        pending,
-        pending_event::ATSpecial
-    );
+        case at_resolution::Event::Episode:
+            bonus_transition::start(
+                machine,
+                bonus_state::Kind::Episode,
+                machine_state::Area::AT
+            );
+            (void)pending_event::consume(
+                pending,
+                pending_event::ATEpisode
+            );
+            return {true, false, true, false};
 
-    return {
-        true,
-        true
-    };
+        case at_resolution::Event::Special:
+            if (machine.special_zone.active) return {};
+
+            special_zone::start(machine.special_zone);
+            (void)pending_event::consume(
+                pending,
+                pending_event::ATSpecial
+            );
+            return {true, false, false, true};
+
+        case at_resolution::Event::Fall:
+        case at_resolution::Event::AddGames:
+        case at_resolution::Event::UpperSpecial:
+        case at_resolution::Event::None:
+        default:
+            return {};
+    }
 }
 
 } // namespace slotv2::at_single_transition
