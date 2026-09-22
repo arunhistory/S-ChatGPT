@@ -56,6 +56,8 @@ add_library(slot_v2_core
   src/slot-v2/line/index.cpp
   src/slot-v2/acquisition/index.cpp
   src/slot-v2/normal-progress/index.cpp
+  src/slot-v2/game-finalize/index.cpp
+  src/slot-v2/pending-event/index.cpp
   src/slot-v2/runtime/index.cpp
   src/slot-v2/point-ledger/index.cpp
   src/slot-v2/accounting/index.cpp
@@ -135,3 +137,7 @@ target_link_libraries(slot_v2_stock_count_lottery_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_preflight_test src/slot-v2/preflight_test.cpp)
 target_link_libraries(slot_v2_preflight_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_game_finalize_test src/slot-v2/game_finalize_test.cpp)
+target_link_libraries(slot_v2_game_finalize_test PRIVATE slot_v2_core)
