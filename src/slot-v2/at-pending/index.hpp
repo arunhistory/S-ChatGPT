@@ -5,7 +5,8 @@
 namespace slotv2::at_pending {
 
 // AT内部抽選の確定分類をpending eventへ反映。
-// Singleは対応イベントを1つだけ、Multipleは複数成立保留を立てる。
+// Single publishes exactly one AT event. Multiple is retained only as an
+// invariant/error guard; the production one-box AT lottery cannot emit it.
 // 優先順位や実処理はここでは決めない。
 void publish(
     const at_resolution::Result& resolution,
