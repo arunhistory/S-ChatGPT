@@ -9,6 +9,7 @@
 #include "../cz-state/index.hpp"
 #include "../special-zone/index.hpp"
 #include "../upper-comeback/index.hpp"
+#include "../revival-state/index.hpp"
 
 namespace slotv2::machine_state {
 
@@ -16,7 +17,8 @@ enum class Area : uint8_t {
     Normal = 0,
     CZ = 1,
     Bonus = 2,
-    AT = 3
+    AT = 3,
+    Revival = 4
 };
 
 struct State {
@@ -32,6 +34,7 @@ struct State {
     cz_state::State cz{};
     special_zone::State special_zone{};
     upper_comeback::State upper_comeback{};
+    revival_state::State revival{};
 };
 
 void reset(State& state);
