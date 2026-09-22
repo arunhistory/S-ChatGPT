@@ -1,10 +1,9 @@
 #include "index.hpp"
-#include "../stock-restart-lottery/index.hpp"
 
 namespace slotv2::at_window_transition {
 
 Result apply(
-    Rng& rng,
+    Rng&,
     machine_state::State& machine,
     pending_event::State& pending
 ) {
@@ -20,21 +19,12 @@ Result apply(
         return {};
     }
 
-    const auto ended_tier = machine.at.tier;
-
-    if (stock::consumeOne(machine.stock)) {
-        const uint16_t games = stock_restart_lottery::draw(rng);
-        machine.at.games_left = static_cast<int>(games);
-
-        (void)pending_event::consume(pending, pending_event::ATWindowEmpty);
-        (void)pending_event::consume(pending, pending_event::ATStockAvailable);
-
-        return {
-            Outcome::StockRestart,
-            ended_tier,
-            games
-        };
+    // Stock restart belongs exclusively to at-stock-restart.
+    if (machine.stock.count > 0u) {
+        return {};
     }
+
+    const auto ended_tier = machine.at.tier;
 
     (void)pending_event::consume(pending, pending_event::ATWindowEmpty);
     (void)pending_event::consume(pending, pending_event::ATStockAvailable);
@@ -46,8 +36,7 @@ Result apply(
         upper_comeback::start(machine.upper_comeback);
         return {
             Outcome::UpperComeback,
-            ended_tier,
-            0u
+            ended_tier
         };
     }
 
@@ -55,8 +44,7 @@ Result apply(
     machine.area = machine_state::Area::Revival;
     return {
         Outcome::Revival,
-        ended_tier,
-        0u
+        ended_tier
     };
 }
 
