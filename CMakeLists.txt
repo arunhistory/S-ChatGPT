@@ -66,6 +66,9 @@ add_library(slot_v2_core
   src/slot-v2/bonus-state/index.cpp
   src/slot-v2/at-state/index.cpp
   src/slot-v2/at-lottery/index.cpp
+  src/slot-v2/progress-event/index.cpp
+  src/slot-v2/at-cycle/index.cpp
+  src/slot-v2/at-event/index.cpp
   src/slot-v2/special-zone/index.cpp
   src/slot-v2/upper-comeback/index.cpp
   src/slot-v2/bonus-upgrade/index.cpp
@@ -141,3 +144,11 @@ target_link_libraries(slot_v2_preflight_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_game_finalize_test src/slot-v2/game_finalize_test.cpp)
 target_link_libraries(slot_v2_game_finalize_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_at_cycle_test src/slot-v2/at_cycle_test.cpp)
+target_link_libraries(slot_v2_at_cycle_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_progress_event_test src/slot-v2/progress_event_test.cpp)
+target_link_libraries(slot_v2_progress_event_test PRIVATE slot_v2_core)
