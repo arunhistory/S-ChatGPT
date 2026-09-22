@@ -105,6 +105,12 @@ export const enum BonusCycleOutcome {
   EpisodeUpgradePending = 2,
 }
 
+export const enum SpecialZoneHitResult {
+  None = 0,
+  AddGames = 1,
+  Bonus = 2,
+}
+
 export const enum BonusTransitionOutcome {
   None = 0,
   EpisodeStarted = 1,
