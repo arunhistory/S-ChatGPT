@@ -153,6 +153,21 @@ uint32_t slot_v2_special_committed() {
 }
 
 __attribute__((visibility("default")))
+uint32_t slot_v2_bell_navigation() {
+    return slotv2::runtime::bellNavigationPacked(g_runtime);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_bell_navigation_next() {
+    return slotv2::runtime::bellNavigationNext(g_runtime);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_bell_navigation_correct() {
+    return slotv2::runtime::bellNavigationCorrect(g_runtime);
+}
+
+__attribute__((visibility("default")))
 uint32_t slot_v2_last_special() {
     return slotv2::runtime::lastSpecial(g_runtime);
 }
