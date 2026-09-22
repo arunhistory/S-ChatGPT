@@ -47,6 +47,9 @@ export interface SlotWasmV2 {
   slot_v2_section_count(): bigint;
   slot_v2_stock_count(): number;
   slot_v2_point_count(): bigint;
+  slot_v2_bell_navigation(): number;
+  slot_v2_bell_navigation_next(): number;
+  slot_v2_bell_navigation_correct(): number;
 }
 
 export function decodeLeverResult(packed: number): LeverResult {
@@ -218,5 +221,29 @@ export function readATSnapshot(wasm: SlotWasmV2): ATSnapshot {
     tier: wasm.slot_v2_at_tier() as ATTier,
     gamesLeft: wasm.slot_v2_at_games_left() | 0,
     specialCommitted: wasm.slot_v2_special_committed() !== 0,
+  };
+}
+
+
+export interface BellNavigationSnapshot {
+  active: boolean;
+  orderIndex: number | null;
+  nextReel: ReelId | null;
+  correctSoFar: boolean;
+}
+
+export function readBellNavigation(
+  wasm: SlotWasmV2,
+): BellNavigationSnapshot {
+  const packed = wasm.slot_v2_bell_navigation() >>> 0;
+  const active = (packed & 1) !== 0;
+
+  const nextRaw = wasm.slot_v2_bell_navigation_next() >>> 0;
+
+  return {
+    active,
+    orderIndex: active ? ((packed >>> 8) & 0xff) : null,
+    nextReel: active && nextRaw !== 0xffffffff ? (nextRaw as ReelId) : null,
+    correctSoFar: active && wasm.slot_v2_bell_navigation_correct() !== 0,
   };
 }
