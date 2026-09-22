@@ -5,12 +5,11 @@ namespace slotv2::normal_at_trigger {
 
 namespace {
 
-void startLowerAT(machine_state::State& machine) {
-    at_state::start(
-        machine.at,
+void queueLowerAT(machine_state::State& machine) {
+    entry_gate::queueAT(
+        machine.entry_gate,
         at_state::Tier::Lower
     );
-    machine.area = machine_state::Area::AT;
 }
 
 }
@@ -22,7 +21,7 @@ Result applyBellFive(
     if (machine.area != machine_state::Area::Normal) return {};
     if (!pending_event::has(pending, pending_event::BellFiveAT)) return {};
 
-    startLowerAT(machine);
+    queueLowerAT(machine);
 
     (void)pending_event::consume(
         pending,
@@ -53,7 +52,7 @@ Result applyNextHitGuarantee(
     }
 
     if (!base_was_at) {
-        startLowerAT(machine);
+        queueLowerAT(machine);
     }
 
     return {
