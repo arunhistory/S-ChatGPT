@@ -11,6 +11,7 @@
 #include "../section-transition/index.hpp"
 #include "../at-window/index.hpp"
 #include "../bonus-cycle/index.hpp"
+#include "../upper-comeback-cycle/index.hpp"
 
 namespace slotv2::runtime {
 namespace {
@@ -82,6 +83,7 @@ void reset(State& state, uint64_t seed) {
     state.last_section_transition = {};
     state.at_window = {};
     state.bonus_cycle = {};
+    state.upper_comeback_cycle = {};
 }
 
 uint32_t lever(State& state) {
@@ -107,7 +109,16 @@ uint32_t lever(State& state) {
             || pending_event::has(state.pending, pending_event::BonusEpisodeUpgrade)
         );
 
-    if (cz_transition_pending || at_window_pending || bonus_transition_pending) {
+    const bool upper_comeback_pending =
+        pending_event::has(
+            state.pending,
+            pending_event::UpperComebackHit
+        );
+
+    if (cz_transition_pending
+        || at_window_pending
+        || bonus_transition_pending
+        || upper_comeback_pending) {
         const auto current = state.session.lever;
         return static_cast<uint32_t>(current.role)
             | (static_cast<uint32_t>(current.special) << 8)
@@ -125,6 +136,22 @@ uint32_t lever(State& state) {
 
     if (state.machine.area == machine_state::Area::Normal) {
         normal_state::onLever(state.machine.normal);
+
+        state.upper_comeback_cycle =
+            upper_comeback_cycle::playOne(
+                state.rng,
+                state.machine.upper_comeback
+            );
+
+        if (state.upper_comeback_cycle.ended
+            && state.upper_comeback_cycle.hit) {
+            pending_event::add(
+                state.pending,
+                pending_event::UpperComebackHit
+            );
+        }
+    } else {
+        state.upper_comeback_cycle = {};
     }
 
     auto result = slotv2::lever::pull(state.rng);
@@ -302,6 +329,13 @@ accounting::Result applyPayout(State& state, int medals) {
     );
     handleSection(state, result.section);
     return result;
+}
+
+void startUpperComeback(State& state) {
+    upper_comeback::start(
+        state.machine.upper_comeback
+    );
+    state.upper_comeback_cycle = {};
 }
 
 bonus_cycle::Result applyBonusNetGain(State& state, int net_gain) {
@@ -542,6 +576,19 @@ uint32_t bonusCyclePacked(const State& state) {
     return (r.active_before ? 1u : 0u)
         | (static_cast<uint32_t>(r.kind) << 8)
         | (static_cast<uint32_t>(r.outcome) << 16);
+}
+
+uint32_t upperComebackPacked(const State& state) {
+    const auto& current = state.machine.upper_comeback;
+    const auto& last = state.upper_comeback_cycle;
+
+    // bit0 window-active / bit1 last-ended / bit2 last-hit
+    // bits8..15 current games-left / bits16..23 last games-before
+    return (current.active ? 1u : 0u)
+        | (last.ended ? (1u << 1) : 0u)
+        | (last.hit ? (1u << 2) : 0u)
+        | (static_cast<uint32_t>(current.games_left) << 8)
+        | (static_cast<uint32_t>(last.games_before) << 16);
 }
 
 } // namespace slotv2::runtime
