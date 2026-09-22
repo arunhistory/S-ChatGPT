@@ -27,6 +27,7 @@
 #include "../normal-route/index.hpp"
 #include "../normal-ceiling/index.hpp"
 #include "../normal-ceiling-transition/index.hpp"
+#include "../normal-cycle-reset/index.hpp"
 #include "../entry-gate-transition/index.hpp"
 #include "../revival-cycle/index.hpp"
 
@@ -505,6 +506,16 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
                     state.session.position[1],
                     state.session.position[2]
                 );
+
+            if (state.entry_gate_transition.outcome
+                == entry_gate_transition::Outcome::ATStarted) {
+                normal_cycle_reset::apply(
+                    state.rng,
+                    state.machine,
+                    state.normal_mode,
+                    state.normal_route
+                );
+            }
         } else {
             state.special_zone_transition =
                 special_zone_transition::apply(
@@ -570,6 +581,17 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
                 state.normal_mode
             );
 
+            if (state.cz_finalize.outcome
+                    == cz_finalize::Outcome::MissReturnNormal
+                && state.normal_route.ceiling_consumed) {
+                normal_cycle_reset::apply(
+                    state.rng,
+                    state.machine,
+                    state.normal_mode,
+                    state.normal_route
+                );
+            }
+
             if (state.machine.area == machine_state::Area::Revival
                 && state.revival_game.active) {
                 state.revival_finalize =
@@ -578,6 +600,16 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
                         state.machine.revival,
                         state.revival_game
                     );
+
+                if (state.revival_finalize.outcome
+                    == revival_cycle::Outcome::Failed) {
+                    normal_cycle_reset::apply(
+                        state.rng,
+                        state.machine,
+                        state.normal_mode,
+                        state.normal_route
+                    );
+                }
             }
 
             // The 64th comeback game completes first; only after the reels stop
@@ -785,6 +817,18 @@ bonus_cycle::Result applyBonusNetGain(State& state, int net_gain) {
         state.bonus_cycle
     );
 
+    if (state.bonus_transition.outcome
+            == bonus_transition::Outcome::Returned
+        && state.bonus_transition.return_area
+            == machine_state::Area::Normal) {
+        normal_cycle_reset::apply(
+            state.rng,
+            state.machine,
+            state.normal_mode,
+            state.normal_route
+        );
+    }
+
     return state.bonus_cycle;
 }
 
@@ -809,6 +853,15 @@ uint32_t completeSpecial(State& state) {
             state.session.special
         );
         state.special_committed = true;
+
+        if (state.last_special_apply.at_started) {
+            normal_cycle_reset::apply(
+                state.rng,
+                state.machine,
+                state.normal_mode,
+                state.normal_route
+            );
+        }
     }
 
     session::completeSpecial(state.session);
