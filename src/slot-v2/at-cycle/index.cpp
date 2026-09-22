@@ -19,7 +19,7 @@ Result beginGame(Rng& rng, machine_state::State& machine) {
         };
     }
 
-    const auto draw = at_lottery::drawBase(rng);
+    const auto draw = at_lottery::draw(rng, machine.at);
     (void)at_state::consumeGame(machine.at);
 
     const int32_t after = machine.at.games_left;
