@@ -68,6 +68,10 @@ add_library(slot_v2_core
   src/slot-v2/at-lottery/index.cpp
   src/slot-v2/progress-event/index.cpp
   src/slot-v2/at-cycle/index.cpp
+  src/slot-v2/cz-lottery/index.cpp
+  src/slot-v2/special-ceiling/index.cpp
+  src/slot-v2/normal-mode/index.cpp
+  src/slot-v2/at-resolution/index.cpp
   src/slot-v2/at-event/index.cpp
   src/slot-v2/special-zone/index.cpp
   src/slot-v2/upper-comeback/index.cpp
@@ -152,3 +156,7 @@ target_link_libraries(slot_v2_at_cycle_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_progress_event_test src/slot-v2/progress_event_test.cpp)
 target_link_libraries(slot_v2_progress_event_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_flow_modules_test src/slot-v2/flow_modules_test.cpp)
+target_link_libraries(slot_v2_flow_modules_test PRIVATE slot_v2_core)
