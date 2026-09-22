@@ -89,6 +89,7 @@ add_library(slot_v2_core
   src/slot-v2/normal-ceiling/index.cpp
   src/slot-v2/normal-ceiling-transition/index.cpp
   src/slot-v2/normal-cycle-reset/index.cpp
+  src/slot-v2/normal-role-trigger/index.cpp
   src/slot-v2/at-resolution/index.cpp
   src/slot-v2/at-single-transition/index.cpp
   src/slot-v2/section-flow/index.cpp
@@ -221,6 +222,9 @@ target_link_libraries(slot_v2_normal_ceiling_transition_test PRIVATE slot_v2_cor
 
 add_executable(slot_v2_normal_cycle_reset_test src/slot-v2/normal_cycle_reset_test.cpp)
 target_link_libraries(slot_v2_normal_cycle_reset_test PRIVATE slot_v2_core)
+
+add_executable(slot_v2_normal_role_trigger_test src/slot-v2/normal_role_trigger_test.cpp)
+target_link_libraries(slot_v2_normal_role_trigger_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_runtime_normal_route_test src/slot-v2/runtime_normal_route_test.cpp)
 target_link_libraries(slot_v2_runtime_normal_route_test PRIVATE slot_v2_core)
