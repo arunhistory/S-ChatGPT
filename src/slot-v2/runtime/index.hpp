@@ -17,6 +17,9 @@
 #include "../normal-ceiling-transition/index.hpp"
 #include "../normal-cycle-reset/index.hpp"
 #include "../normal-role-trigger/index.hpp"
+#include "../normal-flow/index.hpp"
+#include "../normal-flow-transition/index.hpp"
+#include "../setting-profile/index.hpp"
 #include "../progress-event/index.hpp"
 #include "../cz-cycle/index.hpp"
 #include "../cz-finalize/index.hpp"
@@ -64,6 +67,9 @@ struct State {
     bool ceiling_freeze_pending{false};
     normal_role_trigger::DrawResult normal_role_draw{normal_role_trigger::DrawResult::None};
     normal_role_trigger::ApplyResult normal_role_apply{};
+    uint8_t setting{6u};
+    normal_flow::Result normal_flow_result{};
+    normal_flow_transition::Result normal_flow_transition{};
     cz_cycle::Result cz_cycle{};
     cz_finalize::Result cz_finalize{};
     cz_reward::Result cz_reward{};
