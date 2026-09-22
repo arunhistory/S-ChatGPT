@@ -17,6 +17,8 @@
 #include "../cz-finalize/index.hpp"
 #include "../at-pending/index.hpp"
 #include "../section-flow/index.hpp"
+#include "../section-transition/index.hpp"
+#include "../at-window/index.hpp"
 
 namespace slotv2::runtime {
 
@@ -37,6 +39,8 @@ struct State {
     cz_finalize::Result cz_finalize{};
     bool at_hit_stock_gained{false};
     section_flow::Result last_section_flow{};
+    section_transition::Result last_section_transition{};
+    at_window::Result at_window{};
 };
 
 void reset(State& state, uint64_t seed);
@@ -84,5 +88,7 @@ uint32_t normalDisplayGames(const State& state);
 uint32_t czCyclePacked(const State& state);
 uint32_t czFinalizePacked(const State& state);
 uint32_t sectionRewardPacked(const State& state);
+uint32_t sectionTransitionPacked(const State& state);
+uint32_t atWindowPacked(const State& state);
 
 } // namespace slotv2::runtime
