@@ -3,6 +3,7 @@
 #include "../freeze/index.hpp"
 #include "../special-result/index.hpp"
 #include "../stop-controller/index.hpp"
+#include "../game-finalize/index.hpp"
 
 namespace slotv2::runtime {
 
@@ -15,6 +16,7 @@ void reset(State& state, uint64_t seed) {
     state.points = {};
     state.special_committed = false;
     state.last_special_apply = {};
+    pending_event::clear(state.pending);
 }
 
 uint32_t lever(State& state) {
@@ -93,6 +95,13 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
             session::hadSubstitute(state.session),
             session::hadRoleMiss(state.session),
             session::hadAssistGap(state.session)
+        );
+
+        (void)game_finalize::apply(
+            state.session.lever.role,
+            state.acquisition,
+            state.machine.normal_progress,
+            state.pending
         );
     }
 
@@ -217,6 +226,10 @@ uint32_t bellNavigationNext(const State& state) {
 uint32_t bellNavigationCorrect(const State& state) {
     if (!state.session.bell_navigation.active) return 0u;
     return state.session.navigation_correct ? 1u : 0u;
+}
+
+uint32_t pendingEvents(const State& state) {
+    return state.pending.bits;
 }
 
 } // namespace slotv2::runtime
