@@ -19,6 +19,7 @@
 #include "../section-flow/index.hpp"
 #include "../section-transition/index.hpp"
 #include "../at-window/index.hpp"
+#include "../bonus-cycle/index.hpp"
 
 namespace slotv2::runtime {
 
@@ -41,6 +42,7 @@ struct State {
     section_flow::Result last_section_flow{};
     section_transition::Result last_section_transition{};
     at_window::Result at_window{};
+    bonus_cycle::Result bonus_cycle{};
 };
 
 void reset(State& state, uint64_t seed);
@@ -55,6 +57,7 @@ bool consumeNextHitAT(State& state);
 // C++内部会計。TSへ変更権限を出さない。
 accounting::Result applyBet(State& state, int medals);
 accounting::Result applyPayout(State& state, int medals);
+bonus_cycle::Result applyBonusNetGain(State& state, int net_gain);
 
 uint32_t phase(const State& state);
 uint32_t specialResult(const State& state);
@@ -91,5 +94,7 @@ uint32_t sectionRewardPacked(const State& state);
 uint32_t sectionTransitionPacked(const State& state);
 uint32_t atWindowPacked(const State& state);
 uint32_t specialZonePacked(const State& state);
+uint32_t bonusPacked(const State& state);
+uint32_t bonusCyclePacked(const State& state);
 
 } // namespace slotv2::runtime
