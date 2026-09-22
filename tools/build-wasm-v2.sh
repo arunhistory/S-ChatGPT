@@ -21,6 +21,7 @@ SRC="$ROOT/src/slot-v2"
   -Wl,--export=slot_v2_at_window \
   -Wl,--export=slot_v2_section_transition \
   -Wl,--export=slot_v2_special_zone \
+  -Wl,--export=slot_v2_special_zone_result \
   -Wl,--export=slot_v2_cz_cycle \
   -Wl,--export=slot_v2_cz_finalize \
   -Wl,--export=slot_v2_normal_display_games \
