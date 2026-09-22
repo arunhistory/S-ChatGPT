@@ -5,8 +5,52 @@
 #include "../stop-controller/index.hpp"
 #include "../game-finalize/index.hpp"
 #include "../stock-lottery/index.hpp"
+#include "../at-pending/index.hpp"
+#include "../section-flow/index.hpp"
 
 namespace slotv2::runtime {
+namespace {
+
+void publishSectionReward(
+    const section_flow::Result& flow,
+    pending_event::State& pending
+) {
+    if (!flow.cut) return;
+
+    switch (flow.reward.kind) {
+        case section_reward::Kind::TierUp:
+            pending_event::add(pending, pending_event::SectionTierUp);
+            break;
+        case section_reward::Kind::Special:
+            pending_event::add(pending, pending_event::SectionSpecial);
+            break;
+        case section_reward::Kind::UpperSpecial:
+            pending_event::add(pending, pending_event::SectionUpperSpec);
+            break;
+        case section_reward::Kind::None:
+        default:
+            break;
+    }
+}
+
+void handleSection(
+    State& state,
+    const section::ApplyResult& section_result
+) {
+    state.last_section_flow = section_flow::onSectionApply(
+        state.rng,
+        section_result,
+        state.machine.stock,
+        state.machine.at.tier
+    );
+
+    publishSectionReward(
+        state.last_section_flow,
+        state.pending
+    );
+}
+
+} // namespace
 
 void reset(State& state, uint64_t seed) {
     state.rng.reset(seed);
@@ -23,6 +67,7 @@ void reset(State& state, uint64_t seed) {
     state.normal_mode = normal_mode::drawBase(state.rng);
     state.cz_cycle = {};
     state.at_hit_stock_gained = false;
+    state.last_section_flow = {};
 }
 
 uint32_t lever(State& state) {
@@ -53,6 +98,11 @@ uint32_t lever(State& state) {
     state.at_resolution = state.at_cycle.active
         ? at_resolution::classify(state.at_cycle.raw)
         : at_resolution::Result{};
+
+    at_pending::publish(
+        state.at_resolution,
+        state.pending
+    );
 
     state.at_hit_stock_gained = false;
     if (state.at_cycle.active
@@ -166,6 +216,26 @@ bool consumeNextHitAT(State& state) {
         state.machine.normal_progress,
         state.pending
     );
+}
+
+accounting::Result applyBet(State& state, int medals) {
+    const auto result = accounting::debit(
+        state.accounting,
+        state.machine.section,
+        medals
+    );
+    handleSection(state, result.section);
+    return result;
+}
+
+accounting::Result applyPayout(State& state, int medals) {
+    const auto result = accounting::credit(
+        state.accounting,
+        state.machine.section,
+        medals
+    );
+    handleSection(state, result.section);
+    return result;
 }
 
 uint32_t phase(const State& state) {
@@ -322,6 +392,14 @@ uint32_t czCyclePacked(const State& state) {
         | (state.cz_cycle.base_hit ? (1u << 1) : 0u)
         | (static_cast<uint32_t>(state.cz_cycle.games_left) << 8)
         | (state.cz_cycle.ended ? (1u << 16) : 0u);
+}
+
+uint32_t sectionRewardPacked(const State& state) {
+    const auto& r = state.last_section_flow;
+    // bit0 cut / bits8..15 preference / bits16..23 reward kind
+    return (r.cut ? 1u : 0u)
+        | (static_cast<uint32_t>(r.preference_level) << 8)
+        | (static_cast<uint32_t>(r.reward.kind) << 16);
 }
 
 } // namespace slotv2::runtime
