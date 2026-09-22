@@ -23,7 +23,10 @@ enum Bits : uint32_t {
 
     CZHit            = 1u << 13,
     ATWindowEmpty    = 1u << 14,
-    ATStockAvailable = 1u << 15
+    ATStockAvailable = 1u << 15,
+
+    BonusComplete       = 1u << 16,
+    BonusEpisodeUpgrade= 1u << 17
 };
 
 struct State {
