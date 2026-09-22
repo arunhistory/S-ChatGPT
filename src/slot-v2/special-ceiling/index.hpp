@@ -9,22 +9,21 @@ enum class Ceiling : uint16_t {
     G1500 = 1500
 };
 
-enum class G777Result : uint8_t {
-    PlainAT = 0,
-    MiddleStockDirect = 1,
-    UpperDirect = 2
+enum class Reward : uint8_t {
+    LowerATWithStock = 0,
+    Freeze = 1
 };
 
 struct Result {
     Ceiling ceiling{Ceiling::G777};
-    G777Result g777_result{G777Result::PlainAT};
+    Reward reward{Reward::LowerATWithStock};
     bool freeze{false};
 };
 
-// 特殊モード:
-// 777G 95% / 1500G 5%。
-// 777G時は AT / 1/8192相当 / 1/32768相当 を 1:1:1。
-// 通常抽選の進行とは別系統。
+// Special mode:
+// 777G 95% -> lower AT + stock.
+// 1500G 5% -> freeze guaranteed.
+Result fromRoll(uint16_t roll_0_to_999);
 Result draw(Rng& rng);
 
 } // namespace slotv2::special_ceiling
