@@ -24,6 +24,7 @@
 #include "../upper-comeback-cycle/index.hpp"
 #include "../at-single-transition/index.hpp"
 #include "../normal-at-trigger/index.hpp"
+#include "../special-zone-pending/index.hpp"
 #include "../normal-hit-entry/index.hpp"
 
 namespace slotv2::runtime {
@@ -52,6 +53,7 @@ struct State {
     upper_comeback_cycle::Result upper_comeback_cycle{};
     at_single_transition::Result at_single_transition{};
     normal_at_trigger::Result normal_at_trigger{};
+    special_zone::HitResult special_zone_result{special_zone::HitResult::None};
     normal_hit_entry::Result normal_hit_entry{};
 };
 
@@ -116,5 +118,6 @@ uint32_t bonusTransitionPacked(const State& state);
 uint32_t upperComebackPacked(const State& state);
 uint32_t atSingleTransitionPacked(const State& state);
 uint32_t normalATTriggerPacked(const State& state);
+uint32_t specialZoneResultPacked(const State& state);
 
 } // namespace slotv2::runtime
