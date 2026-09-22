@@ -15,6 +15,7 @@
 #include "../normal-route/index.hpp"
 #include "../normal-ceiling/index.hpp"
 #include "../normal-ceiling-transition/index.hpp"
+#include "../normal-cycle-reset/index.hpp"
 #include "../progress-event/index.hpp"
 #include "../cz-cycle/index.hpp"
 #include "../cz-finalize/index.hpp"
