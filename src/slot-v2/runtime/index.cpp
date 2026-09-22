@@ -138,8 +138,6 @@ uint32_t lever(State& state) {
         state.pending
     );
 
-    state.at_window = at_window::inspect(state.machine);
-
     if (state.at_cycle.active && state.at_cycle.window_empty_after_game) {
         pending_event::add(
             state.pending,
@@ -154,6 +152,8 @@ uint32_t lever(State& state) {
         stock::add(state.machine.stock, 1u);
         state.at_hit_stock_gained = true;
     }
+
+    state.at_window = at_window::inspect(state.machine);
 
     state.cz_cycle =
         (result.special == SpecialHit::None
