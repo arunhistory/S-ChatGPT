@@ -13,6 +13,7 @@
 #include "../at-resolution/index.hpp"
 #include "../normal-mode/index.hpp"
 #include "../progress-event/index.hpp"
+#include "../cz-cycle/index.hpp"
 
 namespace slotv2::runtime {
 
@@ -29,6 +30,7 @@ struct State {
     at_cycle::Result at_cycle{};
     at_resolution::Result at_resolution{};
     normal_mode::Mode normal_mode{normal_mode::Mode::NormalA};
+    cz_cycle::Result cz_cycle{};
 };
 
 void reset(State& state, uint64_t seed);
@@ -67,5 +69,8 @@ uint32_t pendingEvents(const State& state);
 uint32_t atCyclePacked(const State& state);
 uint32_t atResolutionPacked(const State& state);
 uint32_t normalMode(const State& state);
+uint32_t normalActualGames(const State& state);
+uint32_t normalDisplayGames(const State& state);
+uint32_t czCyclePacked(const State& state);
 
 } // namespace slotv2::runtime
