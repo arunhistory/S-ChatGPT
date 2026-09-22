@@ -64,6 +64,7 @@ export interface SlotWasmV2 {
   slot_v2_special_zone(): number;
   slot_v2_bonus_state(): number;
   slot_v2_bonus_cycle(): number;
+  slot_v2_upper_comeback(): number;
   slot_v2_at_window(): number;
   slot_v2_at_cycle(): number;
   slot_v2_at_resolution(): number;
@@ -297,6 +298,7 @@ export interface PendingEventSnapshot {
   atStockAvailable: boolean;
   bonusComplete: boolean;
   bonusEpisodeUpgrade: boolean;
+  upperComebackHit: boolean;
 }
 
 export function readPendingEvents(
@@ -324,6 +326,7 @@ export function readPendingEvents(
     atStockAvailable: (bits & PendingEvent.ATStockAvailable) !== 0,
     bonusComplete: (bits & PendingEvent.BonusComplete) !== 0,
     bonusEpisodeUpgrade: (bits & PendingEvent.BonusEpisodeUpgrade) !== 0,
+    upperComebackHit: (bits & PendingEvent.UpperComebackHit) !== 0,
   };
 }
 
@@ -574,5 +577,28 @@ export function readBonusCycle(wasm: SlotWasmV2): BonusCycleSnapshot {
     activeBefore: (packed & 1) !== 0,
     kind: ((packed >>> 8) & 0xff) as BonusKind,
     outcome: ((packed >>> 16) & 0xff) as BonusCycleOutcome,
+  };
+}
+
+
+export interface UpperComebackSnapshot {
+  active: boolean;
+  lastEnded: boolean;
+  lastHit: boolean;
+  gamesLeft: number;
+  lastGamesBefore: number;
+}
+
+export function readUpperComeback(
+  wasm: SlotWasmV2,
+): UpperComebackSnapshot {
+  const packed = wasm.slot_v2_upper_comeback() >>> 0;
+
+  return {
+    active: (packed & 1) !== 0,
+    lastEnded: (packed & (1 << 1)) !== 0,
+    lastHit: (packed & (1 << 2)) !== 0,
+    gamesLeft: (packed >>> 8) & 0xff,
+    lastGamesBefore: (packed >>> 16) & 0xff,
   };
 }
