@@ -14,6 +14,8 @@
 #include "../normal-mode/index.hpp"
 #include "../progress-event/index.hpp"
 #include "../cz-cycle/index.hpp"
+#include "../at-pending/index.hpp"
+#include "../section-flow/index.hpp"
 
 namespace slotv2::runtime {
 
@@ -32,6 +34,7 @@ struct State {
     normal_mode::Mode normal_mode{normal_mode::Mode::NormalA};
     cz_cycle::Result cz_cycle{};
     bool at_hit_stock_gained{false};
+    section_flow::Result last_section_flow{};
 };
 
 void reset(State& state, uint64_t seed);
@@ -42,6 +45,10 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position);
 bool recordCZResult(State& state, bool hit);
 void recordNormalHit(State& state, bool was_at);
 bool consumeNextHitAT(State& state);
+
+// C++内部会計。TSへ変更権限を出さない。
+accounting::Result applyBet(State& state, int medals);
+accounting::Result applyPayout(State& state, int medals);
 
 uint32_t phase(const State& state);
 uint32_t specialResult(const State& state);
@@ -73,5 +80,6 @@ uint32_t normalMode(const State& state);
 uint32_t normalActualGames(const State& state);
 uint32_t normalDisplayGames(const State& state);
 uint32_t czCyclePacked(const State& state);
+uint32_t sectionRewardPacked(const State& state);
 
 } // namespace slotv2::runtime
