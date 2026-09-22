@@ -17,6 +17,7 @@ void reset(State& state, uint64_t seed) {
     state.special_committed = false;
     state.last_special_apply = {};
     pending_event::clear(state.pending);
+    state.at_cycle = {};
 }
 
 uint32_t lever(State& state) {
@@ -33,6 +34,12 @@ uint32_t lever(State& state) {
     const auto freeze = slotv2::freeze::begin(result.special);
 
     session::begin(state.session, result, special, freeze);
+
+    // 特殊直撃が割り込み中のゲームではAT内部結果を同時確定させない。
+    // 通常ATゲームだけ、独立抽選の生bitを保持する。
+    state.at_cycle = result.special == SpecialHit::None
+        ? at_cycle::beginGame(state.rng, state.machine)
+        : at_cycle::Result{};
 
     const bool navigation_enabled =
         state.machine.area == machine_state::Area::AT
@@ -230,6 +237,12 @@ uint32_t bellNavigationCorrect(const State& state) {
 
 uint32_t pendingEvents(const State& state) {
     return state.pending.bits;
+}
+
+uint32_t atCyclePacked(const State& state) {
+    // bit0 active / bits8..13 raw simultaneous AT event bits.
+    return (state.at_cycle.active ? 1u : 0u)
+        | ((state.at_cycle.raw.bits & 0x3fu) << 8);
 }
 
 } // namespace slotv2::runtime
