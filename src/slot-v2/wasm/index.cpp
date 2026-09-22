@@ -261,6 +261,11 @@ uint32_t slot_v2_at_window() {
 }
 
 __attribute__((visibility("default")))
+uint32_t slot_v2_at_single_transition() {
+    return slotv2::runtime::atSingleTransitionPacked(g_runtime);
+}
+
+__attribute__((visibility("default")))
 uint32_t slot_v2_upper_comeback() {
     return slotv2::runtime::upperComebackPacked(g_runtime);
 }
