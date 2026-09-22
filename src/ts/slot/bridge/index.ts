@@ -58,6 +58,7 @@ export interface SlotWasmV2 {
   slot_v2_pending_events(): number;
   slot_v2_section_reward(): number;
   slot_v2_section_transition(): number;
+  slot_v2_special_zone(): number;
   slot_v2_at_window(): number;
   slot_v2_at_cycle(): number;
   slot_v2_at_resolution(): number;
@@ -288,6 +289,7 @@ export interface PendingEventSnapshot {
   sectionUpperSpecial: boolean;
   czHit: boolean;
   atWindowEmpty: boolean;
+  atStockAvailable: boolean;
 }
 
 export function readPendingEvents(
@@ -312,6 +314,7 @@ export function readPendingEvents(
     sectionUpperSpecial: (bits & PendingEvent.SectionUpperSpecial) !== 0,
     czHit: (bits & PendingEvent.CZHit) !== 0,
     atWindowEmpty: (bits & PendingEvent.ATWindowEmpty) !== 0,
+    atStockAvailable: (bits & PendingEvent.ATStockAvailable) !== 0,
   };
 }
 
@@ -496,5 +499,22 @@ export function readATWindow(wasm: SlotWasmV2): ATWindowSnapshot {
   return {
     status: (packed & 0xff) as ATWindowStatus,
     stockCount: packed >>> 8,
+  };
+}
+
+
+export interface SpecialZoneSnapshot {
+  active: boolean;
+  gamesLeft: number;
+}
+
+export function readSpecialZone(
+  wasm: SlotWasmV2,
+): SpecialZoneSnapshot {
+  const packed = wasm.slot_v2_special_zone() >>> 0;
+
+  return {
+    active: (packed & 1) !== 0,
+    gamesLeft: (packed >>> 8) & 0xff,
   };
 }
