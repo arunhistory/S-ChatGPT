@@ -258,3 +258,7 @@ target_link_libraries(slot_v2_runtime_normal_hit_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_bonus_transition_test src/slot-v2/bonus_transition_test.cpp)
 target_link_libraries(slot_v2_bonus_transition_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_runtime_special_zone_test src/slot-v2/runtime_special_zone_test.cpp)
+target_link_libraries(slot_v2_runtime_special_zone_test PRIVATE slot_v2_core)
