@@ -91,6 +91,7 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/stop-rules/weak-chance.cpp" \
   "$SRC/stop-rules/one-medal.cpp" \
   "$SRC/stop-rules/miss.cpp" \
+  "$SRC/stop-rules/entry.cpp" \
   "$SRC/role-policy/index.cpp" \
   "$SRC/navigation/index.cpp" \
   "$SRC/bell-navigation/index.cpp" \
@@ -105,6 +106,8 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/normal-progress/index.cpp" \
   "$SRC/normal-at-trigger/index.cpp" \
   "$SRC/normal-hit-entry/index.cpp" \
+  "$SRC/entry-gate/index.cpp" \
+  "$SRC/entry-gate-transition/index.cpp" \
   "$SRC/cz-cycle/index.cpp" \
   "$SRC/cz-finalize/index.cpp" \
   "$SRC/cz-reward/index.cpp" \
