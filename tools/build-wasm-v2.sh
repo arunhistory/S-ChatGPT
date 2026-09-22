@@ -137,6 +137,9 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/at-stock-restart/index.cpp" \
   "$SRC/section-transition/index.cpp" \
   "$SRC/at-pending/index.cpp" \
+  "$SRC/at-add-games/index.cpp" \
+  "$SRC/at-internal-transition/index.cpp" \
+  "$SRC/at-window-transition/index.cpp" \
   "$SRC/at-event/index.cpp" \
   "$SRC/special-zone/index.cpp" \
   "$SRC/special-zone-pending/index.cpp" \
@@ -146,12 +149,14 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/upper-special-transition/index.cpp" \
   "$SRC/upper-comeback/index.cpp" \
   "$SRC/upper-comeback-cycle/index.cpp" \
+  "$SRC/upper-comeback-transition/index.cpp" \
   "$SRC/revival-cycle/index.cpp" \
   "$SRC/revival-lottery/index.cpp" \
   "$SRC/revival-state/index.cpp" \
   "$SRC/bonus-upgrade/index.cpp" \
   "$SRC/stock-lottery/index.cpp" \
   "$SRC/stock-count-lottery/index.cpp" \
+  "$SRC/stock-restart-lottery/index.cpp" \
   "$SRC/stock/index.cpp" \
   "$SRC/section/index.cpp" \
   "$SRC/section-reward/index.cpp" \
