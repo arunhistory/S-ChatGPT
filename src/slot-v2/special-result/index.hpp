@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include "../shared/types.hpp"
+#include "../stock-count-lottery/index.hpp"
 
 namespace slotv2::special_result {
 
@@ -13,7 +14,7 @@ enum class EntryTarget : uint8_t {
 struct Result {
     SpecialHit hit{SpecialHit::None};
     EntryTarget target{EntryTarget::None};
-    uint8_t stock{0};
+    stock_count_lottery::Profile stock_profile{stock_count_lottery::Profile::None};
     bool freeze{false};
 };
 
