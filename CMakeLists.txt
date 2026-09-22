@@ -92,6 +92,9 @@ add_library(slot_v2_core
   src/slot-v2/special-zone-pending/index.cpp
   src/slot-v2/upper-comeback/index.cpp
   src/slot-v2/upper-comeback-cycle/index.cpp
+  src/slot-v2/revival-cycle/index.cpp
+  src/slot-v2/revival-lottery/index.cpp
+  src/slot-v2/revival-state/index.cpp
   src/slot-v2/bonus-upgrade/index.cpp
   src/slot-v2/stock-lottery/index.cpp
   src/slot-v2/stock-count-lottery/index.cpp
@@ -262,3 +265,11 @@ target_link_libraries(slot_v2_bonus_transition_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_runtime_special_zone_test src/slot-v2/runtime_special_zone_test.cpp)
 target_link_libraries(slot_v2_runtime_special_zone_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_revival_test src/slot-v2/revival_test.cpp)
+target_link_libraries(slot_v2_revival_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_runtime_revival_test src/slot-v2/runtime_revival_test.cpp)
+target_link_libraries(slot_v2_runtime_revival_test PRIVATE slot_v2_core)
