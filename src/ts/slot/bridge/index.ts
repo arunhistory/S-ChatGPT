@@ -8,6 +8,8 @@ import {
   ATResolutionStatus,
   ATEventBit,
   CommandStatus,
+  BonusCycleOutcome,
+  BonusKind,
   CZFinalizeOutcome,
   EntryTarget,
   LeverResult,
@@ -60,6 +62,8 @@ export interface SlotWasmV2 {
   slot_v2_section_reward(): number;
   slot_v2_section_transition(): number;
   slot_v2_special_zone(): number;
+  slot_v2_bonus_state(): number;
+  slot_v2_bonus_cycle(): number;
   slot_v2_at_window(): number;
   slot_v2_at_cycle(): number;
   slot_v2_at_resolution(): number;
@@ -291,6 +295,8 @@ export interface PendingEventSnapshot {
   czHit: boolean;
   atWindowEmpty: boolean;
   atStockAvailable: boolean;
+  bonusComplete: boolean;
+  bonusEpisodeUpgrade: boolean;
 }
 
 export function readPendingEvents(
@@ -316,6 +322,8 @@ export function readPendingEvents(
     czHit: (bits & PendingEvent.CZHit) !== 0,
     atWindowEmpty: (bits & PendingEvent.ATWindowEmpty) !== 0,
     atStockAvailable: (bits & PendingEvent.ATStockAvailable) !== 0,
+    bonusComplete: (bits & PendingEvent.BonusComplete) !== 0,
+    bonusEpisodeUpgrade: (bits & PendingEvent.BonusEpisodeUpgrade) !== 0,
   };
 }
 
@@ -534,4 +542,37 @@ export function readAssistFailurePositions(
   }
 
   return positions;
+}
+
+
+export interface BonusSnapshot {
+  active: boolean;
+  kind: BonusKind;
+  medalsLeft: number;
+}
+
+export interface BonusCycleSnapshot {
+  activeBefore: boolean;
+  kind: BonusKind;
+  outcome: BonusCycleOutcome;
+}
+
+export function readBonusState(wasm: SlotWasmV2): BonusSnapshot {
+  const packed = wasm.slot_v2_bonus_state() >>> 0;
+
+  return {
+    active: (packed & 1) !== 0,
+    kind: ((packed >>> 8) & 0xff) as BonusKind,
+    medalsLeft: (packed >>> 16) & 0xffff,
+  };
+}
+
+export function readBonusCycle(wasm: SlotWasmV2): BonusCycleSnapshot {
+  const packed = wasm.slot_v2_bonus_cycle() >>> 0;
+
+  return {
+    activeBefore: (packed & 1) !== 0,
+    kind: ((packed >>> 8) & 0xff) as BonusKind,
+    outcome: ((packed >>> 16) & 0xff) as BonusCycleOutcome,
+  };
 }
