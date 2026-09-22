@@ -49,6 +49,7 @@ SRC="$ROOT/src/slot-v2"
   -Wl,--export=slot_v2_preflight \
   -Wl,--export=slot_v2_reel_ready_mask \
   -Wl,--export=slot_v2_validate_reel \
+  -Wl,--export=slot_v2_assist_failure_mask \
   -Wl,--export=slot_v2_complete_special \
   -Wl,--export=slot_v2_special_result \
   -Wl,--export=slot_v2_phase \
