@@ -95,7 +95,7 @@ uint32_t specialResult(const State& state) {
     const auto& r = state.session.special;
     return static_cast<uint32_t>(r.hit)
         | (static_cast<uint32_t>(r.target) << 8)
-        | (static_cast<uint32_t>(r.stock) << 16)
+        | (static_cast<uint32_t>(r.stock_profile) << 16)
         | (r.freeze ? (1u << 24) : 0u);
 }
 
@@ -103,6 +103,7 @@ uint32_t completeSpecial(State& state) {
     if (state.session.phase == session::Phase::SpecialPending
         && !state.special_committed) {
         state.last_special_apply = special_apply::apply(
+            state.rng,
             state.machine,
             state.session.special
         );
