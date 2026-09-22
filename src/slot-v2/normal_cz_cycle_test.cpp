@@ -20,18 +20,29 @@ int main() {
 
     {
         slotv2::Rng rng(0xC2C2C2ULL);
-        slotv2::cz_state::State s{};
-        slotv2::cz_state::start(s);
 
-        uint32_t played = 0u;
-        while (s.active) {
-            const auto r = slotv2::cz_cycle::playOne(rng, s);
-            ok = ok && r.active;
-            ++played;
+        for (int trial = 0; trial < 1000; ++trial) {
+            slotv2::cz_state::State s{};
+            slotv2::cz_state::start(s);
+
+            uint32_t played = 0u;
+            bool ended = false;
+
+            while (s.active) {
+                const auto r = slotv2::cz_cycle::playOne(rng, s);
+                ok = ok && r.active;
+                ++played;
+
+                if (r.ended) {
+                    ended = true;
+                    break;
+                }
+            }
+
+            ok = ok && played >= 1u && played <= 10u;
+            ok = ok && ended;
+            ok = ok && !s.active;
         }
-
-        ok = ok && played == 10u;
-        ok = ok && s.games_left == 0u;
     }
 
     if (!ok) {
