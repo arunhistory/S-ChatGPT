@@ -17,6 +17,8 @@
 #include "../cz-finalize/index.hpp"
 #include "../cz-reward/index.hpp"
 #include "../at-pending/index.hpp"
+#include "../at-internal-transition/index.hpp"
+#include "../at-window-transition/index.hpp"
 #include "../section-flow/index.hpp"
 #include "../section-transition/index.hpp"
 #include "../at-window/index.hpp"
@@ -24,6 +26,7 @@
 #include "../bonus-cycle/index.hpp"
 #include "../bonus-transition/index.hpp"
 #include "../upper-comeback-cycle/index.hpp"
+#include "../upper-comeback-transition/index.hpp"
 #include "../at-single-transition/index.hpp"
 #include "../normal-at-trigger/index.hpp"
 #include "../special-zone-pending/index.hpp"
@@ -45,6 +48,8 @@ struct State {
     pending_event::State pending{};
     at_cycle::Result at_cycle{};
     at_resolution::Result at_resolution{};
+    at_internal_transition::Result at_internal_transition{};
+    at_window_transition::Result at_window_transition{};
     normal_mode::Mode normal_mode{normal_mode::Mode::NormalA};
     cz_cycle::Result cz_cycle{};
     cz_finalize::Result cz_finalize{};
