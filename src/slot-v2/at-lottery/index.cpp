@@ -1,5 +1,6 @@
 #include "index.hpp"
 #include "../shared/types.hpp"
+#include "../at-cold/index.hpp"
 
 namespace slotv2::at_lottery {
 namespace {
@@ -59,7 +60,13 @@ Draw draw(Rng& rng, const at_state::State& state) {
     uint32_t roll = static_cast<uint32_t>(rng.next64()) & (kRngSpace - 1u);
     Draw out{};
 
-    if (take(roll, countFor(rates.hit))) {
+    if (take(
+            roll,
+            at_cold::scaleGrowthCount(
+                countFor(rates.hit),
+                state.cold
+            )
+        )) {
         out.hit = true;
         return out;
     }
@@ -67,19 +74,43 @@ Draw draw(Rng& rng, const at_state::State& state) {
         out.fall = true;
         return out;
     }
-    if (take(roll, countFor(rates.add_games))) {
+    if (take(
+            roll,
+            at_cold::scaleGrowthCount(
+                countFor(rates.add_games),
+                state.cold
+            )
+        )) {
         out.add_games = true;
         return out;
     }
-    if (take(roll, countFor(rates.special))) {
+    if (take(
+            roll,
+            at_cold::scaleGrowthCount(
+                countFor(rates.special),
+                state.cold
+            )
+        )) {
         out.special = true;
         return out;
     }
-    if (take(roll, countFor(rates.episode))) {
+    if (take(
+            roll,
+            at_cold::scaleGrowthCount(
+                countFor(rates.episode),
+                state.cold
+            )
+        )) {
         out.episode = true;
         return out;
     }
-    if (take(roll, countFor(rates.upper_special))) {
+    if (take(
+            roll,
+            at_cold::scaleGrowthCount(
+                countFor(rates.upper_special),
+                state.cold
+            )
+        )) {
         out.upper_special = true;
         return out;
     }
