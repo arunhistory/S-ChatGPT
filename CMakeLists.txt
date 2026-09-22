@@ -57,6 +57,7 @@ add_library(slot_v2_core
   src/slot-v2/acquisition/index.cpp
   src/slot-v2/normal-progress/index.cpp
   src/slot-v2/cz-cycle/index.cpp
+  src/slot-v2/cz-finalize/index.cpp
   src/slot-v2/normal-state/index.cpp
   src/slot-v2/normal-progress-view/index.cpp
   src/slot-v2/ceiling-catalog/index.cpp
@@ -191,3 +192,7 @@ target_link_libraries(slot_v2_flow_pending_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_runtime_accounting_test src/slot-v2/runtime_accounting_test.cpp)
 target_link_libraries(slot_v2_runtime_accounting_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_cz_finalize_test src/slot-v2/cz_finalize_test.cpp)
+target_link_libraries(slot_v2_cz_finalize_test PRIVATE slot_v2_core)
