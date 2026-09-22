@@ -4,22 +4,41 @@
 
 int main() {
     bool ok = true;
-
-    // oneIn(1)は必ず成立、0は必ず不成立。
     slotv2::Rng rng(0xABCDEFULL);
-    ok = ok && rng.oneIn(1u);
-    ok = ok && !rng.oneIn(0u);
 
-    // 通常のAT抽選を多数回通して、全フラグ経路が実際に到達可能か確認。
+    const slotv2::at_state::Table tables[] = {
+        slotv2::at_state::Table::Normal,
+        slotv2::at_state::Table::Heaven,
+        slotv2::at_state::Table::SuperHeaven,
+        slotv2::at_state::Table::Specialized,
+    };
+    const slotv2::at_state::Tier tiers[] = {
+        slotv2::at_state::Tier::Lower,
+        slotv2::at_state::Tier::Middle,
+        slotv2::at_state::Tier::Upper,
+    };
+
     uint64_t hit=0, fall=0, add=0, special=0, episode=0, upper=0;
-    for (uint64_t i = 0; i < 5000000ULL; ++i) {
-        const auto d = slotv2::at_lottery::drawBase(rng);
-        hit += d.hit;
-        fall += d.fall;
-        add += d.add_games;
-        special += d.special;
-        episode += d.episode;
-        upper += d.upper_special;
+
+    for (const auto tier : tiers) {
+        for (const auto table : tables) {
+            slotv2::at_state::State state{};
+            state.active = true;
+            state.tier = tier;
+            state.table = table;
+            state.games_left = 100;
+
+            for (uint64_t i = 0; i < 1000000ULL; ++i) {
+                const auto d = slotv2::at_lottery::draw(rng, state);
+                ok = ok && slotv2::at_lottery::count(d) <= 1u;
+                hit += d.hit;
+                fall += d.fall;
+                add += d.add_games;
+                special += d.special;
+                episode += d.episode;
+                upper += d.upper_special;
+            }
+        }
     }
 
     ok = ok && hit > 0 && fall > 0 && add > 0
