@@ -16,6 +16,9 @@ import {
   readNormalMode,
   readNormalProgress,
   readPendingEvents,
+  readRevivalFinalize,
+  readRevivalGame,
+  readRevivalState,
   readSectionReward,
   readSectionTransition,
   readSessionPhase,
@@ -48,6 +51,9 @@ import {
   NormalATTriggerSnapshot,
   NormalProgressSnapshot,
   PendingEventSnapshot,
+  RevivalFinalizeSnapshot,
+  RevivalGameSnapshot,
+  RevivalSnapshot,
   SectionRewardSnapshot,
   SectionTransitionSnapshot,
   SpecialZoneSnapshot,
@@ -74,6 +80,9 @@ export interface SlotV2Snapshot {
   cz: CZCycleSnapshot;
   czFinalize: CZFinalizeSnapshot;
   pending: PendingEventSnapshot;
+  revival: RevivalSnapshot;
+  revivalGame: RevivalGameSnapshot;
+  revivalFinalize: RevivalFinalizeSnapshot;
   sectionReward: SectionRewardSnapshot;
   sectionTransition: SectionTransitionSnapshot;
   specialZone: SpecialZoneSnapshot;
@@ -106,6 +115,9 @@ export function readSlotV2Snapshot(
     cz: readCZCycle(wasm),
     czFinalize: readCZFinalize(wasm),
     pending: readPendingEvents(wasm),
+    revival: readRevivalState(wasm),
+    revivalGame: readRevivalGame(wasm),
+    revivalFinalize: readRevivalFinalize(wasm),
     sectionReward: readSectionReward(wasm),
     sectionTransition: readSectionTransition(wasm),
     specialZone: readSpecialZone(wasm),
