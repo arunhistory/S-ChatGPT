@@ -1,0 +1,30 @@
+#include "index.hpp"
+
+namespace slotv2::upper_comeback_transition {
+
+Result apply(
+    machine_state::State& machine,
+    pending_event::State& pending,
+    const upper_comeback_cycle::Result& cycle
+) {
+    if (!cycle.ended) return {};
+
+    if (cycle.hit) {
+        at_state::start(machine.at, at_state::Tier::Upper);
+        machine.area = machine_state::Area::AT;
+        (void)pending_event::consume(
+            pending,
+            pending_event::UpperComebackHit
+        );
+        return {Outcome::UpperAT};
+    }
+
+    revival_state::start(
+        machine.revival,
+        at_state::Tier::Upper
+    );
+    machine.area = machine_state::Area::Revival;
+    return {Outcome::Revival};
+}
+
+} // namespace slotv2::upper_comeback_transition
