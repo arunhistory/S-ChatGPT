@@ -14,6 +14,7 @@
 #include "../upper-comeback-cycle/index.hpp"
 #include "../at-single-transition/index.hpp"
 #include "../normal-at-trigger/index.hpp"
+#include "../normal-hit-entry/index.hpp"
 
 namespace slotv2::runtime {
 namespace {
@@ -88,6 +89,8 @@ void reset(State& state, uint64_t seed) {
     state.upper_comeback_cycle = {};
     state.at_single_transition = {};
     state.normal_at_trigger = {};
+    state.normal_hit_entry = {};
+    state.normal_hit_entry = {};
 }
 
 uint32_t lever(State& state) {
@@ -341,6 +344,71 @@ bool consumeNextHitAT(State& state) {
         state.machine.normal_progress,
         state.pending
     );
+}
+
+normal_hit_entry::Result resolveNormalHitAsBonus(State& state) {
+    if (state.machine.area != machine_state::Area::Normal) return {};
+
+    // 次回AT保証が立っていれば、この通常当たりをATへ変換する。
+    state.normal_at_trigger =
+        normal_at_trigger::applyNextHitGuarantee(
+            state.machine,
+            state.pending,
+            false
+        );
+
+    if (state.normal_at_trigger.started) {
+        progress_event::onNormalHitResolved(
+            state.machine.normal_progress,
+            state.pending,
+            true
+        );
+
+        state.normal_hit_entry = {
+            normal_hit_entry::Outcome::LowerAT,
+            bonus_state::Kind::Regular
+        };
+        return state.normal_hit_entry;
+    }
+
+    state.normal_hit_entry = normal_hit_entry::enterBonus(
+        state.machine,
+        state.normal_mode
+    );
+
+    if (state.normal_hit_entry.outcome == normal_hit_entry::Outcome::Bonus) {
+        progress_event::onNormalHitResolved(
+            state.machine.normal_progress,
+            state.pending,
+            false
+        );
+    }
+
+    return state.normal_hit_entry;
+}
+
+normal_hit_entry::Result resolveNormalHitAsAT(State& state) {
+    if (state.machine.area != machine_state::Area::Normal) return {};
+
+    // 既存の次回AT保証があれば、この当たりで消費だけしておく。
+    state.normal_at_trigger =
+        normal_at_trigger::applyNextHitGuarantee(
+            state.machine,
+            state.pending,
+            true
+        );
+
+    state.normal_hit_entry = normal_hit_entry::enterAT(state.machine);
+
+    if (state.normal_hit_entry.outcome == normal_hit_entry::Outcome::LowerAT) {
+        progress_event::onNormalHitResolved(
+            state.machine.normal_progress,
+            state.pending,
+            true
+        );
+    }
+
+    return state.normal_hit_entry;
 }
 
 accounting::Result applyBet(State& state, int medals) {
