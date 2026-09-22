@@ -12,6 +12,7 @@
 #include "../at-cycle/index.hpp"
 #include "../at-resolution/index.hpp"
 #include "../normal-mode/index.hpp"
+#include "../progress-event/index.hpp"
 
 namespace slotv2::runtime {
 
@@ -33,6 +34,11 @@ struct State {
 void reset(State& state, uint64_t seed);
 uint32_t lever(State& state);
 uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position);
+
+// C++内部オーケストレーション用。TSからは呼ばせない。
+bool recordCZResult(State& state, bool hit);
+void recordNormalHit(State& state, bool was_at);
+bool consumeNextHitAT(State& state);
 
 uint32_t phase(const State& state);
 uint32_t specialResult(const State& state);
