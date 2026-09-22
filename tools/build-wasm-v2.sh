@@ -28,6 +28,7 @@ SRC="$ROOT/src/slot-v2"
   -Wl,--export=slot_v2_stop_sequence \
   -Wl,--export=slot_v2_acquisition \
   -Wl,--export=slot_v2_validate_left \
+  -Wl,--export=slot_v2_preflight \
   -Wl,--export=slot_v2_reel_ready_mask \
   -Wl,--export=slot_v2_validate_reel \
   -Wl,--export=slot_v2_complete_special \
@@ -46,6 +47,7 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/lever/index.cpp" \
   "$SRC/reel-strip/index.cpp" \
   "$SRC/reel-validator/index.cpp" \
+  "$SRC/preflight/index.cpp" \
   "$SRC/reel-read/index.cpp" \
   "$SRC/stop-candidate/index.cpp" \
   "$SRC/stop-rules/common.cpp" \
