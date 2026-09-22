@@ -115,6 +115,7 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/stock-count-lottery/index.cpp" \
   "$SRC/stock/index.cpp" \
   "$SRC/section/index.cpp" \
+  "$SRC/section-reward/index.cpp" \
   "$SRC/line/index.cpp" \
   "$SRC/session/index.cpp" \
   "$SRC/wasm/index.cpp"
