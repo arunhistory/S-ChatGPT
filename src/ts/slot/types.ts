@@ -51,6 +51,10 @@ export const enum PendingEvent {
   CZHit = 1 << 13,
   ATWindowEmpty = 1 << 14,
   ATStockAvailable = 1 << 15,
+
+  BonusComplete = 1 << 16,
+  BonusEpisodeUpgrade = 1 << 17,
+  UpperComebackHit = 1 << 18,
 }
 
 export const enum SectionRewardKind {
