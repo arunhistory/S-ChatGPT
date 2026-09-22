@@ -1,5 +1,4 @@
 #include "index.hpp"
-#include "../bonus-transition/index.hpp"
 
 namespace slotv2::normal_hit_entry {
 
@@ -17,10 +16,10 @@ Result enterBonus(
         };
     }
 
-    bonus_transition::start(
-        machine,
+    entry_gate::queueBonus(
+        machine.entry_gate,
         policy.kind,
-        machine_state::Area::Normal
+        false
     );
 
     return {
@@ -32,11 +31,10 @@ Result enterBonus(
 Result enterAT(machine_state::State& machine) {
     if (machine.area != machine_state::Area::Normal) return {};
 
-    at_state::start(
-        machine.at,
+    entry_gate::queueAT(
+        machine.entry_gate,
         at_state::Tier::Lower
     );
-    machine.area = machine_state::Area::AT;
 
     return {
         Outcome::LowerAT,
