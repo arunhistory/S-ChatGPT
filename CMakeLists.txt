@@ -235,3 +235,7 @@ target_link_libraries(slot_v2_normal_at_trigger_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_bonus_entry_policy_test src/slot-v2/bonus_entry_policy_test.cpp)
 target_link_libraries(slot_v2_bonus_entry_policy_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_runtime_normal_scope_test src/slot-v2/runtime_normal_scope_test.cpp)
+target_link_libraries(slot_v2_runtime_normal_scope_test PRIVATE slot_v2_core)
