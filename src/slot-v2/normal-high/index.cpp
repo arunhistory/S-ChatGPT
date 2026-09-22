@@ -26,16 +26,19 @@ uint16_t hitThresholdPerThousand(RoleFlag role) {
     }
 }
 
-Result play(
+Result draw(
     Rng& rng,
-    State& state,
+    const State& current,
     RoleFlag role,
     uint32_t actual_games
 ) {
     Result out{};
+    out.next_state = current;
 
-    if (state.active) {
-        if (state.games < 65535u) ++state.games;
+    if (current.active) {
+        if (out.next_state.games < 65535u) {
+            ++out.next_state.games;
+        }
 
         const uint16_t hit_threshold =
             hitThresholdPerThousand(role);
@@ -54,24 +57,24 @@ Result play(
                     out.shorten_games = normal_shortening::continuous(rng);
                 }
             } else if (reward_roll < 995u) {
-                state.active = false;
-                state.games = 0u;
+                out.next_state.active = false;
+                out.next_state.games = 0u;
                 out.reward = Reward::CZ;
                 out.exited = true;
                 return out;
             } else {
-                state.active = false;
-                state.games = 0u;
+                out.next_state.active = false;
+                out.next_state.games = 0u;
                 out.reward = Reward::Bonus;
                 out.exited = true;
                 return out;
             }
         }
 
-        if (state.games >= 5u
+        if (out.next_state.games >= 5u
             && rng.uniformBelow(10u) == 0u) {
-            state.active = false;
-            state.games = 0u;
+            out.next_state.active = false;
+            out.next_state.games = 0u;
             out.exited = true;
         }
 
@@ -86,8 +89,8 @@ Result play(
 
     if (entry_threshold > 0u
         && rng.uniformBelow(1000u) < entry_threshold) {
-        state.active = true;
-        state.games = 0u;
+        out.next_state.active = true;
+        out.next_state.games = 0u;
         out.entered = true;
     }
 
