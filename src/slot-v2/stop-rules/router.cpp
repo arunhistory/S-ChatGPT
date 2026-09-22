@@ -8,6 +8,7 @@
 #include "weak-chance.hpp"
 #include "strong-chance.hpp"
 #include "penguin.hpp"
+#include "entry.hpp"
 #include "fallback.hpp"
 
 namespace slotv2::stop_rules {
@@ -36,6 +37,10 @@ bool accepts(const stop_shared::Context& ctx, const reel_strip::StripView& strip
 
         case RoleFlag::PenguinChance:
             return penguin::accepts(ctx, strip, candidate);
+
+        case RoleFlag::EntryAT:
+        case RoleFlag::EntryBonus:
+            return entry::accepts(ctx, strip, candidate);
 
         case RoleFlag::OneMedal:
             return one_medal::accepts(ctx, strip, candidate);
