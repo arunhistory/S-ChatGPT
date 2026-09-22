@@ -58,6 +58,25 @@ int main() {
 
     {
         slotv2::runtime::State state{};
+        slotv2::runtime::reset(state, 0xAAA4ULL);
+
+        state.machine.area = slotv2::machine_state::Area::Bonus;
+        state.machine.bonus.active = false;
+        slotv2::pending_event::add(
+            state.pending,
+            slotv2::pending_event::BonusComplete
+        );
+
+        state.session.phase = slotv2::session::Phase::Complete;
+
+        const uint32_t lever = slotv2::runtime::lever(state);
+        ok = ok
+            && commandStatus(lever)
+                == slotv2::CommandStatus::RejectedPhase;
+    }
+
+    {
+        slotv2::runtime::State state{};
         slotv2::runtime::reset(state, 0xAAA3ULL);
 
         state.machine.area = slotv2::machine_state::Area::Normal;
