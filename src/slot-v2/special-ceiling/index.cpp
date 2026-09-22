@@ -2,23 +2,28 @@
 
 namespace slotv2::special_ceiling {
 
-Result draw(Rng& rng) {
-    const uint32_t ceiling_roll = rng.uniformBelow(1000u);
+Result fromRoll(uint16_t roll_0_to_999) {
+    const uint16_t roll = static_cast<uint16_t>(roll_0_to_999 % 1000u);
 
-    if (ceiling_roll >= 950u) {
+    if (roll >= 950u) {
         return {
             Ceiling::G1500,
-            G777Result::PlainAT,
+            Reward::Freeze,
             true
         };
     }
 
-    const uint32_t result_roll = rng.uniformBelow(3u);
     return {
         Ceiling::G777,
-        static_cast<G777Result>(result_roll),
+        Reward::LowerATWithStock,
         false
     };
+}
+
+Result draw(Rng& rng) {
+    return fromRoll(
+        static_cast<uint16_t>(rng.uniformBelow(1000u))
+    );
 }
 
 } // namespace slotv2::special_ceiling
