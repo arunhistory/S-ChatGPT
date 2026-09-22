@@ -31,6 +31,7 @@ Result applyBellFive(
 
     return {
         true,
+        false,
         true,
         false
     };
@@ -42,7 +43,6 @@ Result applyNextHitGuarantee(
     bool base_was_at
 ) {
     if (machine.area != machine_state::Area::Normal) return {};
-    if (base_was_at) return {};
     if (!machine.normal_progress.next_hit_at_guaranteed) return {};
 
     if (!progress_event::consumeNextHitAT(
@@ -52,9 +52,12 @@ Result applyNextHitGuarantee(
         return {};
     }
 
-    startLowerAT(machine);
+    if (!base_was_at) {
+        startLowerAT(machine);
+    }
 
     return {
+        !base_was_at,
         true,
         false,
         true
