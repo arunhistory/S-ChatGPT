@@ -17,7 +17,7 @@ struct Result {
 // 区間報酬を、仕様が確定している範囲だけ機械状態へ反映する。
 // ・TierUp: Lower->Middle / Middle->Upper
 // ・Special: 通常特化5Gを開始
-// ・UpperSpecial: 上位特化の具体処理は未確定なのでpendingを残す
+// ・UpperSpecial: pendingを残し、upper-special-transitionが90%継続特化へ接続
 Result apply(
     machine_state::State& machine,
     pending_event::State& pending,
