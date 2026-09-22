@@ -81,6 +81,8 @@ export interface SlotWasmV2 {
   slot_v2_at_cycle(): number;
   slot_v2_at_resolution(): number;
   slot_v2_normal_mode(): number;
+  slot_v2_normal_route(): number;
+  slot_v2_normal_ceiling_transition(): number;
   slot_v2_normal_actual_games(): number;
   slot_v2_normal_display_games(): number;
   slot_v2_normal_progress(): number;
@@ -398,6 +400,33 @@ export function readATResolution(
 
 export function readNormalMode(wasm: SlotWasmV2): NormalMode {
   return wasm.slot_v2_normal_mode() as NormalMode;
+}
+
+export interface NormalRouteSnapshot {
+  pattern: number;
+  ceiling: number;
+  specialWindowChecked: boolean;
+  ceilingConsumed: boolean;
+  freezeQueued: boolean;
+}
+
+export function readNormalRoute(
+  wasm: SlotWasmV2,
+): NormalRouteSnapshot {
+  const packed = wasm.slot_v2_normal_route() >>> 0;
+  return {
+    pattern: packed & 0xff,
+    ceiling: (packed >>> 8) & 0xffff,
+    specialWindowChecked: (packed & (1 << 24)) !== 0,
+    ceilingConsumed: (packed & (1 << 25)) !== 0,
+    freezeQueued: (packed & (1 << 26)) !== 0,
+  };
+}
+
+export function readNormalCeilingTransition(
+  wasm: SlotWasmV2,
+): number {
+  return wasm.slot_v2_normal_ceiling_transition() >>> 0;
 }
 
 
