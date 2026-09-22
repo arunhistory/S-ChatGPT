@@ -232,6 +232,9 @@ target_link_libraries(slot_v2_normal_cycle_reset_test PRIVATE slot_v2_core)
 add_executable(slot_v2_normal_role_trigger_test src/slot-v2/normal_role_trigger_test.cpp)
 target_link_libraries(slot_v2_normal_role_trigger_test PRIVATE slot_v2_core)
 
+add_executable(slot_v2_normal_flow_test src/slot-v2/normal_flow_test.cpp)
+target_link_libraries(slot_v2_normal_flow_test PRIVATE slot_v2_core)
+
 add_executable(slot_v2_runtime_normal_route_test src/slot-v2/runtime_normal_route_test.cpp)
 target_link_libraries(slot_v2_runtime_normal_route_test PRIVATE slot_v2_core)
 
