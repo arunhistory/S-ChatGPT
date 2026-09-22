@@ -29,6 +29,7 @@ const REQUIRED_EXPORTS = [
   "slot_v2_section_count",
   "slot_v2_stock_count",
   "slot_v2_point_count",
+  "slot_v2_pending_events",
 ] as const;
 
 function asSlotWasmV2(exports: WebAssembly.Exports): SlotWasmV2 {
