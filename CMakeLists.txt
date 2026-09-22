@@ -187,3 +187,7 @@ target_link_libraries(slot_v2_section_reward_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_flow_pending_test src/slot-v2/flow_pending_test.cpp)
 target_link_libraries(slot_v2_flow_pending_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_runtime_accounting_test src/slot-v2/runtime_accounting_test.cpp)
+target_link_libraries(slot_v2_runtime_accounting_test PRIVATE slot_v2_core)
