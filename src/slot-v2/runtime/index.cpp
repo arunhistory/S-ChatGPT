@@ -17,6 +17,7 @@
 #include "../at-single-transition/index.hpp"
 #include "../normal-at-trigger/index.hpp"
 #include "../special-zone-pending/index.hpp"
+#include "../upper-special-transition/index.hpp"
 #include "../normal-hit-entry/index.hpp"
 #include "../revival-cycle/index.hpp"
 
@@ -101,6 +102,13 @@ void reset(State& state, uint64_t seed) {
 }
 
 uint32_t lever(State& state) {
+    // Internal pending trigger is resolved before lever gating so the next
+    // lever enters the upper-special loop rather than stalling the machine.
+    (void)upper_special_transition::apply(
+        state.machine,
+        state.pending
+    );
+
     const bool cz_transition_pending =
         state.machine.area == machine_state::Area::CZ
         && !state.machine.cz.active
@@ -172,6 +180,7 @@ uint32_t lever(State& state) {
     state.at_single_transition = {};
     state.normal_at_trigger = {};
     state.special_zone_result = special_zone::HitResult::None;
+    state.upper_special_step = {};
     state.revival_game = {};
     state.revival_finalize = {};
 
@@ -228,6 +237,12 @@ uint32_t lever(State& state) {
         && state.machine.at.active
         && state.machine.special_zone.active;
 
+    const bool upper_special_game =
+        result.special == SpecialHit::None
+        && state.machine.area == machine_state::Area::AT
+        && state.machine.at.active
+        && state.machine.upper_special.active;
+
     if (special_zone_game) {
         state.special_zone_result = special_zone::playOne(
             state.machine.special_zone,
@@ -239,10 +254,23 @@ uint32_t lever(State& state) {
         );
     }
 
-    // 特化5G中は通常ATのST残Gと内部抽選を進めない。
+    if (upper_special_game) {
+        state.upper_special_step = upper_special::playOne(
+            state.machine.upper_special,
+            state.rng
+        );
+        if (state.upper_special_step.added_games > 0u) {
+            at_state::addGames(
+                state.machine.at,
+                static_cast<int>(state.upper_special_step.added_games)
+            );
+        }
+    }
+
+    // 特化中は通常ATのST残Gと内部抽選を進めない。
     // 特殊直撃が割り込み中のゲームでもAT内部結果は同時確定させない。
     state.at_cycle =
-        (result.special == SpecialHit::None && !special_zone_game)
+        (result.special == SpecialHit::None && !special_zone_game && !upper_special_game)
         ? at_cycle::beginGame(state.rng, state.machine)
         : at_cycle::Result{};
 
