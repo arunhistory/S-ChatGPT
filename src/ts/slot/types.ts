@@ -55,6 +55,9 @@ export const enum PendingEvent {
   BonusComplete = 1 << 16,
   BonusEpisodeUpgrade = 1 << 17,
   UpperComebackHit = 1 << 18,
+
+  SpecialZoneAddGames = 1 << 19,
+  SpecialZoneBonus = 1 << 20,
 }
 
 export const enum SectionRewardKind {
