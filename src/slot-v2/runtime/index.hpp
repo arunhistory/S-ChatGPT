@@ -144,5 +144,6 @@ uint32_t specialZoneResultPacked(const State& state);
 uint32_t revivalPacked(const State& state);
 uint32_t revivalGamePacked(const State& state);
 uint32_t revivalFinalizePacked(const State& state);
+uint32_t entryGatePacked(const State& state);
 
 } // namespace slotv2::runtime
