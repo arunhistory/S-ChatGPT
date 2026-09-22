@@ -2,11 +2,10 @@
 
 namespace slotv2::stock_count_lottery {
 
-uint8_t draw(Rng& rng, Profile profile) {
+uint8_t fromRoll(uint16_t roll_0_to_999, Profile profile) {
     if (profile == Profile::None) return 0u;
 
-    // 0.1%単位の1000分率で正確に割り当てる。
-    const uint32_t roll = rng.uniformBelow(1000u);
+    const uint32_t roll = static_cast<uint32_t>(roll_0_to_999 % 1000u);
 
     if (profile == Profile::Middle) {
         // 1:800 / 2:150 / 3:40 / 4:9 / 5:1
@@ -24,6 +23,14 @@ uint8_t draw(Rng& rng, Profile profile) {
     if (roll < 950u) return 3u;
     if (roll < 995u) return 4u;
     return 5u;
+}
+
+uint8_t draw(Rng& rng, Profile profile) {
+    if (profile == Profile::None) return 0u;
+    return fromRoll(
+        static_cast<uint16_t>(rng.uniformBelow(1000u)),
+        profile
+    );
 }
 
 } // namespace slotv2::stock_count_lottery
