@@ -11,6 +11,8 @@ SRC="$ROOT/src/slot-v2"
   -Wl,--export=slot_v2_reset \
   -Wl,--export=slot_v2_lever \
   -Wl,--export=slot_v2_last_special \
+  -Wl,--export=slot_v2_bonus_cycle \
+  -Wl,--export=slot_v2_bonus_state \
   -Wl,--export=slot_v2_section_reward \
   -Wl,--export=slot_v2_at_window \
   -Wl,--export=slot_v2_section_transition \
@@ -106,6 +108,7 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/machine-state/index.cpp" \
   "$SRC/cz-state/index.cpp" \
   "$SRC/bonus-state/index.cpp" \
+  "$SRC/bonus-cycle/index.cpp" \
   "$SRC/at-state/index.cpp" \
   "$SRC/at-lottery/index.cpp" \
   "$SRC/progress-event/index.cpp" \
