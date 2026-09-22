@@ -129,6 +129,7 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/at-pending/index.cpp" \
   "$SRC/at-event/index.cpp" \
   "$SRC/special-zone/index.cpp" \
+  "$SRC/special-zone-pending/index.cpp" \
   "$SRC/upper-comeback/index.cpp" \
   "$SRC/upper-comeback-cycle/index.cpp" \
   "$SRC/bonus-upgrade/index.cpp" \
