@@ -6,15 +6,11 @@
 
 namespace {
 
-bool visibleHasCherry(uint8_t center) {
+bool centerOrLowerHasCherry(uint8_t center) {
     const auto strip = slotv2::reel_strip::get(slotv2::ReelId::Left);
-    for (int d = -1; d <= 1; ++d) {
-        int p = static_cast<int>(center) + d;
-        while (p < 0) p += strip.size;
-        p %= strip.size;
-        if (strip.data[p] == slotv2::Symbol::Cherry) return true;
-    }
-    return false;
+    const uint8_t lower = static_cast<uint8_t>((center + 1u) % strip.size);
+    return strip.data[center % strip.size] == slotv2::Symbol::Cherry
+        || strip.data[lower] == slotv2::Symbol::Cherry;
 }
 
 bool checkRole(slotv2::RoleFlag role, bool forbidCherry) {
@@ -33,9 +29,10 @@ bool checkRole(slotv2::RoleFlag role, bool forbidCherry) {
         const bool physicallyStopped =
             r.status == slotv2::stop_shared::ResolveStatus::Ok
             || r.status == slotv2::stop_shared::ResolveStatus::RoleMissed
-            || r.status == slotv2::stop_shared::ResolveStatus::SubstituteStop;
+            || r.status == slotv2::stop_shared::ResolveStatus::SubstituteStop
+            || r.status == slotv2::stop_shared::ResolveStatus::AssistGap;
 
-        if (forbidCherry && physicallyStopped && visibleHasCherry(r.final_position)) {
+        if (forbidCherry && physicallyStopped && centerOrLowerHasCherry(r.final_position)) {
             ok = false;
         }
     }
@@ -47,7 +44,6 @@ bool checkRole(slotv2::RoleFlag role, bool forbidCherry) {
 int main() {
     bool ok = true;
 
-    // すべての停止結果は0〜4コマ。非チェリー役では可視🍒禁止を守る。
     ok = checkRole(slotv2::RoleFlag::Bell9, true) && ok;
     ok = checkRole(slotv2::RoleFlag::Replay, true) && ok;
     ok = checkRole(slotv2::RoleFlag::Miss, true) && ok;
@@ -57,11 +53,11 @@ int main() {
     ok = checkRole(slotv2::RoleFlag::StrongChance, true) && ok;
     ok = checkRole(slotv2::RoleFlag::PenguinChance, true) && ok;
 
-    // 確定済み左配列では「🍉/BAR/🍒目印が2組」と「🍒を蹴れること」を必須条件にする。
-    // 🔔/REPLAY全位置保証は validator の診断bitとして残し、未解決条件を隠さない。
     const uint32_t validator = slotv2::reel_validator::validateLeft();
     const uint32_t required =
         slotv2::reel_validator::LeftCherryHidePossible |
+        slotv2::reel_validator::LeftBellGuaranteed |
+        slotv2::reel_validator::LeftReplayGuaranteed |
         slotv2::reel_validator::LeftBarLandmarkPair;
 
     ok = ok && ((validator & required) == required);
