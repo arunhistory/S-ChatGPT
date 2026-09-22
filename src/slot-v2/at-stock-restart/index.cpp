@@ -1,5 +1,6 @@
 #include "index.hpp"
 #include "../at-table-transition/index.hpp"
+#include "../at-cold/index.hpp"
 
 namespace slotv2::at_stock_restart {
 
@@ -40,6 +41,7 @@ Result apply(
 
     machine.at.games_left = games;
     machine.at.table = after;
+    at_cold::reroll(rng, machine.at);
 
     (void)pending_event::consume(
         pending,
