@@ -108,6 +108,41 @@ uint32_t validateAssist(ReelId reel) {
     return out;
 }
 
+uint32_t assistFailureMask(ReelId reel, RoleFlag role) {
+    const auto strip = reel_strip::get(reel);
+    if (!strip.data || strip.size != kReelSize) return 0x001fffffu;
+
+    uint32_t failures = 0u;
+
+    for (int pressed = 0; pressed < strip.size; ++pressed) {
+        bool found = false;
+
+        for (int slip = 0; slip <= kMaxSlip; ++slip) {
+            int p = pressed - slip;
+            while (p < 0) p += strip.size;
+            p %= strip.size;
+
+            if (!assist_target::accepts(role, reel, strip.data[p])) {
+                continue;
+            }
+
+            if (reel == ReelId::Left
+                && hasVisible(strip, p, Symbol::Cherry)) {
+                continue;
+            }
+
+            found = true;
+            break;
+        }
+
+        if (!found) {
+            failures |= (1u << pressed);
+        }
+    }
+
+    return failures;
+}
+
 uint32_t readyMask() {
     uint32_t mask = 0;
     for (uint8_t i = 0; i < 3u; ++i) {
