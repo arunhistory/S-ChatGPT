@@ -139,6 +139,7 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/normal-ceiling/index.cpp" \
   "$SRC/normal-ceiling-transition/index.cpp" \
   "$SRC/normal-cycle-reset/index.cpp" \
+  "$SRC/normal-role-trigger/index.cpp" \
   "$SRC/at-resolution/index.cpp" \
   "$SRC/at-single-transition/index.cpp" \
   "$SRC/section-flow/index.cpp" \
