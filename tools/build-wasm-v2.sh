@@ -11,6 +11,7 @@ SRC="$ROOT/src/slot-v2"
   -Wl,--export=slot_v2_reset \
   -Wl,--export=slot_v2_lever \
   -Wl,--export=slot_v2_last_special \
+  -Wl,--export=slot_v2_pending_events \
   -Wl,--export=slot_v2_bell_navigation_correct \
   -Wl,--export=slot_v2_bell_navigation_next \
   -Wl,--export=slot_v2_bell_navigation \
@@ -77,6 +78,8 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/freeze/index.cpp" \
   "$SRC/acquisition/index.cpp" \
   "$SRC/normal-progress/index.cpp" \
+  "$SRC/game-finalize/index.cpp" \
+  "$SRC/pending-event/index.cpp" \
   "$SRC/runtime/index.cpp" \
   "$SRC/point-ledger/index.cpp" \
   "$SRC/accounting/index.cpp" \
