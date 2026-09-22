@@ -56,6 +56,12 @@ export interface SlotWasmV2 {
   slot_v2_at_cycle(): number;
   slot_v2_at_resolution(): number;
   slot_v2_normal_mode(): number;
+  slot_v2_normal_actual_games(): number;
+  slot_v2_normal_display_games(): number;
+  slot_v2_normal_progress(): number;
+  slot_v2_cz_cycle(): number;
+  slot_v2_ceiling_count(): number;
+  slot_v2_ceiling_at(index: number): number;
   slot_v2_bell_navigation(): number;
   slot_v2_bell_navigation_next(): number;
   slot_v2_bell_navigation_correct(): number;
@@ -281,6 +287,7 @@ export function readPendingEvents(
 
 export interface ATCycleSnapshot {
   active: boolean;
+  hitStockGained: boolean;
   rawBits: number;
   hit: boolean;
   fall: boolean;
@@ -302,6 +309,7 @@ export function readATCycle(wasm: SlotWasmV2): ATCycleSnapshot {
 
   return {
     active: (packed & 1) !== 0,
+    hitStockGained: (packed & (1 << 1)) !== 0,
     rawBits: bits,
     hit: (bits & ATEventBit.Hit) !== 0,
     fall: (bits & ATEventBit.Fall) !== 0,
@@ -326,4 +334,59 @@ export function readATResolution(
 
 export function readNormalMode(wasm: SlotWasmV2): NormalMode {
   return wasm.slot_v2_normal_mode() as NormalMode;
+}
+
+
+export interface NormalProgressSnapshot {
+  actualGames: number;
+  displayGames: number;
+  czMisses: number;
+  normalHitsWithoutAT: number;
+  bell9Streak: number;
+  nextHitATGuaranteed: boolean;
+}
+
+export interface CZCycleSnapshot {
+  active: boolean;
+  baseHit: boolean;
+  gamesLeft: number;
+  ended: boolean;
+}
+
+export function readNormalProgress(
+  wasm: SlotWasmV2,
+): NormalProgressSnapshot {
+  const packed = wasm.slot_v2_normal_progress() >>> 0;
+
+  return {
+    actualGames: wasm.slot_v2_normal_actual_games() >>> 0,
+    displayGames: wasm.slot_v2_normal_display_games() >>> 0,
+    czMisses: packed & 0xff,
+    normalHitsWithoutAT: (packed >>> 8) & 0xff,
+    bell9Streak: (packed >>> 16) & 0xff,
+    nextHitATGuaranteed: ((packed >>> 24) & 1) !== 0,
+  };
+}
+
+export function readCZCycle(wasm: SlotWasmV2): CZCycleSnapshot {
+  const packed = wasm.slot_v2_cz_cycle() >>> 0;
+
+  return {
+    active: (packed & 1) !== 0,
+    baseHit: (packed & (1 << 1)) !== 0,
+    gamesLeft: (packed >>> 8) & 0xff,
+    ended: ((packed >>> 16) & 1) !== 0,
+  };
+}
+
+export function readCeilingCatalog(wasm: SlotWasmV2): number[] {
+  const count = wasm.slot_v2_ceiling_count() >>> 0;
+  const values: number[] = [];
+
+  for (let i = 0; i < count; ++i) {
+    const value = wasm.slot_v2_ceiling_at(i) >>> 0;
+    if (value !== 0xffffffff) values.push(value);
+  }
+
+  return values;
 }
