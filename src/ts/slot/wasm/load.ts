@@ -30,6 +30,7 @@ const REQUIRED_EXPORTS = [
   "slot_v2_stock_count",
   "slot_v2_point_count",
   "slot_v2_pending_events",
+  "slot_v2_section_reward",
   "slot_v2_normal_mode",
   "slot_v2_ceiling_at",
   "slot_v2_ceiling_count",
