@@ -20,6 +20,20 @@ uint32_t Rng::next27() {
     return static_cast<uint32_t>(next64() & (kRngSpace - 1u));
 }
 
+uint32_t Rng::uniformBelow(uint32_t bound) {
+    if (bound <= 1u) return 0u;
+
+    const uint64_t b = static_cast<uint64_t>(bound);
+    const uint64_t threshold = (static_cast<uint64_t>(0) - b) % b;
+
+    uint64_t value = 0;
+    do {
+        value = next64();
+    } while (value < threshold);
+
+    return static_cast<uint32_t>(value % b);
+}
+
 bool Rng::oneIn(uint32_t denominator) {
     if (denominator == 0u) return false;
     if (denominator == 1u) return true;
