@@ -18,6 +18,7 @@ enum class Reward : uint8_t {
 };
 
 struct Result {
+    State next_state{};
     bool entered{false};
     bool exited{false};
     uint16_t shorten_games{0};
@@ -27,9 +28,11 @@ struct Result {
 uint16_t entryThresholdPerThousand(RoleFlag role);
 uint16_t hitThresholdPerThousand(RoleFlag role);
 
-Result play(
+// Pure state planning: does not mutate current state.
+// The caller commits next_state only after the game's third stop.
+Result draw(
     Rng& rng,
-    State& state,
+    const State& current,
     RoleFlag role,
     uint32_t actual_games
 );
