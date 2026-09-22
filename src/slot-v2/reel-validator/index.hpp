@@ -21,6 +21,11 @@ enum AssistResultBits : uint32_t {
 // 4bitすべて立てば、現時点の左リール基本条件を通過。
 uint32_t validateLeft();
 uint32_t validateAssist(ReelId reel);
+
+// 21bit: bitN=押下位置Nで0〜4コマ内に合法取得候補が無い。
+// 左リールは非チェリー成立時の可視🍒禁止も同時に判定する。
+uint32_t assistFailureMask(ReelId reel, RoleFlag role);
+
 uint32_t readyMask();
 
 } // namespace slotv2::reel_validator
