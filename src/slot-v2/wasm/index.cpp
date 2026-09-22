@@ -91,7 +91,7 @@ uint32_t slot_v2_preflight() {
 __attribute__((visibility("default")))
 uint32_t slot_v2_assist_failure_mask(uint32_t reel, uint32_t role) {
     if (reel > 2u) return 0x001fffffu;
-    if (role > static_cast<uint32_t>(slotv2::RoleFlag::PenguinChance)) {
+    if (role > static_cast<uint32_t>(slotv2::RoleFlag::EntryBonus)) {
         return 0x001fffffu;
     }
 
@@ -308,6 +308,11 @@ uint32_t slot_v2_revival_game() {
 __attribute__((visibility("default")))
 uint32_t slot_v2_revival_finalize() {
     return slotv2::runtime::revivalFinalizePacked(g_runtime);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_entry_gate() {
+    return slotv2::runtime::entryGatePacked(g_runtime);
 }
 
 __attribute__((visibility("default")))
