@@ -8,6 +8,7 @@
 #include "../at-pending/index.hpp"
 #include "../section-flow/index.hpp"
 #include "../cz-finalize/index.hpp"
+#include "../cz-reward/index.hpp"
 #include "../section-transition/index.hpp"
 #include "../at-window/index.hpp"
 #include "../bonus-cycle/index.hpp"
@@ -84,6 +85,7 @@ void reset(State& state, uint64_t seed) {
     state.normal_mode = normal_mode::drawBase(state.rng);
     state.cz_cycle = {};
     state.cz_finalize = {};
+    state.cz_reward = {};
     state.at_hit_stock_gained = false;
     state.last_section_flow = {};
     state.last_section_transition = {};
@@ -281,13 +283,20 @@ uint32_t lever(State& state) {
         (result.special == SpecialHit::None
             && state.machine.area == machine_state::Area::CZ
             && state.machine.cz.active)
-        ? cz_cycle::playOne(state.rng, state.machine.cz)
+        ? cz_cycle::playOne(state.rng, state.machine.cz, result.role)
         : cz_cycle::Result{};
 
     state.cz_finalize = cz_finalize::apply(
         state.machine,
         state.pending,
         state.cz_cycle
+    );
+
+    state.cz_reward = cz_reward::apply(
+        state.rng,
+        state.machine,
+        state.pending,
+        state.normal_mode
     );
 
     const bool navigation_enabled =
