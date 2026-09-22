@@ -86,6 +86,8 @@ add_library(slot_v2_core
   src/slot-v2/at-single-transition/index.cpp
   src/slot-v2/section-flow/index.cpp
   src/slot-v2/at-window/index.cpp
+  src/slot-v2/at-table-transition/index.cpp
+  src/slot-v2/at-stock-restart/index.cpp
   src/slot-v2/section-transition/index.cpp
   src/slot-v2/at-pending/index.cpp
   src/slot-v2/at-event/index.cpp
@@ -176,6 +178,9 @@ target_link_libraries(slot_v2_game_finalize_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_at_cycle_test src/slot-v2/at_cycle_test.cpp)
 target_link_libraries(slot_v2_at_cycle_test PRIVATE slot_v2_core)
+
+add_executable(slot_v2_at_stock_restart_test src/slot-v2/at_stock_restart_test.cpp)
+target_link_libraries(slot_v2_at_stock_restart_test PRIVATE slot_v2_core)
 
 
 add_executable(slot_v2_progress_event_test src/slot-v2/progress_event_test.cpp)
