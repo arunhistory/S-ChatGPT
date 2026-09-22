@@ -13,35 +13,54 @@ Result apply(
 
     if (special.hit == SpecialHit::None) return out;
 
+    uint8_t stock_count = 0u;
     if (special.stock_profile != stock_count_lottery::Profile::None) {
-        const uint8_t stock_count = stock_count_lottery::draw(
+        stock_count = stock_count_lottery::draw(
             rng,
             special.stock_profile
         );
-        stock::add(machine.stock, stock_count);
         out.stock_added = stock_count;
+    }
+
+    // Freeze already has its forced blue-777 start signal, so it enters
+    // Upper AT immediately after that sequence completes.
+    if (special.freeze) {
+        if (stock_count > 0u) {
+            stock::add(machine.stock, stock_count);
+        }
+        at_state::start(machine.at, at_state::Tier::Upper);
+        machine.area = machine_state::Area::AT;
+        out.applied = true;
+        out.at_started = true;
+        out.tier = at_state::Tier::Upper;
+        return out;
     }
 
     switch (special.target) {
         case special_result::EntryTarget::MiddleAT:
-            at_state::start(machine.at, at_state::Tier::Middle);
-            machine.area = machine_state::Area::AT;
+            entry_gate::queueAT(
+                machine.entry_gate,
+                at_state::Tier::Middle,
+                stock_count
+            );
             out.applied = true;
-            out.at_started = true;
+            out.at_started = false;
             out.tier = at_state::Tier::Middle;
             return out;
 
         case special_result::EntryTarget::UpperAT:
-            at_state::start(machine.at, at_state::Tier::Upper);
-            machine.area = machine_state::Area::AT;
+            entry_gate::queueAT(
+                machine.entry_gate,
+                at_state::Tier::Upper,
+                stock_count
+            );
             out.applied = true;
-            out.at_started = true;
+            out.at_started = false;
             out.tier = at_state::Tier::Upper;
             return out;
 
         case special_result::EntryTarget::None:
         default:
-            out.applied = out.stock_added > 0u;
             return out;
     }
 }
