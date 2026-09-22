@@ -7,6 +7,7 @@ import {
   ATResolutionStatus,
   ATEventBit,
   CommandStatus,
+  CZFinalizeOutcome,
   EntryTarget,
   LeverResult,
   MachineArea,
@@ -62,6 +63,7 @@ export interface SlotWasmV2 {
   slot_v2_normal_display_games(): number;
   slot_v2_normal_progress(): number;
   slot_v2_cz_cycle(): number;
+  slot_v2_cz_finalize(): number;
   slot_v2_ceiling_count(): number;
   slot_v2_ceiling_at(index: number): number;
   slot_v2_bell_navigation(): number;
@@ -281,6 +283,8 @@ export interface PendingEventSnapshot {
   sectionTierUp: boolean;
   sectionSpecial: boolean;
   sectionUpperSpecial: boolean;
+  czHit: boolean;
+  atWindowEmpty: boolean;
 }
 
 export function readPendingEvents(
@@ -303,6 +307,8 @@ export function readPendingEvents(
     sectionTierUp: (bits & PendingEvent.SectionTierUp) !== 0,
     sectionSpecial: (bits & PendingEvent.SectionSpecial) !== 0,
     sectionUpperSpecial: (bits & PendingEvent.SectionUpperSpecial) !== 0,
+    czHit: (bits & PendingEvent.CZHit) !== 0,
+    atWindowEmpty: (bits & PendingEvent.ATWindowEmpty) !== 0,
   };
 }
 
@@ -310,6 +316,7 @@ export function readPendingEvents(
 export interface ATCycleSnapshot {
   active: boolean;
   hitStockGained: boolean;
+  windowEmptyAfterGame: boolean;
   rawBits: number;
   hit: boolean;
   fall: boolean;
@@ -332,6 +339,7 @@ export function readATCycle(wasm: SlotWasmV2): ATCycleSnapshot {
   return {
     active: (packed & 1) !== 0,
     hitStockGained: (packed & (1 << 1)) !== 0,
+    windowEmptyAfterGame: (packed & (1 << 2)) !== 0,
     rawBits: bits,
     hit: (bits & ATEventBit.Hit) !== 0,
     fall: (bits & ATEventBit.Fall) !== 0,
@@ -429,5 +437,22 @@ export function readSectionReward(
     cut: (packed & 1) !== 0,
     preferenceLevel: (packed >>> 8) & 0xff,
     kind: ((packed >>> 16) & 0xff) as SectionRewardKind,
+  };
+}
+
+
+export interface CZFinalizeSnapshot {
+  outcome: CZFinalizeOutcome;
+  leverBlocked: boolean;
+}
+
+export function readCZFinalize(
+  wasm: SlotWasmV2,
+): CZFinalizeSnapshot {
+  const packed = wasm.slot_v2_cz_finalize() >>> 0;
+
+  return {
+    outcome: (packed & 0xff) as CZFinalizeOutcome,
+    leverBlocked: ((packed >>> 8) & 1) !== 0,
   };
 }
