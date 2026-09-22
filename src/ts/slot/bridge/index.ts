@@ -41,6 +41,7 @@ export interface SlotWasmV2 {
   slot_v2_validate_left(): number;
   slot_v2_preflight(): number;
   slot_v2_validate_reel(reel: number): number;
+  slot_v2_assist_failure_mask(reel: number, role: number): number;
   slot_v2_reel_ready_mask(): number;
   slot_v2_last_special(): number;
   slot_v2_last_role(): number;
@@ -517,4 +518,20 @@ export function readSpecialZone(
     active: (packed & 1) !== 0,
     gamesLeft: (packed >>> 8) & 0xff,
   };
+}
+
+
+export function readAssistFailurePositions(
+  wasm: SlotWasmV2,
+  reel: ReelId,
+  role: RoleFlag,
+): number[] {
+  const mask = wasm.slot_v2_assist_failure_mask(reel, role) >>> 0;
+  const positions: number[] = [];
+
+  for (let i = 0; i < 21; ++i) {
+    if ((mask & (1 << i)) !== 0) positions.push(i);
+  }
+
+  return positions;
 }
