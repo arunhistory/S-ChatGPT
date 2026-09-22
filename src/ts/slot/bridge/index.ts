@@ -2,6 +2,7 @@ import {
   AcquisitionResult,
   AcquisitionStatus,
   ATTier,
+  ATWindowStatus,
   NormalMode,
   ATResolvedEvent,
   ATResolutionStatus,
@@ -56,6 +57,8 @@ export interface SlotWasmV2 {
   slot_v2_point_count(): bigint;
   slot_v2_pending_events(): number;
   slot_v2_section_reward(): number;
+  slot_v2_section_transition(): number;
+  slot_v2_at_window(): number;
   slot_v2_at_cycle(): number;
   slot_v2_at_resolution(): number;
   slot_v2_normal_mode(): number;
@@ -454,5 +457,44 @@ export function readCZFinalize(
   return {
     outcome: (packed & 0xff) as CZFinalizeOutcome,
     leverBlocked: ((packed >>> 8) & 1) !== 0,
+  };
+}
+
+
+export interface SectionTransitionSnapshot {
+  applied: boolean;
+  tierChanged: boolean;
+  specialStarted: boolean;
+  upperSpecialPending: boolean;
+  before: ATTier;
+  after: ATTier;
+}
+
+export interface ATWindowSnapshot {
+  status: ATWindowStatus;
+  stockCount: number;
+}
+
+export function readSectionTransition(
+  wasm: SlotWasmV2,
+): SectionTransitionSnapshot {
+  const packed = wasm.slot_v2_section_transition() >>> 0;
+
+  return {
+    applied: (packed & 1) !== 0,
+    tierChanged: (packed & (1 << 1)) !== 0,
+    specialStarted: (packed & (1 << 2)) !== 0,
+    upperSpecialPending: (packed & (1 << 3)) !== 0,
+    before: ((packed >>> 8) & 0xff) as ATTier,
+    after: ((packed >>> 16) & 0xff) as ATTier,
+  };
+}
+
+export function readATWindow(wasm: SlotWasmV2): ATWindowSnapshot {
+  const packed = wasm.slot_v2_at_window() >>> 0;
+
+  return {
+    status: (packed & 0xff) as ATWindowStatus,
+    stockCount: packed >>> 8,
   };
 }
