@@ -90,6 +90,57 @@ int main() {
         ok = ok && !state.machine.entry_gate.active;
     }
 
+
+    // Entry wait must outrank an already-pending AT-window end.
+    {
+        slotv2::runtime::State state{};
+        slotv2::runtime::reset(state, 0xA771ULL);
+
+        slotv2::at_state::start(
+            state.machine.at,
+            slotv2::at_state::Tier::Lower
+        );
+        state.machine.area = slotv2::machine_state::Area::AT;
+        state.machine.at.games_left = 0;
+        slotv2::entry_gate::queueBonus(
+            state.machine.entry_gate,
+            slotv2::bonus_state::Kind::Regular,
+            true
+        );
+        slotv2::pending_event::add(
+            state.pending,
+            slotv2::pending_event::ATWindowEmpty
+        );
+
+        bool spun = false;
+        for (int attempt = 0; attempt < 64 && !spun; ++attempt) {
+            const uint32_t lever = slotv2::runtime::lever(state);
+            const auto status = static_cast<slotv2::CommandStatus>((lever >> 24) & 0xffu);
+            const auto role = static_cast<slotv2::RoleFlag>(lever & 0xffu);
+
+            ok = ok && status == slotv2::CommandStatus::Ok;
+            ok = ok && state.machine.area == slotv2::machine_state::Area::AT;
+            ok = ok && state.machine.at.active;
+            ok = ok && state.machine.at.games_left == 0;
+
+            if (role == slotv2::RoleFlag::EntryBonus) {
+                ok = ok && stopExact(state, 4u, 8u, 12u);
+                spun = true;
+            } else {
+                ok = ok && role == slotv2::RoleFlag::Miss;
+                ok = ok && stopExact(state, 0u, 0u, 0u);
+            }
+        }
+
+        ok = ok && spun;
+        ok = ok && state.machine.area == slotv2::machine_state::Area::Bonus;
+        ok = ok && state.machine.bonus.active;
+        ok = ok && slotv2::pending_event::has(
+            state.pending,
+            slotv2::pending_event::ATWindowEmpty
+        );
+    }
+
     if (!ok) {
         std::cerr << "slot_v2_runtime_entry_gate_test: FAILED\n";
         return 1;
