@@ -26,6 +26,7 @@ add_library(slot_v2_core
   src/slot-v2/lever/index.cpp
   src/slot-v2/reel-strip/index.cpp
   src/slot-v2/reel-validator/index.cpp
+  src/slot-v2/preflight/index.cpp
   src/slot-v2/reel-read/index.cpp
   src/slot-v2/reel-candidate/index.cpp
   src/slot-v2/stop-candidate/index.cpp
@@ -130,3 +131,7 @@ target_link_libraries(slot_v2_special_apply_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_stock_count_lottery_test src/slot-v2/stock_count_lottery_test.cpp)
 target_link_libraries(slot_v2_stock_count_lottery_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_preflight_test src/slot-v2/preflight_test.cpp)
+target_link_libraries(slot_v2_preflight_test PRIVATE slot_v2_core)
