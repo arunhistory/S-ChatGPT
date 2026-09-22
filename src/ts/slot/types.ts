@@ -172,6 +172,8 @@ export const enum RoleFlag {
   WeakChance,
   StrongChance,
   PenguinChance,
+  EntryAT,
+  EntryBonus,
 }
 
 export const enum StopStatus {
