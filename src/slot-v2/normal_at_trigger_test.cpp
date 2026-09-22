@@ -20,10 +20,11 @@ int main() {
         );
 
         ok = ok && r.started && r.from_bell_five;
-        ok = ok && machine.area == slotv2::machine_state::Area::AT;
-        ok = ok && machine.at.active;
-        ok = ok && machine.at.tier == slotv2::at_state::Tier::Lower;
-        ok = ok && machine.at.games_left == 100;
+        ok = ok && machine.area == slotv2::machine_state::Area::Normal;
+        ok = ok && !machine.at.active;
+        ok = ok && machine.entry_gate.active;
+        ok = ok && machine.entry_gate.kind == slotv2::entry_gate::Kind::AT;
+        ok = ok && machine.entry_gate.at_tier == slotv2::at_state::Tier::Lower;
         ok = ok && !slotv2::pending_event::has(
             pending,
             slotv2::pending_event::BellFiveAT
@@ -49,7 +50,9 @@ int main() {
             );
 
         ok = ok && r.started && r.from_next_hit_guarantee;
-        ok = ok && machine.area == slotv2::machine_state::Area::AT;
+        ok = ok && machine.area == slotv2::machine_state::Area::Normal;
+        ok = ok && !machine.at.active;
+        ok = ok && machine.entry_gate.active;
         ok = ok && !machine.normal_progress.next_hit_at_guaranteed;
         ok = ok && !slotv2::pending_event::has(
             pending,
