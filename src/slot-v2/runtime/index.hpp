@@ -31,6 +31,7 @@ struct State {
     at_resolution::Result at_resolution{};
     normal_mode::Mode normal_mode{normal_mode::Mode::NormalA};
     cz_cycle::Result cz_cycle{};
+    bool at_hit_stock_gained{false};
 };
 
 void reset(State& state, uint64_t seed);
