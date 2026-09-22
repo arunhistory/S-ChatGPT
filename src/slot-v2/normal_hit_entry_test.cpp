@@ -14,10 +14,11 @@ int main() {
         );
 
         ok = ok && r.outcome == slotv2::normal_hit_entry::Outcome::Bonus;
-        ok = ok && machine.area == slotv2::machine_state::Area::Bonus;
-        ok = ok && machine.bonus.active;
-        ok = ok && machine.bonus.kind == slotv2::bonus_state::Kind::Regular;
-        ok = ok && machine.bonus.medals_left == 50;
+        ok = ok && machine.area == slotv2::machine_state::Area::Normal;
+        ok = ok && !machine.bonus.active;
+        ok = ok && machine.entry_gate.active;
+        ok = ok && machine.entry_gate.kind == slotv2::entry_gate::Kind::Bonus;
+        ok = ok && machine.entry_gate.bonus_kind == slotv2::bonus_state::Kind::Regular;
     }
 
     {
@@ -30,8 +31,9 @@ int main() {
         );
 
         ok = ok && r.outcome == slotv2::normal_hit_entry::Outcome::Bonus;
-        ok = ok && machine.bonus.kind == slotv2::bonus_state::Kind::Episode;
-        ok = ok && machine.bonus.medals_left == 80;
+        ok = ok && machine.entry_gate.active;
+        ok = ok && machine.entry_gate.bonus_kind == slotv2::bonus_state::Kind::Episode;
+        ok = ok && !machine.bonus.active;
     }
 
     {
@@ -46,6 +48,7 @@ int main() {
         ok = ok && r.outcome
             == slotv2::normal_hit_entry::Outcome::UnresolvedSpecialMode;
         ok = ok && machine.area == slotv2::machine_state::Area::Normal;
+        ok = ok && !machine.entry_gate.active;
     }
 
     {
@@ -55,10 +58,11 @@ int main() {
         const auto r = slotv2::normal_hit_entry::enterAT(machine);
 
         ok = ok && r.outcome == slotv2::normal_hit_entry::Outcome::LowerAT;
-        ok = ok && machine.area == slotv2::machine_state::Area::AT;
-        ok = ok && machine.at.active;
-        ok = ok && machine.at.tier == slotv2::at_state::Tier::Lower;
-        ok = ok && machine.at.games_left == 100;
+        ok = ok && machine.area == slotv2::machine_state::Area::Normal;
+        ok = ok && !machine.at.active;
+        ok = ok && machine.entry_gate.active;
+        ok = ok && machine.entry_gate.kind == slotv2::entry_gate::Kind::AT;
+        ok = ok && machine.entry_gate.at_tier == slotv2::at_state::Tier::Lower;
     }
 
     if (!ok) {
