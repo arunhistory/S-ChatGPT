@@ -29,6 +29,8 @@
 #include "../normal-ceiling-transition/index.hpp"
 #include "../normal-cycle-reset/index.hpp"
 #include "../normal-role-trigger/index.hpp"
+#include "../normal-flow/index.hpp"
+#include "../normal-flow-transition/index.hpp"
 #include "../entry-gate-transition/index.hpp"
 #include "../revival-cycle/index.hpp"
 
@@ -106,6 +108,9 @@ void reset(State& state, uint64_t seed) {
     state.ceiling_freeze_pending = false;
     state.normal_role_draw = normal_role_trigger::DrawResult::None;
     state.normal_role_apply = {};
+    state.setting = 6u;
+    state.normal_flow_result = {};
+    state.normal_flow_transition = {};
     state.cz_cycle = {};
     state.cz_finalize = {};
     state.cz_reward = {};
@@ -238,6 +243,8 @@ uint32_t lever(State& state) {
     state.normal_ceiling_transition = {};
     state.normal_role_draw = normal_role_trigger::DrawResult::None;
     state.normal_role_apply = {};
+    state.normal_flow_result = {};
+    state.normal_flow_transition = {};
     state.special_zone_result = special_zone::HitResult::None;
     state.special_zone_transition = {};
     state.upper_special_step = {};
@@ -322,15 +329,31 @@ uint32_t lever(State& state) {
                 state.rng,
                 result.role
             );
+
+            if (state.normal_role_draw
+                == normal_role_trigger::DrawResult::None) {
+                state.normal_flow_result = normal_flow::draw(
+                    state.rng,
+                    state.machine.normal_high,
+                    result.role,
+                    state.machine.normal.actual_games,
+                    state.setting
+                );
+            }
         }
 
         // Ceiling result is also fixed at lever-on, but it is applied only
         // after the third stop so acquired-role triggers can keep priority.
         if (result.special == SpecialHit::None
             && state.machine.area == machine_state::Area::Normal
+            && state.normal_role_draw
+                == normal_role_trigger::DrawResult::None
+            && state.normal_flow_result.reward
+                == normal_flow::Reward::None
             && normal_route::reached(
                 state.normal_route,
                 state.machine.normal.display_games
+                    + state.normal_flow_result.high.shorten_games
             )) {
             state.normal_ceiling_reward = normal_ceiling::draw(
                 state.rng,
@@ -608,9 +631,35 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
                         );
                 }
 
+                if (!state.machine.entry_gate.active
+                    && state.normal_role_draw
+                        == normal_role_trigger::DrawResult::None) {
+                    state.machine.normal_high =
+                        state.normal_flow_result.high.next_state;
+
+                    if (state.normal_flow_result.high.shorten_games > 0u) {
+                        normal_state::addDisplayGames(
+                            state.machine.normal,
+                            state.normal_flow_result.high.shorten_games
+                        );
+                    }
+
+                    if (state.normal_flow_result.reward
+                        != normal_flow::Reward::None) {
+                        state.normal_flow_transition =
+                            normal_flow_transition::apply(
+                                state.machine,
+                                state.pending,
+                                state.normal_mode,
+                                state.normal_flow_result.reward
+                            );
+                    }
+                }
+
                 if (state.normal_ceiling_reward != normal_ceiling::Reward::None) {
                     // Five-bell or another already-queued entry wins this game.
-                    if (!state.machine.entry_gate.active) {
+                    if (!state.machine.entry_gate.active
+                        && state.machine.area == machine_state::Area::Normal) {
                         state.normal_ceiling_transition =
                             normal_ceiling_transition::apply(
                                 state.machine,
