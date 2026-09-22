@@ -32,6 +32,7 @@
 #include "../special-zone-pending/index.hpp"
 #include "../upper-special-transition/index.hpp"
 #include "../normal-hit-entry/index.hpp"
+#include "../entry-gate-transition/index.hpp"
 #include "../revival-cycle/index.hpp"
 
 namespace slotv2::runtime {
@@ -67,6 +68,7 @@ struct State {
     special_zone::HitResult special_zone_result{special_zone::HitResult::None};
     upper_special::Step upper_special_step{};
     normal_hit_entry::Result normal_hit_entry{};
+    entry_gate_transition::Result entry_gate_transition{};
     revival_cycle::Game revival_game{};
     revival_cycle::FinalizeResult revival_finalize{};
 };
