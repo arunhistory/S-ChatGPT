@@ -11,6 +11,9 @@ SRC="$ROOT/src/slot-v2"
   -Wl,--export=slot_v2_reset \
   -Wl,--export=slot_v2_lever \
   -Wl,--export=slot_v2_last_special \
+  -Wl,--export=slot_v2_revival_finalize \
+  -Wl,--export=slot_v2_revival_game \
+  -Wl,--export=slot_v2_revival_state \
   -Wl,--export=slot_v2_bonus_cycle \
   -Wl,--export=slot_v2_bonus_transition \
   -Wl,--export=slot_v2_bonus_state \
@@ -136,6 +139,9 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/special-zone-pending/index.cpp" \
   "$SRC/upper-comeback/index.cpp" \
   "$SRC/upper-comeback-cycle/index.cpp" \
+  "$SRC/revival-cycle/index.cpp" \
+  "$SRC/revival-lottery/index.cpp" \
+  "$SRC/revival-state/index.cpp" \
   "$SRC/bonus-upgrade/index.cpp" \
   "$SRC/stock-lottery/index.cpp" \
   "$SRC/stock-count-lottery/index.cpp" \
