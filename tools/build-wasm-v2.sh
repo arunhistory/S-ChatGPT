@@ -12,6 +12,7 @@ SRC="$ROOT/src/slot-v2"
   -Wl,--export=slot_v2_lever \
   -Wl,--export=slot_v2_last_special \
   -Wl,--export=slot_v2_revival_finalize \
+  -Wl,--export=slot_v2_entry_gate \
   -Wl,--export=slot_v2_revival_game \
   -Wl,--export=slot_v2_revival_state \
   -Wl,--export=slot_v2_bonus_cycle \
