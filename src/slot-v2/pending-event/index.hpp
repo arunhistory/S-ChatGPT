@@ -26,7 +26,9 @@ enum Bits : uint32_t {
     ATStockAvailable = 1u << 15,
 
     BonusComplete       = 1u << 16,
-    BonusEpisodeUpgrade= 1u << 17
+    BonusEpisodeUpgrade= 1u << 17,
+
+    UpperComebackHit    = 1u << 18
 };
 
 struct State {
