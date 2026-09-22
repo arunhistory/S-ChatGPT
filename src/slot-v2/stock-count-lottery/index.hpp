@@ -15,6 +15,7 @@ enum class Profile : uint8_t {
 //
 // Upper:
 // 1=60% / 2=25% / 3=10% / 4=4.5% / 5=0.5%
+uint8_t fromRoll(uint16_t roll_0_to_999, Profile profile);
 uint8_t draw(Rng& rng, Profile profile);
 
 } // namespace slotv2::stock_count_lottery
