@@ -23,6 +23,7 @@ cmake --build "$BUILD" --target slot_v2_stop_test slot_v2_special_test slot_v2_n
 "$BUILD/slot_v2_preflight_test"
 "$BUILD/slot_v2_game_finalize_test"
 "$BUILD/slot_v2_at_cycle_test"
+"$BUILD/slot_v2_at_transition_test"
 "$BUILD/slot_v2_at_stock_restart_test"
 "$BUILD/slot_v2_progress_event_test"
 "$BUILD/slot_v2_flow_modules_test"
