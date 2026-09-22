@@ -7,11 +7,13 @@ void start(State& state, Tier tier) {
     state.tier = tier;
     state.table = Table::Normal;
     state.games_left = kInitialSTGames;
+    state.cold = false;
 }
 
 void end(State& state) {
     state.active = false;
     state.games_left = 0;
+    state.cold = false;
 }
 
 void addGames(State& state, int games) {
