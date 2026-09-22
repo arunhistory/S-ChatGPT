@@ -1,6 +1,8 @@
 #pragma once
 #include <stdint.h>
-#include "../machine-state/index.hpp"
+#include "../at-state/index.hpp"
+#include "../entry-gate/index.hpp"
+#include "../bonus-state/index.hpp"
 
 namespace slotv2::at_omen {
 
@@ -34,7 +36,8 @@ Game beginGame(
 );
 
 FinalizeOutcome finalize(
-    machine_state::State& machine,
+    const at_state::State& at,
+    entry_gate::State& entry_gate,
     State& omen,
     const Game& game
 );
