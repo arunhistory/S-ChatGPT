@@ -133,6 +133,8 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/at-single-transition/index.cpp" \
   "$SRC/section-flow/index.cpp" \
   "$SRC/at-window/index.cpp" \
+  "$SRC/at-table-transition/index.cpp" \
+  "$SRC/at-stock-restart/index.cpp" \
   "$SRC/section-transition/index.cpp" \
   "$SRC/at-pending/index.cpp" \
   "$SRC/at-event/index.cpp" \
