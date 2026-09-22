@@ -7,6 +7,8 @@ StopPolicy stopPolicy(RoleFlag role) {
         case RoleFlag::Bell9:
         case RoleFlag::Bell15:
         case RoleFlag::Replay:
+        case RoleFlag::EntryAT:
+        case RoleFlag::EntryBonus:
             return StopPolicy::Assist;
 
         case RoleFlag::WeakCherry:
