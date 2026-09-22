@@ -261,6 +261,16 @@ uint32_t slot_v2_at_window() {
 }
 
 __attribute__((visibility("default")))
+uint32_t slot_v2_bonus_state() {
+    return slotv2::runtime::bonusPacked(g_runtime);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_bonus_cycle() {
+    return slotv2::runtime::bonusCyclePacked(g_runtime);
+}
+
+__attribute__((visibility("default")))
 uint32_t slot_v2_last_special() {
     return slotv2::runtime::lastSpecial(g_runtime);
 }
