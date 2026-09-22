@@ -10,8 +10,12 @@ Result apply(
     if (!cycle.ended) return {};
 
     if (cycle.hit) {
-        at_state::start(machine.at, at_state::Tier::Upper);
-        machine.area = machine_state::Area::AT;
+        // Comeback hit is fixed here, but Upper AT does not start until
+        // the red-777 start signal is actually aligned.
+        entry_gate::queueAT(
+            machine.entry_gate,
+            at_state::Tier::Upper
+        );
         (void)pending_event::consume(
             pending,
             pending_event::UpperComebackHit
