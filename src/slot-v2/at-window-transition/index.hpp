@@ -8,17 +8,18 @@ namespace slotv2::at_window_transition {
 
 enum class Outcome : uint8_t {
     None = 0,
-    StockRestart = 1,
-    UpperComeback = 2,
-    Revival = 3
+    UpperComeback = 1,
+    Revival = 2
 };
 
 struct Result {
     Outcome outcome{Outcome::None};
     at_state::Tier tier{at_state::Tier::Lower};
-    uint16_t restart_games{0};
 };
 
+// Runs only after at-stock-restart had the first chance to consume a stock.
+// With no stock left, Upper goes to the 64G comeback window;
+// Lower/Middle go directly to the five-game revival challenge.
 Result apply(
     Rng& rng,
     machine_state::State& machine,
