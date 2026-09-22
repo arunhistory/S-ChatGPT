@@ -1,4 +1,4 @@
-import { SpecialHit } from "../../types";
+import { SpecialHit } from "../../types.js";
 
 export interface FreezePresentationPort {
   lockInput(): void;
