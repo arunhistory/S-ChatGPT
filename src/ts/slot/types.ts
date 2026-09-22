@@ -35,6 +35,25 @@ export const enum PendingEvent {
   BellFiveAT = 1 << 0,
   CZThreeMissHit = 1 << 1,
   NextHitAT = 1 << 2,
+
+  ATHit = 1 << 3,
+  ATFall = 1 << 4,
+  ATAddGames = 1 << 5,
+  ATSpecial = 1 << 6,
+  ATEpisode = 1 << 7,
+  ATUpperSpecial = 1 << 8,
+  ATMultiple = 1 << 9,
+
+  SectionTierUp = 1 << 10,
+  SectionSpecial = 1 << 11,
+  SectionUpperSpecial = 1 << 12,
+}
+
+export const enum SectionRewardKind {
+  None = 0,
+  TierUp = 1,
+  Special = 2,
+  UpperSpecial = 3,
 }
 
 export const enum ATTier {
