@@ -14,6 +14,7 @@ import {
   SpecialResult,
   StopResult,
   StopStatus,
+  StockProfile,
   Symbol,
 } from "../types";
 
@@ -139,7 +140,7 @@ export function readSpecialResult(wasm: SlotWasmV2): SpecialResult {
   return {
     hit: (packed & 0xff) as SpecialHit,
     target: ((packed >>> 8) & 0xff) as EntryTarget,
-    stock: (packed >>> 16) & 0xff,
+    stockProfile: ((packed >>> 16) & 0xff) as StockProfile,
     freeze: ((packed >>> 24) & 1) === 1,
   };
 }
