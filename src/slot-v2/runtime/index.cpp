@@ -15,6 +15,7 @@
 #include "../upper-comeback-cycle/index.hpp"
 #include "../at-single-transition/index.hpp"
 #include "../normal-at-trigger/index.hpp"
+#include "../special-zone-pending/index.hpp"
 #include "../normal-hit-entry/index.hpp"
 
 namespace slotv2::runtime {
@@ -124,10 +125,31 @@ uint32_t lever(State& state) {
             pending_event::UpperComebackHit
         );
 
+    const bool special_zone_transition_pending =
+        pending_event::has(
+            state.pending,
+            pending_event::SpecialZoneAddGames
+        )
+        || pending_event::has(
+            state.pending,
+            pending_event::SpecialZoneBonus
+        );
+
+    const bool unresolved_at_pending =
+        pending_event::has(state.pending, pending_event::ATHit)
+        || pending_event::has(state.pending, pending_event::ATFall)
+        || pending_event::has(state.pending, pending_event::ATAddGames)
+        || pending_event::has(state.pending, pending_event::ATEpisode)
+        || pending_event::has(state.pending, pending_event::ATUpperSpecial)
+        || pending_event::has(state.pending, pending_event::ATMultiple)
+        || pending_event::has(state.pending, pending_event::SectionUpperSpec);
+
     if (cz_transition_pending
         || at_window_pending
         || bonus_transition_pending
-        || upper_comeback_pending) {
+        || upper_comeback_pending
+        || special_zone_transition_pending
+        || unresolved_at_pending) {
         const auto current = state.session.lever;
         return static_cast<uint32_t>(current.role)
             | (static_cast<uint32_t>(current.special) << 8)
@@ -145,6 +167,7 @@ uint32_t lever(State& state) {
 
     state.at_single_transition = {};
     state.normal_at_trigger = {};
+    state.special_zone_result = special_zone::HitResult::None;
 
     if (state.machine.area == machine_state::Area::Normal) {
         normal_state::onLever(state.machine.normal);
@@ -172,9 +195,27 @@ uint32_t lever(State& state) {
 
     session::begin(state.session, result, special, freeze);
 
-    // 特殊直撃が割り込み中のゲームではAT内部結果を同時確定させない。
-    // 通常ATゲームだけ、独立抽選の生bitを保持する。
-    state.at_cycle = result.special == SpecialHit::None
+    const bool special_zone_game =
+        result.special == SpecialHit::None
+        && state.machine.area == machine_state::Area::AT
+        && state.machine.at.active
+        && state.machine.special_zone.active;
+
+    if (special_zone_game) {
+        state.special_zone_result = special_zone::playOne(
+            state.machine.special_zone,
+            state.rng
+        );
+        special_zone_pending::publish(
+            state.special_zone_result,
+            state.pending
+        );
+    }
+
+    // 特化5G中は通常ATのST残Gと内部抽選を進めない。
+    // 特殊直撃が割り込み中のゲームでもAT内部結果は同時確定させない。
+    state.at_cycle =
+        (result.special == SpecialHit::None && !special_zone_game)
         ? at_cycle::beginGame(state.rng, state.machine)
         : at_cycle::Result{};
 
@@ -719,6 +760,10 @@ uint32_t normalATTriggerPacked(const State& state) {
         | (r.guarantee_consumed ? (1u << 1) : 0u)
         | (r.from_bell_five ? (1u << 2) : 0u)
         | (r.from_next_hit_guarantee ? (1u << 3) : 0u);
+}
+
+uint32_t specialZoneResultPacked(const State& state) {
+    return static_cast<uint32_t>(state.special_zone_result);
 }
 
 } // namespace slotv2::runtime
