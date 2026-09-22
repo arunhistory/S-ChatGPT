@@ -47,6 +47,9 @@ export const enum PendingEvent {
   SectionTierUp = 1 << 10,
   SectionSpecial = 1 << 11,
   SectionUpperSpecial = 1 << 12,
+
+  CZHit = 1 << 13,
+  ATWindowEmpty = 1 << 14,
 }
 
 export const enum SectionRewardKind {
@@ -54,6 +57,13 @@ export const enum SectionRewardKind {
   TierUp = 1,
   Special = 2,
   UpperSpecial = 3,
+}
+
+export const enum CZFinalizeOutcome {
+  None = 0,
+  HitPending = 1,
+  MissReturnNormal = 2,
+  ThreeMissHitPending = 3,
 }
 
 export const enum ATTier {
