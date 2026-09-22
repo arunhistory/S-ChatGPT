@@ -31,7 +31,9 @@ enum class RoleFlag : uint8_t {
     Watermelon,
     WeakChance,
     StrongChance,
-    PenguinChance
+    PenguinChance,
+    EntryAT,
+    EntryBonus
 };
 
 enum class ReelId : uint8_t { Left = 0, Middle = 1, Right = 2 };
@@ -54,6 +56,7 @@ struct LeverResult {
     SpecialHit special{SpecialHit::None};
     RoleFlag role{RoleFlag::None};
     bool main_lottery_ran{false};
+    bool entry_wait{false};
 };
 
 struct StopCandidates {
