@@ -7,6 +7,7 @@
 #include "../stock-lottery/index.hpp"
 #include "../at-pending/index.hpp"
 #include "../section-flow/index.hpp"
+#include "../cz-finalize/index.hpp"
 
 namespace slotv2::runtime {
 namespace {
@@ -66,11 +67,34 @@ void reset(State& state, uint64_t seed) {
     state.at_resolution = {};
     state.normal_mode = normal_mode::drawBase(state.rng);
     state.cz_cycle = {};
+    state.cz_finalize = {};
     state.at_hit_stock_gained = false;
     state.last_section_flow = {};
 }
 
 uint32_t lever(State& state) {
+    const bool cz_transition_pending =
+        state.machine.area == machine_state::Area::CZ
+        && !state.machine.cz.active
+        && (
+            pending_event::has(state.pending, pending_event::CZHit)
+            || pending_event::has(state.pending, pending_event::CZThreeMissHit)
+        );
+
+    const bool at_window_pending =
+        state.machine.area == machine_state::Area::AT
+        && state.machine.at.active
+        && state.machine.at.games_left <= 0
+        && pending_event::has(state.pending, pending_event::ATWindowEmpty);
+
+    if (cz_transition_pending || at_window_pending) {
+        const auto current = state.session.lever;
+        return static_cast<uint32_t>(current.role)
+            | (static_cast<uint32_t>(current.special) << 8)
+            | (current.main_lottery_ran ? (1u << 16) : 0u)
+            | (static_cast<uint32_t>(CommandStatus::RejectedPhase) << 24);
+    }
+
     if (!session::canLever(state.session)) {
         const auto current = state.session.lever;
         return static_cast<uint32_t>(current.role)
@@ -104,6 +128,13 @@ uint32_t lever(State& state) {
         state.pending
     );
 
+    if (state.at_cycle.active && state.at_cycle.window_empty_after_game) {
+        pending_event::add(
+            state.pending,
+            pending_event::ATWindowEmpty
+        );
+    }
+
     state.at_hit_stock_gained = false;
     if (state.at_cycle.active
         && at_event::has(state.at_cycle.raw, at_event::Hit)
@@ -118,6 +149,12 @@ uint32_t lever(State& state) {
             && state.machine.cz.active)
         ? cz_cycle::playOne(state.rng, state.machine.cz)
         : cz_cycle::Result{};
+
+    state.cz_finalize = cz_finalize::apply(
+        state.machine,
+        state.pending,
+        state.cz_cycle
+    );
 
     const bool navigation_enabled =
         state.machine.area == machine_state::Area::AT
@@ -361,9 +398,10 @@ uint32_t pendingEvents(const State& state) {
 }
 
 uint32_t atCyclePacked(const State& state) {
-    // bit0 active / bit1 hit-derived stock gain / bits8..13 raw simultaneous AT event bits.
+    // bit0 active / bit1 hit-derived stock / bit2 window-empty / bits8..13 raw events
     return (state.at_cycle.active ? 1u : 0u)
         | (state.at_hit_stock_gained ? (1u << 1) : 0u)
+        | (state.at_cycle.window_empty_after_game ? (1u << 2) : 0u)
         | ((state.at_cycle.raw.bits & 0x3fu) << 8);
 }
 
@@ -392,6 +430,12 @@ uint32_t czCyclePacked(const State& state) {
         | (state.cz_cycle.base_hit ? (1u << 1) : 0u)
         | (static_cast<uint32_t>(state.cz_cycle.games_left) << 8)
         | (state.cz_cycle.ended ? (1u << 16) : 0u);
+}
+
+uint32_t czFinalizePacked(const State& state) {
+    // 0..7 outcome / bit8 lever-blocked
+    return static_cast<uint32_t>(state.cz_finalize.outcome)
+        | (state.cz_finalize.lever_blocked ? (1u << 8) : 0u);
 }
 
 uint32_t sectionRewardPacked(const State& state) {
