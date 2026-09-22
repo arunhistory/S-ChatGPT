@@ -296,6 +296,21 @@ uint32_t slot_v2_bonus_transition() {
 }
 
 __attribute__((visibility("default")))
+uint32_t slot_v2_revival_state() {
+    return slotv2::runtime::revivalPacked(g_runtime);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_revival_game() {
+    return slotv2::runtime::revivalGamePacked(g_runtime);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_revival_finalize() {
+    return slotv2::runtime::revivalFinalizePacked(g_runtime);
+}
+
+__attribute__((visibility("default")))
 uint32_t slot_v2_last_special() {
     return slotv2::runtime::lastSpecial(g_runtime);
 }
