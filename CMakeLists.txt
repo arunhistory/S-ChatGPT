@@ -278,6 +278,9 @@ target_link_libraries(slot_v2_normal_hit_entry_test PRIVATE slot_v2_core)
 add_executable(slot_v2_entry_gate_test src/slot-v2/entry_gate_test.cpp)
 target_link_libraries(slot_v2_entry_gate_test PRIVATE slot_v2_core)
 
+add_executable(slot_v2_runtime_entry_gate_test src/slot-v2/runtime_entry_gate_test.cpp)
+target_link_libraries(slot_v2_runtime_entry_gate_test PRIVATE slot_v2_core)
+
 
 add_executable(slot_v2_runtime_normal_hit_test src/slot-v2/runtime_normal_hit_test.cpp)
 target_link_libraries(slot_v2_runtime_normal_hit_test PRIVATE slot_v2_core)
