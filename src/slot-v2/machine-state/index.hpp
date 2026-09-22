@@ -7,6 +7,7 @@
 #include "../at-state/index.hpp"
 #include "../bonus-state/index.hpp"
 #include "../cz-state/index.hpp"
+#include "../special-zone/index.hpp"
 
 namespace slotv2::machine_state {
 
@@ -26,6 +27,7 @@ struct State {
     at_state::State at{};
     bonus_state::State bonus{};
     cz_state::State cz{};
+    special_zone::State special_zone{};
 };
 
 void reset(State& state);
