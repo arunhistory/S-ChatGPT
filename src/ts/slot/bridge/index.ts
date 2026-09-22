@@ -25,6 +25,7 @@ import {
   SpecialResult,
   StopResult,
   StopStatus,
+  SpecialZoneHitResult,
   StockProfile,
   Symbol,
 } from "../types.js";
@@ -63,6 +64,7 @@ export interface SlotWasmV2 {
   slot_v2_section_reward(): number;
   slot_v2_section_transition(): number;
   slot_v2_special_zone(): number;
+  slot_v2_special_zone_result(): number;
   slot_v2_bonus_state(): number;
   slot_v2_bonus_cycle(): number;
   slot_v2_bonus_transition(): number;
@@ -668,4 +670,11 @@ export function readBonusTransition(
     outcome: (packed & 0xff) as BonusTransitionOutcome,
     returnArea: ((packed >>> 8) & 0xff) as MachineArea,
   };
+}
+
+
+export function readSpecialZoneResult(
+  wasm: SlotWasmV2,
+): SpecialZoneHitResult {
+  return wasm.slot_v2_special_zone_result() as SpecialZoneHitResult;
 }
