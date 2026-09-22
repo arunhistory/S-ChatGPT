@@ -20,6 +20,7 @@ void reset(State& state, uint64_t seed) {
     state.at_cycle = {};
     state.at_resolution = {};
     state.normal_mode = normal_mode::drawBase(state.rng);
+    state.cz_cycle = {};
 }
 
 uint32_t lever(State& state) {
@@ -29,6 +30,10 @@ uint32_t lever(State& state) {
             | (static_cast<uint32_t>(current.special) << 8)
             | (current.main_lottery_ran ? (1u << 16) : 0u)
             | (static_cast<uint32_t>(CommandStatus::RejectedPhase) << 24);
+    }
+
+    if (state.machine.area == machine_state::Area::Normal) {
+        normal_state::onLever(state.machine.normal);
     }
 
     auto result = slotv2::lever::pull(state.rng);
@@ -46,6 +51,13 @@ uint32_t lever(State& state) {
     state.at_resolution = state.at_cycle.active
         ? at_resolution::classify(state.at_cycle.raw)
         : at_resolution::Result{};
+
+    state.cz_cycle =
+        (result.special == SpecialHit::None
+            && state.machine.area == machine_state::Area::CZ
+            && state.machine.cz.active)
+        ? cz_cycle::playOne(state.rng, state.machine.cz)
+        : cz_cycle::Result{};
 
     const bool navigation_enabled =
         state.machine.area == machine_state::Area::AT
@@ -283,6 +295,22 @@ uint32_t atResolutionPacked(const State& state) {
 
 uint32_t normalMode(const State& state) {
     return static_cast<uint32_t>(state.normal_mode);
+}
+
+uint32_t normalActualGames(const State& state) {
+    return state.machine.normal.actual_games;
+}
+
+uint32_t normalDisplayGames(const State& state) {
+    return state.machine.normal.display_games;
+}
+
+uint32_t czCyclePacked(const State& state) {
+    // bit0 active / bit1 base-hit / bits8..15 games-left / bit16 ended
+    return (state.cz_cycle.active ? 1u : 0u)
+        | (state.cz_cycle.base_hit ? (1u << 1) : 0u)
+        | (static_cast<uint32_t>(state.cz_cycle.games_left) << 8)
+        | (state.cz_cycle.ended ? (1u << 16) : 0u);
 }
 
 } // namespace slotv2::runtime
