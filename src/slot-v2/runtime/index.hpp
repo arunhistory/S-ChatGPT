@@ -20,6 +20,7 @@
 #include "../section-transition/index.hpp"
 #include "../at-window/index.hpp"
 #include "../bonus-cycle/index.hpp"
+#include "../bonus-transition/index.hpp"
 #include "../upper-comeback-cycle/index.hpp"
 #include "../at-single-transition/index.hpp"
 #include "../normal-at-trigger/index.hpp"
@@ -47,6 +48,7 @@ struct State {
     section_transition::Result last_section_transition{};
     at_window::Result at_window{};
     bonus_cycle::Result bonus_cycle{};
+    bonus_transition::Result bonus_transition{};
     upper_comeback_cycle::Result upper_comeback_cycle{};
     at_single_transition::Result at_single_transition{};
     normal_at_trigger::Result normal_at_trigger{};
@@ -110,6 +112,7 @@ uint32_t atWindowPacked(const State& state);
 uint32_t specialZonePacked(const State& state);
 uint32_t bonusPacked(const State& state);
 uint32_t bonusCyclePacked(const State& state);
+uint32_t bonusTransitionPacked(const State& state);
 uint32_t upperComebackPacked(const State& state);
 uint32_t atSingleTransitionPacked(const State& state);
 uint32_t normalATTriggerPacked(const State& state);
