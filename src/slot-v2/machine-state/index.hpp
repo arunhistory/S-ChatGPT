@@ -8,6 +8,7 @@
 #include "../bonus-state/index.hpp"
 #include "../cz-state/index.hpp"
 #include "../special-zone/index.hpp"
+#include "../upper-comeback/index.hpp"
 
 namespace slotv2::machine_state {
 
@@ -28,6 +29,7 @@ struct State {
     bonus_state::State bonus{};
     cz_state::State cz{};
     special_zone::State special_zone{};
+    upper_comeback::State upper_comeback{};
 };
 
 void reset(State& state);
