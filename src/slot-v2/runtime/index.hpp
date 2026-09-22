@@ -21,6 +21,7 @@
 #include "../at-window/index.hpp"
 #include "../bonus-cycle/index.hpp"
 #include "../upper-comeback-cycle/index.hpp"
+#include "../at-single-transition/index.hpp"
 
 namespace slotv2::runtime {
 
@@ -45,6 +46,7 @@ struct State {
     at_window::Result at_window{};
     bonus_cycle::Result bonus_cycle{};
     upper_comeback_cycle::Result upper_comeback_cycle{};
+    at_single_transition::Result at_single_transition{};
 };
 
 void reset(State& state, uint64_t seed);
@@ -100,5 +102,6 @@ uint32_t specialZonePacked(const State& state);
 uint32_t bonusPacked(const State& state);
 uint32_t bonusCyclePacked(const State& state);
 uint32_t upperComebackPacked(const State& state);
+uint32_t atSingleTransitionPacked(const State& state);
 
 } // namespace slotv2::runtime
