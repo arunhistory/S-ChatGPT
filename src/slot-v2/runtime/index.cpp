@@ -478,6 +478,52 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
         return (static_cast<uint32_t>(stop_shared::ResolveStatus::InvalidReel) << 16);
     }
 
+    if (state.session.freeze.active) {
+        const auto forced = freeze::forceStop(
+            reel_id,
+            static_cast<uint8_t>(pressed_position)
+        );
+        session::acceptStop(
+            state.session,
+            reel_id,
+            forced
+        );
+
+        if (state.session.stop_count == 3u) {
+            state.acquisition = acquisition::judge(
+                RoleFlag::None,
+                state.session.position[0],
+                state.session.position[1],
+                state.session.position[2],
+                false,
+                false,
+                false
+            );
+
+            if (!state.special_committed) {
+                state.last_special_apply = special_apply::apply(
+                    state.rng,
+                    state.machine,
+                    state.session.special
+                );
+                state.special_committed = true;
+
+                if (state.last_special_apply.at_started) {
+                    normal_cycle_reset::apply(
+                        state.rng,
+                        state.machine,
+                        state.normal_mode,
+                        state.normal_route
+                    );
+                }
+            }
+        }
+
+        return static_cast<uint32_t>(forced.final_position)
+            | (static_cast<uint32_t>(forced.slip) << 8)
+            | (static_cast<uint32_t>(forced.status) << 16);
+    }
+
     const auto ctx = session::makeStopContext(
         state.session,
         reel_id,
