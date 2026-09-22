@@ -8,7 +8,7 @@ Result resolve(SpecialHit hit) {
             return {
                 SpecialHit::MiddleATStock,
                 EntryTarget::MiddleAT,
-                1,
+                stock_count_lottery::Profile::Middle,
                 false
             };
 
@@ -16,7 +16,7 @@ Result resolve(SpecialHit hit) {
             return {
                 SpecialHit::UpperAT,
                 EntryTarget::UpperAT,
-                0,
+                stock_count_lottery::Profile::None,
                 false
             };
 
@@ -24,7 +24,7 @@ Result resolve(SpecialHit hit) {
             return {
                 SpecialHit::Freeze,
                 EntryTarget::UpperAT,
-                1,
+                stock_count_lottery::Profile::Upper,
                 true
             };
 
