@@ -202,3 +202,7 @@ target_link_libraries(slot_v2_cz_finalize_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_section_transition_test src/slot-v2/section_transition_test.cpp)
 target_link_libraries(slot_v2_section_transition_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_runtime_gate_test src/slot-v2/runtime_gate_test.cpp)
+target_link_libraries(slot_v2_runtime_gate_test PRIVATE slot_v2_core)
