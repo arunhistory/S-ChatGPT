@@ -216,3 +216,7 @@ target_link_libraries(slot_v2_bonus_cycle_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_upper_comeback_cycle_test src/slot-v2/upper_comeback_cycle_test.cpp)
 target_link_libraries(slot_v2_upper_comeback_cycle_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_runtime_bonus_test src/slot-v2/runtime_bonus_test.cpp)
+target_link_libraries(slot_v2_runtime_bonus_test PRIVATE slot_v2_core)
