@@ -11,6 +11,7 @@
 #include "../section-transition/index.hpp"
 #include "../at-window/index.hpp"
 #include "../bonus-cycle/index.hpp"
+#include "../bonus-transition/index.hpp"
 #include "../upper-comeback-cycle/index.hpp"
 #include "../at-single-transition/index.hpp"
 #include "../normal-at-trigger/index.hpp"
@@ -86,6 +87,7 @@ void reset(State& state, uint64_t seed) {
     state.last_section_transition = {};
     state.at_window = {};
     state.bonus_cycle = {};
+    state.bonus_transition = {};
     state.upper_comeback_cycle = {};
     state.at_single_transition = {};
     state.normal_at_trigger = {};
@@ -465,6 +467,12 @@ bonus_cycle::Result applyBonusNetGain(State& state, int net_gain) {
             break;
     }
 
+    state.bonus_transition = bonus_transition::finalize(
+        state.machine,
+        state.pending,
+        state.bonus_cycle
+    );
+
     return state.bonus_cycle;
 }
 
@@ -678,6 +686,13 @@ uint32_t bonusCyclePacked(const State& state) {
         | (static_cast<uint32_t>(r.outcome) << 16);
 }
 
+uint32_t bonusTransitionPacked(const State& state) {
+    const auto& r = state.bonus_transition;
+    // 0..7 outcome / 8..15 return area
+    return static_cast<uint32_t>(r.outcome)
+        | (static_cast<uint32_t>(r.return_area) << 8);
+}
+
 uint32_t upperComebackPacked(const State& state) {
     const auto& current = state.machine.upper_comeback;
     const auto& last = state.upper_comeback_cycle;
@@ -693,7 +708,9 @@ uint32_t upperComebackPacked(const State& state) {
 
 uint32_t atSingleTransitionPacked(const State& state) {
     return (state.at_single_transition.applied ? 1u : 0u)
-        | (state.at_single_transition.special_started ? (1u << 1) : 0u);
+        | (state.at_single_transition.regular_bonus_started ? (1u << 1) : 0u)
+        | (state.at_single_transition.episode_bonus_started ? (1u << 2) : 0u)
+        | (state.at_single_transition.special_started ? (1u << 3) : 0u);
 }
 
 uint32_t normalATTriggerPacked(const State& state) {
