@@ -18,6 +18,7 @@ import {
   readSessionPhase,
   readSpecialResult,
   readSpecialZone,
+  readUpperComeback,
   SlotWasmV2,
 } from "../bridge/index.js";
 import {
@@ -42,6 +43,7 @@ import {
   SectionRewardSnapshot,
   SectionTransitionSnapshot,
   SpecialZoneSnapshot,
+  UpperComebackSnapshot,
 } from "../bridge/index.js";
 
 export interface SlotV2Snapshot {
@@ -64,6 +66,7 @@ export interface SlotV2Snapshot {
   sectionReward: SectionRewardSnapshot;
   sectionTransition: SectionTransitionSnapshot;
   specialZone: SpecialZoneSnapshot;
+  upperComeback: UpperComebackSnapshot;
 }
 
 // UIはこのsnapshotを描画するだけ。
@@ -91,5 +94,6 @@ export function readSlotV2Snapshot(
     sectionReward: readSectionReward(wasm),
     sectionTransition: readSectionTransition(wasm),
     specialZone: readSpecialZone(wasm),
+    upperComeback: readUpperComeback(wasm),
   };
 }
