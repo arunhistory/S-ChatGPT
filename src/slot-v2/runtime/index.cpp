@@ -333,13 +333,6 @@ uint32_t lever(State& state) {
         state.cz_cycle
     );
 
-    state.cz_reward = cz_reward::apply(
-        state.rng,
-        state.machine,
-        state.pending,
-        state.normal_mode
-    );
-
     const bool navigation_enabled =
         state.machine.area == machine_state::Area::AT
         && state.machine.at.active;
@@ -424,6 +417,15 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
                 state.pending,
                 state.at_resolution
             );
+
+        // CZ result is fixed at lever-on, but the reward transition begins
+        // only after the winning game's third reel has stopped.
+        state.cz_reward = cz_reward::apply(
+            state.rng,
+            state.machine,
+            state.pending,
+            state.normal_mode
+        );
 
         if (state.machine.area == machine_state::Area::Revival
             && state.revival_game.active) {
