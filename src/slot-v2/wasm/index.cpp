@@ -3,6 +3,8 @@
 #include "../reel-validator/index.hpp"
 #include "../reel-read/index.hpp"
 #include "../preflight/index.hpp"
+#include "../ceiling-catalog/index.hpp"
+#include "../normal-progress-view/index.hpp"
 
 namespace {
 slotv2::runtime::State g_runtime{};
@@ -185,6 +187,24 @@ uint32_t slot_v2_at_cycle() {
 __attribute__((visibility("default")))
 uint32_t slot_v2_pending_events() {
     return slotv2::runtime::pendingEvents(g_runtime);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_normal_progress() {
+    return slotv2::normal_progress_view::pack(
+        g_runtime.machine.normal_progress
+    );
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_ceiling_count() {
+    return static_cast<uint32_t>(slotv2::ceiling_catalog::kCount);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_ceiling_at(uint32_t index) {
+    if (index >= slotv2::ceiling_catalog::kCount) return 0xffffffffu;
+    return static_cast<uint32_t>(slotv2::ceiling_catalog::kValues[index]);
 }
 
 __attribute__((visibility("default")))
