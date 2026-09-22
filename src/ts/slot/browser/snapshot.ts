@@ -3,6 +3,7 @@ import {
   readATCycle,
   readATResolution,
   readATSnapshot,
+  readATSingleTransition,
   readATWindow,
   readBellNavigation,
   readBonusCycle,
@@ -31,6 +32,7 @@ import {
   ATCycleSnapshot,
   ATResolutionSnapshot,
   ATSnapshot,
+  ATSingleTransitionSnapshot,
   ATWindowSnapshot,
   BellNavigationSnapshot,
   BonusCycleSnapshot,
@@ -54,6 +56,7 @@ export interface SlotV2Snapshot {
   at: ATSnapshot;
   atCycle: ATCycleSnapshot;
   atResolution: ATResolutionSnapshot;
+  atSingleTransition: ATSingleTransitionSnapshot;
   atWindow: ATWindowSnapshot;
   bellNavigation: BellNavigationSnapshot;
   bonus: BonusSnapshot;
@@ -82,6 +85,7 @@ export function readSlotV2Snapshot(
     at: readATSnapshot(wasm),
     atCycle: readATCycle(wasm),
     atResolution: readATResolution(wasm),
+    atSingleTransition: readATSingleTransition(wasm),
     atWindow: readATWindow(wasm),
     bellNavigation: readBellNavigation(wasm),
     bonus: readBonusState(wasm),
