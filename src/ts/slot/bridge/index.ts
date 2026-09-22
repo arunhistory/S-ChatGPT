@@ -15,6 +15,7 @@ import {
   ReelPosition,
   RoleFlag,
   SessionPhase,
+  SectionRewardKind,
   SpecialHit,
   SpecialResult,
   StopResult,
@@ -53,6 +54,7 @@ export interface SlotWasmV2 {
   slot_v2_stock_count(): number;
   slot_v2_point_count(): bigint;
   slot_v2_pending_events(): number;
+  slot_v2_section_reward(): number;
   slot_v2_at_cycle(): number;
   slot_v2_at_resolution(): number;
   slot_v2_normal_mode(): number;
@@ -269,6 +271,16 @@ export interface PendingEventSnapshot {
   bellFiveAT: boolean;
   czThreeMissHit: boolean;
   nextHitAT: boolean;
+  atHit: boolean;
+  atFall: boolean;
+  atAddGames: boolean;
+  atSpecial: boolean;
+  atEpisode: boolean;
+  atUpperSpecial: boolean;
+  atMultiple: boolean;
+  sectionTierUp: boolean;
+  sectionSpecial: boolean;
+  sectionUpperSpecial: boolean;
 }
 
 export function readPendingEvents(
@@ -281,6 +293,16 @@ export function readPendingEvents(
     bellFiveAT: (bits & PendingEvent.BellFiveAT) !== 0,
     czThreeMissHit: (bits & PendingEvent.CZThreeMissHit) !== 0,
     nextHitAT: (bits & PendingEvent.NextHitAT) !== 0,
+    atHit: (bits & PendingEvent.ATHit) !== 0,
+    atFall: (bits & PendingEvent.ATFall) !== 0,
+    atAddGames: (bits & PendingEvent.ATAddGames) !== 0,
+    atSpecial: (bits & PendingEvent.ATSpecial) !== 0,
+    atEpisode: (bits & PendingEvent.ATEpisode) !== 0,
+    atUpperSpecial: (bits & PendingEvent.ATUpperSpecial) !== 0,
+    atMultiple: (bits & PendingEvent.ATMultiple) !== 0,
+    sectionTierUp: (bits & PendingEvent.SectionTierUp) !== 0,
+    sectionSpecial: (bits & PendingEvent.SectionSpecial) !== 0,
+    sectionUpperSpecial: (bits & PendingEvent.SectionUpperSpecial) !== 0,
   };
 }
 
@@ -389,4 +411,23 @@ export function readCeilingCatalog(wasm: SlotWasmV2): number[] {
   }
 
   return values;
+}
+
+
+export interface SectionRewardSnapshot {
+  cut: boolean;
+  preferenceLevel: number;
+  kind: SectionRewardKind;
+}
+
+export function readSectionReward(
+  wasm: SlotWasmV2,
+): SectionRewardSnapshot {
+  const packed = wasm.slot_v2_section_reward() >>> 0;
+
+  return {
+    cut: (packed & 1) !== 0,
+    preferenceLevel: (packed >>> 8) & 0xff,
+    kind: ((packed >>> 16) & 0xff) as SectionRewardKind,
+  };
 }
