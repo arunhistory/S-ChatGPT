@@ -3,10 +3,10 @@
 
 namespace slotv2::cz_cycle {
 
-Result playOne(Rng& rng, cz_state::State& state) {
+Result playOne(Rng& rng, cz_state::State& state, RoleFlag role) {
     if (!state.active || state.games_left == 0u) return {};
 
-    const bool hit = cz_lottery::drawBase(rng);
+    const bool hit = cz_lottery::draw(rng, role);
 
     if (hit) {
         cz_state::resolve(state);
