@@ -15,6 +15,7 @@
 #include "../progress-event/index.hpp"
 #include "../cz-cycle/index.hpp"
 #include "../cz-finalize/index.hpp"
+#include "../cz-reward/index.hpp"
 #include "../at-pending/index.hpp"
 #include "../section-flow/index.hpp"
 #include "../section-transition/index.hpp"
@@ -45,6 +46,7 @@ struct State {
     normal_mode::Mode normal_mode{normal_mode::Mode::NormalA};
     cz_cycle::Result cz_cycle{};
     cz_finalize::Result cz_finalize{};
+    cz_reward::Result cz_reward{};
     bool at_hit_stock_gained{false};
     section_flow::Result last_section_flow{};
     section_transition::Result last_section_transition{};
