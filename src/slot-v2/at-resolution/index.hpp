@@ -26,8 +26,10 @@ struct Result {
     uint8_t count{0};
 };
 
-// 優先順位は未確定なので勝手に決めない。
-// 0件/1件/複数件だけを分類し、複数成立はそのまま保留する。
+// The current AT lottery uses one disjoint shared box, so Multiple must not
+// occur in normal play. Keep the state only as an invariant/error guard for
+// malformed externally constructed Draw/Event values and backwards-compatible
+// snapshots.
 Result classify(const at_event::Result& raw);
 
 } // namespace slotv2::at_resolution
