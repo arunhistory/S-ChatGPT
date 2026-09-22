@@ -23,6 +23,7 @@
 #include "../special-zone-pending/index.hpp"
 #include "../upper-special-transition/index.hpp"
 #include "../normal-hit-entry/index.hpp"
+#include "../entry-gate-transition/index.hpp"
 #include "../revival-cycle/index.hpp"
 
 namespace slotv2::runtime {
@@ -104,6 +105,7 @@ void reset(State& state, uint64_t seed) {
     state.at_single_transition = {};
     state.normal_at_trigger = {};
     state.normal_hit_entry = {};
+    state.entry_gate_transition = {};
     state.revival_game = {};
     state.revival_finalize = {};
 }
@@ -208,10 +210,14 @@ uint32_t lever(State& state) {
     state.normal_at_trigger = {};
     state.special_zone_result = special_zone::HitResult::None;
     state.upper_special_step = {};
+    state.entry_gate_transition = {};
     state.revival_game = {};
     state.revival_finalize = {};
 
-    if (state.machine.area == machine_state::Area::Normal) {
+    const bool entry_wait_active = state.machine.entry_gate.active;
+
+    if (state.machine.area == machine_state::Area::Normal
+        && !entry_wait_active) {
         normal_state::onLever(state.machine.normal);
 
         state.upper_comeback_cycle =
@@ -235,17 +241,35 @@ uint32_t lever(State& state) {
         state.machine.area == machine_state::Area::Revival
         && state.machine.revival.active;
 
-    // 特殊直撃は通常時だけ。復活チャレンジは通常小役だけを同率で抽選する。
-    const bool allow_special =
-        state.machine.area == machine_state::Area::Normal
-        && !revival_game_active;
+    // During BONUS/AT start wait, the hit is already internally fixed.
+    // Normal/special lotteries pause; each wait game only draws the 1/2
+    // red-symbol reactivation flag.
+    LeverResult result{};
+    if (entry_wait_active) {
+        (void)entry_gate::beginGame(
+            state.machine.entry_gate,
+            state.rng
+        );
+        result.command_status = CommandStatus::Ok;
+        result.special = SpecialHit::None;
+        result.role = entry_gate::roleForArmed(
+            state.machine.entry_gate
+        );
+        result.main_lottery_ran = false;
+        result.entry_wait = true;
+    } else {
+        // 特殊直撃は通常時だけ。復活チャレンジは通常小役だけを同率で抽選する。
+        const bool allow_special =
+            state.machine.area == machine_state::Area::Normal
+            && !revival_game_active;
 
-    auto result = slotv2::lever::pull(
-        state.rng,
-        allow_special
-    );
+        result = slotv2::lever::pull(
+            state.rng,
+            allow_special
+        );
+    }
 
-    if (revival_game_active) {
+    if (revival_game_active && !result.entry_wait) {
         state.revival_game = revival_cycle::beginGame(
             state.rng,
             state.machine.revival,
@@ -259,13 +283,15 @@ uint32_t lever(State& state) {
     session::begin(state.session, result, special, freeze);
 
     const bool special_zone_game =
-        result.special == SpecialHit::None
+        !result.entry_wait
+        && result.special == SpecialHit::None
         && state.machine.area == machine_state::Area::AT
         && state.machine.at.active
         && state.machine.special_zone.active;
 
     const bool upper_special_game =
-        result.special == SpecialHit::None
+        !result.entry_wait
+        && result.special == SpecialHit::None
         && state.machine.area == machine_state::Area::AT
         && state.machine.at.active
         && state.machine.upper_special.active;
@@ -297,7 +323,10 @@ uint32_t lever(State& state) {
     // 特化中は通常ATのST残Gと内部抽選を進めない。
     // 特殊直撃が割り込み中のゲームでもAT内部結果は同時確定させない。
     state.at_cycle =
-        (result.special == SpecialHit::None && !special_zone_game && !upper_special_game)
+        (!result.entry_wait
+            && result.special == SpecialHit::None
+            && !special_zone_game
+            && !upper_special_game)
         ? at_cycle::beginGame(state.rng, state.machine)
         : at_cycle::Result{};
 
@@ -335,7 +364,8 @@ uint32_t lever(State& state) {
     }
 
     state.cz_cycle =
-        (result.special == SpecialHit::None
+        (!result.entry_wait
+            && result.special == SpecialHit::None
             && state.machine.area == machine_state::Area::CZ
             && state.machine.cz.active)
         ? cz_cycle::playOne(state.rng, state.machine.cz, result.role)
@@ -410,55 +440,65 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
             session::hadAssistGap(state.session)
         );
 
-        if (state.machine.area == machine_state::Area::Normal) {
-            (void)game_finalize::apply(
-                state.session.lever.role,
-                state.acquisition,
-                state.machine.normal_progress,
-                state.pending
-            );
-
-            state.normal_at_trigger =
-                normal_at_trigger::applyBellFive(
+        if (state.session.lever.entry_wait) {
+            state.entry_gate_transition =
+                entry_gate_transition::apply(
                     state.machine,
+                    state.session.position[0],
+                    state.session.position[1],
+                    state.session.position[2]
+                );
+        } else {
+            if (state.machine.area == machine_state::Area::Normal) {
+                (void)game_finalize::apply(
+                    state.session.lever.role,
+                    state.acquisition,
+                    state.machine.normal_progress,
                     state.pending
                 );
-        }
 
-        state.at_single_transition =
-            at_single_transition::apply(
-                state.machine,
-                state.pending,
-                state.at_resolution
-            );
+                state.normal_at_trigger =
+                    normal_at_trigger::applyBellFive(
+                        state.machine,
+                        state.pending
+                    );
+            }
 
-        // CZ result is fixed at lever-on, but the reward transition begins
-        // only after the winning game's third reel has stopped.
-        state.cz_reward = cz_reward::apply(
-            state.rng,
-            state.machine,
-            state.pending,
-            state.normal_mode
-        );
-
-        if (state.machine.area == machine_state::Area::Revival
-            && state.revival_game.active) {
-            state.revival_finalize =
-                revival_cycle::finalizeGame(
+            state.at_single_transition =
+                at_single_transition::apply(
                     state.machine,
-                    state.machine.revival,
-                    state.revival_game
+                    state.pending,
+                    state.at_resolution
                 );
-        }
 
-        // The 64th comeback game completes first; only after the reels stop
-        // do we re-enter Upper AT or proceed to the five-game revival.
-        if (state.upper_comeback_cycle.ended) {
-            (void)upper_comeback_transition::apply(
+            // CZ result is fixed at lever-on, but the reward transition begins
+            // only after the winning game's third reel has stopped.
+            state.cz_reward = cz_reward::apply(
+                state.rng,
                 state.machine,
                 state.pending,
-                state.upper_comeback_cycle
+                state.normal_mode
             );
+
+            if (state.machine.area == machine_state::Area::Revival
+                && state.revival_game.active) {
+                state.revival_finalize =
+                    revival_cycle::finalizeGame(
+                        state.machine,
+                        state.machine.revival,
+                        state.revival_game
+                    );
+            }
+
+            // The 64th comeback game completes first; only after the reels stop
+            // do we queue Upper AT or proceed to the five-game revival.
+            if (state.upper_comeback_cycle.ended) {
+                (void)upper_comeback_transition::apply(
+                    state.machine,
+                    state.pending,
+                    state.upper_comeback_cycle
+                );
+            }
         }
     }
 
