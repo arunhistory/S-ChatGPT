@@ -123,6 +123,29 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
         | (static_cast<uint32_t>(result.status) << 16);
 }
 
+bool recordCZResult(State& state, bool hit) {
+    return progress_event::onCZResolved(
+        state.machine.normal_progress,
+        state.pending,
+        hit
+    );
+}
+
+void recordNormalHit(State& state, bool was_at) {
+    progress_event::onNormalHitResolved(
+        state.machine.normal_progress,
+        state.pending,
+        was_at
+    );
+}
+
+bool consumeNextHitAT(State& state) {
+    return progress_event::consumeNextHitAT(
+        state.machine.normal_progress,
+        state.pending
+    );
+}
+
 uint32_t phase(const State& state) {
     return static_cast<uint32_t>(state.session.phase);
 }
