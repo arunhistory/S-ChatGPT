@@ -66,6 +66,7 @@ export interface SlotWasmV2 {
   slot_v2_bonus_cycle(): number;
   slot_v2_upper_comeback(): number;
   slot_v2_at_single_transition(): number;
+  slot_v2_normal_at_trigger(): number;
   slot_v2_at_window(): number;
   slot_v2_at_cycle(): number;
   slot_v2_at_resolution(): number;
@@ -618,5 +619,26 @@ export function readATSingleTransition(
   return {
     applied: (packed & 1) !== 0,
     specialStarted: (packed & (1 << 1)) !== 0,
+  };
+}
+
+
+export interface NormalATTriggerSnapshot {
+  started: boolean;
+  guaranteeConsumed: boolean;
+  fromBellFive: boolean;
+  fromNextHitGuarantee: boolean;
+}
+
+export function readNormalATTrigger(
+  wasm: SlotWasmV2,
+): NormalATTriggerSnapshot {
+  const packed = wasm.slot_v2_normal_at_trigger() >>> 0;
+
+  return {
+    started: (packed & 1) !== 0,
+    guaranteeConsumed: (packed & (1 << 1)) !== 0,
+    fromBellFive: (packed & (1 << 2)) !== 0,
+    fromNextHitGuarantee: (packed & (1 << 3)) !== 0,
   };
 }
