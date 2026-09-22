@@ -19,7 +19,7 @@ int main() {
         const auto r = slotv2::special_result::resolve(SpecialHit::MiddleATStock);
         ok = ok
             && r.target == slotv2::special_result::EntryTarget::MiddleAT
-            && r.stock == 1
+            && r.stock_profile == slotv2::stock_count_lottery::Profile::Middle
             && !r.freeze;
     }
 
@@ -27,7 +27,7 @@ int main() {
         const auto r = slotv2::special_result::resolve(SpecialHit::UpperAT);
         ok = ok
             && r.target == slotv2::special_result::EntryTarget::UpperAT
-            && r.stock == 0
+            && r.stock_profile == slotv2::stock_count_lottery::Profile::None
             && !r.freeze;
     }
 
@@ -35,7 +35,7 @@ int main() {
         const auto r = slotv2::special_result::resolve(SpecialHit::Freeze);
         ok = ok
             && r.target == slotv2::special_result::EntryTarget::UpperAT
-            && r.stock == 1
+            && r.stock_profile == slotv2::stock_count_lottery::Profile::Upper
             && r.freeze;
     }
 
