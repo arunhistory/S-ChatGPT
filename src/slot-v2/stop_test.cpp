@@ -3,6 +3,7 @@
 #include "reel-strip/index.hpp"
 #include "reel-validator/index.hpp"
 #include "stop-controller/index.hpp"
+#include "acquisition/index.hpp"
 
 namespace {
 
@@ -52,6 +53,8 @@ int main() {
     ok = checkRole(slotv2::RoleFlag::WeakChance, true) && ok;
     ok = checkRole(slotv2::RoleFlag::StrongChance, true) && ok;
     ok = checkRole(slotv2::RoleFlag::PenguinChance, true) && ok;
+    ok = checkRole(slotv2::RoleFlag::EntryAT, true) && ok;
+    ok = checkRole(slotv2::RoleFlag::EntryBonus, true) && ok;
 
     const uint32_t validator = slotv2::reel_validator::validateLeft();
     const uint32_t required =
@@ -61,6 +64,29 @@ int main() {
         slotv2::reel_validator::LeftBarLandmarkPair;
 
     ok = ok && ((validator & required) == required);
+
+    // Approved chance substitutes are zero-payout chance results, never a one-medal role.
+    {
+        const auto weak = slotv2::acquisition::judge(
+            slotv2::RoleFlag::WeakChance,
+            3u, 0u, 3u, // BELL / BELL / SNOW
+            false, false, false
+        );
+        ok = ok && weak.internal_role == slotv2::RoleFlag::WeakChance;
+        ok = ok && weak.medals == 0;
+        ok = ok && weak.status == slotv2::acquisition::Status::NoPayoutRole;
+    }
+
+    {
+        const auto strong = slotv2::acquisition::judge(
+            slotv2::RoleFlag::StrongChance,
+            12u, 3u, 3u, // WATERMELON / WATERMELON / SNOW
+            false, false, false
+        );
+        ok = ok && strong.internal_role == slotv2::RoleFlag::StrongChance;
+        ok = ok && strong.medals == 0;
+        ok = ok && strong.status == slotv2::acquisition::Status::NoPayoutRole;
+    }
 
     if (!ok) {
         std::cerr << "slot_v2_stop_test: FAILED validator=" << validator << "\n";
