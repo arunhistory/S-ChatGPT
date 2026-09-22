@@ -2,6 +2,10 @@ import {
   AcquisitionResult,
   AcquisitionStatus,
   ATTier,
+  NormalMode,
+  ATResolvedEvent,
+  ATResolutionStatus,
+  ATEventBit,
   CommandStatus,
   EntryTarget,
   LeverResult,
@@ -49,6 +53,9 @@ export interface SlotWasmV2 {
   slot_v2_stock_count(): number;
   slot_v2_point_count(): bigint;
   slot_v2_pending_events(): number;
+  slot_v2_at_cycle(): number;
+  slot_v2_at_resolution(): number;
+  slot_v2_normal_mode(): number;
   slot_v2_bell_navigation(): number;
   slot_v2_bell_navigation_next(): number;
   slot_v2_bell_navigation_correct(): number;
@@ -269,4 +276,54 @@ export function readPendingEvents(
     czThreeMissHit: (bits & PendingEvent.CZThreeMissHit) !== 0,
     nextHitAT: (bits & PendingEvent.NextHitAT) !== 0,
   };
+}
+
+
+export interface ATCycleSnapshot {
+  active: boolean;
+  rawBits: number;
+  hit: boolean;
+  fall: boolean;
+  addGames: boolean;
+  special: boolean;
+  episode: boolean;
+  upperSpecial: boolean;
+}
+
+export interface ATResolutionSnapshot {
+  status: ATResolutionStatus;
+  event: ATResolvedEvent;
+  count: number;
+}
+
+export function readATCycle(wasm: SlotWasmV2): ATCycleSnapshot {
+  const packed = wasm.slot_v2_at_cycle() >>> 0;
+  const bits = (packed >>> 8) & 0x3f;
+
+  return {
+    active: (packed & 1) !== 0,
+    rawBits: bits,
+    hit: (bits & ATEventBit.Hit) !== 0,
+    fall: (bits & ATEventBit.Fall) !== 0,
+    addGames: (bits & ATEventBit.AddGames) !== 0,
+    special: (bits & ATEventBit.Special) !== 0,
+    episode: (bits & ATEventBit.Episode) !== 0,
+    upperSpecial: (bits & ATEventBit.UpperSpecial) !== 0,
+  };
+}
+
+export function readATResolution(
+  wasm: SlotWasmV2,
+): ATResolutionSnapshot {
+  const packed = wasm.slot_v2_at_resolution() >>> 0;
+
+  return {
+    status: (packed & 0xff) as ATResolutionStatus,
+    event: ((packed >>> 8) & 0xff) as ATResolvedEvent,
+    count: (packed >>> 16) & 0xff,
+  };
+}
+
+export function readNormalMode(wasm: SlotWasmV2): NormalMode {
+  return wasm.slot_v2_normal_mode() as NormalMode;
 }
