@@ -6,6 +6,8 @@
 #include "../game-finalize/index.hpp"
 #include "../stock-lottery/index.hpp"
 #include "../at-pending/index.hpp"
+#include "../at-internal-transition/index.hpp"
+#include "../at-window-transition/index.hpp"
 #include "../section-flow/index.hpp"
 #include "../cz-finalize/index.hpp"
 #include "../cz-reward/index.hpp"
@@ -15,6 +17,7 @@
 #include "../bonus-cycle/index.hpp"
 #include "../bonus-transition/index.hpp"
 #include "../upper-comeback-cycle/index.hpp"
+#include "../upper-comeback-transition/index.hpp"
 #include "../at-single-transition/index.hpp"
 #include "../normal-at-trigger/index.hpp"
 #include "../special-zone-pending/index.hpp"
@@ -84,6 +87,8 @@ void reset(State& state, uint64_t seed) {
     pending_event::clear(state.pending);
     state.at_cycle = {};
     state.at_resolution = {};
+    state.at_internal_transition = {};
+    state.at_window_transition = {};
     state.normal_mode = normal_mode::drawBase(state.rng);
     state.cz_cycle = {};
     state.cz_finalize = {};
@@ -428,6 +433,16 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
                     state.machine.revival,
                     state.revival_game
                 );
+        }
+
+        // The 64th comeback game completes first; only after the reels stop
+        // do we re-enter Upper AT or proceed to the five-game revival.
+        if (state.upper_comeback_cycle.ended) {
+            (void)upper_comeback_transition::apply(
+                state.machine,
+                state.pending,
+                state.upper_comeback_cycle
+            );
         }
     }
 
