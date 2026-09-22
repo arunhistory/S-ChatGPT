@@ -72,6 +72,7 @@ add_library(slot_v2_core
   src/slot-v2/cz-state/index.cpp
   src/slot-v2/bonus-state/index.cpp
   src/slot-v2/bonus-cycle/index.cpp
+  src/slot-v2/bonus-transition/index.cpp
   src/slot-v2/bonus-entry-policy/index.cpp
   src/slot-v2/at-state/index.cpp
   src/slot-v2/at-lottery/index.cpp
@@ -253,3 +254,7 @@ target_link_libraries(slot_v2_normal_hit_entry_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_runtime_normal_hit_test src/slot-v2/runtime_normal_hit_test.cpp)
 target_link_libraries(slot_v2_runtime_normal_hit_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_bonus_transition_test src/slot-v2/bonus_transition_test.cpp)
+target_link_libraries(slot_v2_bonus_transition_test PRIVATE slot_v2_core)
