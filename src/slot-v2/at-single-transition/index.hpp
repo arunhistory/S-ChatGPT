@@ -7,12 +7,14 @@ namespace slotv2::at_single_transition {
 
 struct Result {
     bool applied{false};
+    bool regular_bonus_started{false};
+    bool episode_bonus_started{false};
     bool special_started{false};
 };
 
 // 優先順位不要な「単独成立」だけを処理する。
-// 現時点で確定処理できるのは 1/700 特化 → 通常特化5G開始。
-// Hit/Fall/AddGames/Episode/UpperSpecial は後続仕様が必要なのでpendingのまま。
+// Hit -> 通常BONUS50枚、Episode -> Episode80枚、Special -> 通常特化5G。
+// Fall/AddGames/UpperSpecial は後続仕様が必要なのでpendingのまま。
 Result apply(
     machine_state::State& machine,
     pending_event::State& pending,
