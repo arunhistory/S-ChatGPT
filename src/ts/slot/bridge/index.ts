@@ -13,6 +13,7 @@ import {
   BonusTransitionOutcome,
   CZFinalizeOutcome,
   EntryTarget,
+  EntryGateKind,
   LeverResult,
   MachineArea,
   PendingEvent,
@@ -75,6 +76,7 @@ export interface SlotWasmV2 {
   slot_v2_revival_state(): number;
   slot_v2_revival_game(): number;
   slot_v2_revival_finalize(): number;
+  slot_v2_entry_gate(): number;
   slot_v2_at_window(): number;
   slot_v2_at_cycle(): number;
   slot_v2_at_resolution(): number;
@@ -683,6 +685,25 @@ export function readSpecialZoneResult(
   return wasm.slot_v2_special_zone_result() as SpecialZoneHitResult;
 }
 
+
+export interface EntryGateSnapshot {
+  active: boolean;
+  armedThisGame: boolean;
+  kind: EntryGateKind;
+  target: number;
+  queuedStock: number;
+}
+
+export function readEntryGate(wasm: SlotWasmV2): EntryGateSnapshot {
+  const packed = wasm.slot_v2_entry_gate() >>> 0;
+  return {
+    active: (packed & 1) !== 0,
+    armedThisGame: (packed & (1 << 1)) !== 0,
+    kind: ((packed >>> 8) & 0xff) as EntryGateKind,
+    target: (packed >>> 16) & 0xff,
+    queuedStock: (packed >>> 24) & 0xff,
+  };
+}
 
 export interface RevivalSnapshot {
   active: boolean;
