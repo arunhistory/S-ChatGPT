@@ -208,6 +208,21 @@ uint32_t slot_v2_ceiling_at(uint32_t index) {
 }
 
 __attribute__((visibility("default")))
+uint32_t slot_v2_normal_actual_games() {
+    return slotv2::runtime::normalActualGames(g_runtime);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_normal_display_games() {
+    return slotv2::runtime::normalDisplayGames(g_runtime);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_cz_cycle() {
+    return slotv2::runtime::czCyclePacked(g_runtime);
+}
+
+__attribute__((visibility("default")))
 uint32_t slot_v2_last_special() {
     return slotv2::runtime::lastSpecial(g_runtime);
 }
