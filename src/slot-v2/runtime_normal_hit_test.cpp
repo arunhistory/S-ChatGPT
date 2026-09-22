@@ -4,7 +4,7 @@
 int main() {
     bool ok = true;
 
-    // NormalA/B resolved BONUS -> regular 50.
+    // NormalA/B hit is fixed, then waits for RED7/RED7/BAR.
     {
         slotv2::runtime::State state{};
         slotv2::runtime::reset(state, 0x1111ULL);
@@ -13,13 +13,15 @@ int main() {
         const auto r = slotv2::runtime::resolveNormalHitAsBonus(state);
 
         ok = ok && r.outcome == slotv2::normal_hit_entry::Outcome::Bonus;
-        ok = ok && state.machine.area == slotv2::machine_state::Area::Bonus;
-        ok = ok && state.machine.bonus.kind == slotv2::bonus_state::Kind::Regular;
-        ok = ok && state.machine.bonus.medals_left == 50;
+        ok = ok && state.machine.area == slotv2::machine_state::Area::Normal;
+        ok = ok && !state.machine.bonus.active;
+        ok = ok && state.machine.entry_gate.active;
+        ok = ok && state.machine.entry_gate.kind == slotv2::entry_gate::Kind::Bonus;
+        ok = ok && state.machine.entry_gate.bonus_kind == slotv2::bonus_state::Kind::Regular;
         ok = ok && state.machine.normal_progress.normal_hits_without_at == 1u;
     }
 
-    // Heaven/SuperHeaven resolved BONUS -> Episode 80.
+    // Heaven/SuperHeaven hit waits for episode-bonus alignment.
     {
         slotv2::runtime::State state{};
         slotv2::runtime::reset(state, 0x2222ULL);
@@ -28,11 +30,11 @@ int main() {
         const auto r = slotv2::runtime::resolveNormalHitAsBonus(state);
 
         ok = ok && r.outcome == slotv2::normal_hit_entry::Outcome::Bonus;
-        ok = ok && state.machine.bonus.kind == slotv2::bonus_state::Kind::Episode;
-        ok = ok && state.machine.bonus.medals_left == 80;
+        ok = ok && state.machine.entry_gate.active;
+        ok = ok && state.machine.entry_gate.bonus_kind == slotv2::bonus_state::Kind::Episode;
     }
 
-    // Next-hit AT guarantee converts a resolved BONUS hit into lower AT.
+    // Next-hit AT guarantee converts the hit into lower-AT entry wait.
     {
         slotv2::runtime::State state{};
         slotv2::runtime::reset(state, 0x3333ULL);
@@ -45,13 +47,14 @@ int main() {
         const auto r = slotv2::runtime::resolveNormalHitAsBonus(state);
 
         ok = ok && r.outcome == slotv2::normal_hit_entry::Outcome::LowerAT;
-        ok = ok && state.machine.area == slotv2::machine_state::Area::AT;
-        ok = ok && state.machine.at.tier == slotv2::at_state::Tier::Lower;
-        ok = ok && state.machine.at.games_left == 100;
+        ok = ok && state.machine.area == slotv2::machine_state::Area::Normal;
+        ok = ok && !state.machine.at.active;
+        ok = ok && state.machine.entry_gate.active;
+        ok = ok && state.machine.entry_gate.at_tier == slotv2::at_state::Tier::Lower;
         ok = ok && !state.machine.normal_progress.next_hit_at_guaranteed;
     }
 
-    // A base AT hit enters lower AT and consumes any already-waiting guarantee.
+    // Base AT hit also waits for RED777 and consumes a waiting guarantee.
     {
         slotv2::runtime::State state{};
         slotv2::runtime::reset(state, 0x4444ULL);
@@ -64,7 +67,8 @@ int main() {
         const auto r = slotv2::runtime::resolveNormalHitAsAT(state);
 
         ok = ok && r.outcome == slotv2::normal_hit_entry::Outcome::LowerAT;
-        ok = ok && state.machine.area == slotv2::machine_state::Area::AT;
+        ok = ok && state.machine.area == slotv2::machine_state::Area::Normal;
+        ok = ok && state.machine.entry_gate.active;
         ok = ok && !state.machine.normal_progress.next_hit_at_guaranteed;
         ok = ok && !slotv2::pending_event::has(
             state.pending,
@@ -83,6 +87,7 @@ int main() {
         ok = ok && r.outcome
             == slotv2::normal_hit_entry::Outcome::UnresolvedSpecialMode;
         ok = ok && state.machine.area == slotv2::machine_state::Area::Normal;
+        ok = ok && !state.machine.entry_gate.active;
     }
 
     if (!ok) {
