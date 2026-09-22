@@ -35,6 +35,7 @@ const REQUIRED_EXPORTS = [
   "slot_v2_ceiling_at",
   "slot_v2_ceiling_count",
   "slot_v2_cz_cycle",
+  "slot_v2_cz_finalize",
   "slot_v2_normal_progress",
   "slot_v2_normal_display_games",
   "slot_v2_normal_actual_games",
