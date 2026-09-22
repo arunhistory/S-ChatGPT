@@ -11,6 +11,7 @@
 #include "../cz-reward/index.hpp"
 #include "../section-transition/index.hpp"
 #include "../at-window/index.hpp"
+#include "../at-stock-restart/index.hpp"
 #include "../bonus-cycle/index.hpp"
 #include "../bonus-transition/index.hpp"
 #include "../upper-comeback-cycle/index.hpp"
@@ -91,6 +92,7 @@ void reset(State& state, uint64_t seed) {
     state.last_section_flow = {};
     state.last_section_transition = {};
     state.at_window = {};
+    state.at_stock_restart = {};
     state.bonus_cycle = {};
     state.bonus_transition = {};
     state.upper_comeback_cycle = {};
@@ -102,6 +104,12 @@ void reset(State& state, uint64_t seed) {
 }
 
 uint32_t lever(State& state) {
+    state.at_stock_restart = at_stock_restart::apply(
+        state.rng,
+        state.machine,
+        state.pending
+    );
+
     // Internal pending trigger is resolved before lever gating so the next
     // lever enters the upper-special loop rather than stalling the machine.
     (void)upper_special_transition::apply(
