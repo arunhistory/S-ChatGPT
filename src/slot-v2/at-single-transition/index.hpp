@@ -13,7 +13,7 @@ struct Result {
 };
 
 // 優先順位不要な「単独成立」だけを処理する。
-// Hit -> 通常BONUS50枚、Episode -> Episode80枚、Special -> 通常特化5G。
+// Hit/Episode -> 1G AT omen first. Special -> regular special zone 5G.
 // Fall/AddGames are handled by at-internal-transition.
 // UpperSpecial is handled by upper-special-transition.
 // This module owns only Hit/Episode/Special single-event entry routing.
