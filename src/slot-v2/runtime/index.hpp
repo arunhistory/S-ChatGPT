@@ -30,6 +30,7 @@
 #include "../at-single-transition/index.hpp"
 #include "../normal-at-trigger/index.hpp"
 #include "../special-zone-pending/index.hpp"
+#include "../special-zone-transition/index.hpp"
 #include "../upper-special-transition/index.hpp"
 #include "../normal-hit-entry/index.hpp"
 #include "../entry-gate-transition/index.hpp"
@@ -66,6 +67,7 @@ struct State {
     at_single_transition::Result at_single_transition{};
     normal_at_trigger::Result normal_at_trigger{};
     special_zone::HitResult special_zone_result{special_zone::HitResult::None};
+    special_zone_transition::Result special_zone_transition{};
     upper_special::Step upper_special_step{};
     normal_hit_entry::Result normal_hit_entry{};
     entry_gate_transition::Result entry_gate_transition{};
