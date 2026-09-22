@@ -31,6 +31,20 @@ uint32_t lever(State& state) {
     const auto freeze = slotv2::freeze::begin(result.special);
 
     session::begin(state.session, result, special, freeze);
+
+    const bool navigation_enabled =
+        state.machine.area == machine_state::Area::AT
+        && state.machine.at.active;
+
+    session::setBellNavigation(
+        state.session,
+        bell_navigation::make(
+            state.rng,
+            result.role,
+            navigation_enabled
+        )
+    );
+
     state.acquisition = {};
     state.special_committed = false;
     state.last_special_apply = {};
@@ -180,6 +194,29 @@ int32_t atGamesLeft(const State& state) {
 
 uint32_t specialCommitted(const State& state) {
     return state.special_committed ? 1u : 0u;
+}
+
+uint32_t bellNavigationPacked(const State& state) {
+    const auto& plan = state.session.bell_navigation;
+    if (!plan.active) return 0u;
+
+    // bit0 active / bits8..15 order index
+    return 1u | (static_cast<uint32_t>(plan.order_index) << 8);
+}
+
+uint32_t bellNavigationNext(const State& state) {
+    const auto& plan = state.session.bell_navigation;
+    if (!plan.active || !state.session.navigation_correct) return 0xffffffffu;
+    if (state.session.stop_count >= 3u) return 0xffffffffu;
+
+    return static_cast<uint32_t>(
+        plan.order.reel[state.session.stop_count]
+    );
+}
+
+uint32_t bellNavigationCorrect(const State& state) {
+    if (!state.session.bell_navigation.active) return 0u;
+    return state.session.navigation_correct ? 1u : 0u;
 }
 
 } // namespace slotv2::runtime
