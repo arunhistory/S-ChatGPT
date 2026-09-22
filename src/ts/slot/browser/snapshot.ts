@@ -8,6 +8,7 @@ import {
   readBellNavigation,
   readBonusCycle,
   readBonusState,
+  readBonusTransition,
   readCZCycle,
   readCZFinalize,
   readMachineSnapshot,
@@ -38,6 +39,7 @@ import {
   BellNavigationSnapshot,
   BonusCycleSnapshot,
   BonusSnapshot,
+  BonusTransitionSnapshot,
   CZCycleSnapshot,
   CZFinalizeSnapshot,
   MachineSnapshot,
@@ -63,6 +65,7 @@ export interface SlotV2Snapshot {
   bellNavigation: BellNavigationSnapshot;
   bonus: BonusSnapshot;
   bonusCycle: BonusCycleSnapshot;
+  bonusTransition: BonusTransitionSnapshot;
   normalMode: NormalMode;
   normal: NormalProgressSnapshot;
   normalATTrigger: NormalATTriggerSnapshot;
@@ -93,6 +96,7 @@ export function readSlotV2Snapshot(
     bellNavigation: readBellNavigation(wasm),
     bonus: readBonusState(wasm),
     bonusCycle: readBonusCycle(wasm),
+    bonusTransition: readBonusTransition(wasm),
     normalMode: readNormalMode(wasm),
     normal: readNormalProgress(wasm),
     normalATTrigger: readNormalATTrigger(wasm),
