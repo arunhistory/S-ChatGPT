@@ -34,7 +34,6 @@ uint16_t ceilingFor(
         case normal_mode::Mode::SuperHeaven:
             return kSuperHeaven[p];
         case normal_mode::Mode::Special:
-            // Special ceiling is chosen separately at entry.
             return 0u;
     }
     return 0u;
@@ -49,6 +48,7 @@ void rerollBase(
     state.pattern = static_cast<uint8_t>(rng.uniformBelow(10u));
     state.ceiling = ceilingFor(mode, state.pattern);
     state.special_window_checked = false;
+    state.ceiling_consumed = false;
 }
 
 bool checkSpecialWindow(
@@ -72,6 +72,7 @@ bool checkSpecialWindow(
 
     const auto special = special_ceiling::draw(rng);
     state.ceiling = static_cast<uint16_t>(special.ceiling);
+    state.ceiling_consumed = false;
     return true;
 }
 
@@ -79,8 +80,13 @@ bool reached(
     const State& state,
     uint32_t display_games
 ) {
-    return state.ceiling > 0u
+    return !state.ceiling_consumed
+        && state.ceiling > 0u
         && display_games >= state.ceiling;
+}
+
+void consumeCeiling(State& state) {
+    state.ceiling_consumed = true;
 }
 
 } // namespace slotv2::normal_route
