@@ -8,6 +8,7 @@
 #include "../bonus-state/index.hpp"
 #include "../cz-state/index.hpp"
 #include "../special-zone/index.hpp"
+#include "../upper-special/index.hpp"
 #include "../upper-comeback/index.hpp"
 #include "../revival-state/index.hpp"
 
@@ -33,6 +34,7 @@ struct State {
     bool bonus_return_valid{false};
     cz_state::State cz{};
     special_zone::State special_zone{};
+    upper_special::State upper_special{};
     upper_comeback::State upper_comeback{};
     revival_state::State revival{};
 };
