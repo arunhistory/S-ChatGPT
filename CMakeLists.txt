@@ -85,6 +85,7 @@ add_library(slot_v2_core
   src/slot-v2/at-event/index.cpp
   src/slot-v2/special-zone/index.cpp
   src/slot-v2/upper-comeback/index.cpp
+  src/slot-v2/upper-comeback-cycle/index.cpp
   src/slot-v2/bonus-upgrade/index.cpp
   src/slot-v2/stock-lottery/index.cpp
   src/slot-v2/stock-count-lottery/index.cpp
@@ -211,3 +212,7 @@ target_link_libraries(slot_v2_runtime_gate_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_bonus_cycle_test src/slot-v2/bonus_cycle_test.cpp)
 target_link_libraries(slot_v2_bonus_cycle_test PRIVATE slot_v2_core)
+
+
+add_executable(slot_v2_upper_comeback_cycle_test src/slot-v2/upper_comeback_cycle_test.cpp)
+target_link_libraries(slot_v2_upper_comeback_cycle_test PRIVATE slot_v2_core)
