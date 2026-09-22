@@ -21,6 +21,7 @@
 #include "../at-single-transition/index.hpp"
 #include "../normal-at-trigger/index.hpp"
 #include "../special-zone-pending/index.hpp"
+#include "../special-zone-transition/index.hpp"
 #include "../upper-special-transition/index.hpp"
 #include "../normal-hit-entry/index.hpp"
 #include "../entry-gate-transition/index.hpp"
@@ -220,6 +221,7 @@ uint32_t lever(State& state) {
     state.at_single_transition = {};
     state.normal_at_trigger = {};
     state.special_zone_result = special_zone::HitResult::None;
+    state.special_zone_transition = {};
     state.upper_special_step = {};
     state.entry_gate_transition = {};
     state.revival_game = {};
@@ -460,6 +462,12 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
                     state.session.position[2]
                 );
         } else {
+            state.special_zone_transition =
+                special_zone_transition::apply(
+                    state.machine,
+                    state.pending
+                );
+
             if (state.machine.area == machine_state::Area::Normal) {
                 (void)game_finalize::apply(
                     state.session.lever.role,
