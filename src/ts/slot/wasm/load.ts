@@ -42,6 +42,7 @@ const REQUIRED_EXPORTS = [
   "slot_v2_at_single_transition",
   "slot_v2_normal_at_trigger",
   "slot_v2_revival_finalize",
+  "slot_v2_entry_gate",
   "slot_v2_revival_game",
   "slot_v2_revival_state",
   "slot_v2_bonus_state",
