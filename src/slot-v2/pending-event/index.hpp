@@ -22,7 +22,8 @@ enum Bits : uint32_t {
     SectionUpperSpec = 1u << 12,
 
     CZHit            = 1u << 13,
-    ATWindowEmpty    = 1u << 14
+    ATWindowEmpty    = 1u << 14,
+    ATStockAvailable = 1u << 15
 };
 
 struct State {
