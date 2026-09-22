@@ -90,6 +90,12 @@ add_library(slot_v2_core
   src/slot-v2/normal-ceiling-transition/index.cpp
   src/slot-v2/normal-cycle-reset/index.cpp
   src/slot-v2/normal-role-trigger/index.cpp
+  src/slot-v2/setting-profile/index.cpp
+  src/slot-v2/normal-shortening/index.cpp
+  src/slot-v2/normal-high/index.cpp
+  src/slot-v2/normal-raw-lottery/index.cpp
+  src/slot-v2/normal-flow/index.cpp
+  src/slot-v2/normal-flow-transition/index.cpp
   src/slot-v2/at-resolution/index.cpp
   src/slot-v2/at-single-transition/index.cpp
   src/slot-v2/section-flow/index.cpp
