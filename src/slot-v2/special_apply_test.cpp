@@ -16,12 +16,15 @@ int main() {
         );
         const auto r = slotv2::special_apply::apply(rng, machine, special);
 
-        ok = ok && r.applied && r.at_started;
-        ok = ok && machine.area == slotv2::machine_state::Area::AT;
-        ok = ok && machine.at.tier == slotv2::at_state::Tier::Middle;
-        ok = ok && machine.at.games_left == 100;
-        ok = ok && machine.stock.count >= 1 && machine.stock.count <= 5;
-        ok = ok && r.stock_added == machine.stock.count;
+        ok = ok && r.applied && !r.at_started;
+        ok = ok && machine.area == slotv2::machine_state::Area::Normal;
+        ok = ok && !machine.at.active;
+        ok = ok && machine.entry_gate.active;
+        ok = ok && machine.entry_gate.at_tier == slotv2::at_state::Tier::Middle;
+        ok = ok && machine.entry_gate.stock_to_add >= 1u
+            && machine.entry_gate.stock_to_add <= 5u;
+        ok = ok && machine.stock.count == 0u;
+        ok = ok && r.stock_added == machine.entry_gate.stock_to_add;
     }
 
     {
@@ -31,10 +34,12 @@ int main() {
         const auto special = slotv2::special_result::resolve(
             slotv2::SpecialHit::UpperAT
         );
-        (void)slotv2::special_apply::apply(rng, machine, special);
+        const auto r = slotv2::special_apply::apply(rng, machine, special);
 
-        ok = ok && machine.at.tier == slotv2::at_state::Tier::Upper;
-        ok = ok && machine.stock.count == 0;
+        ok = ok && r.applied && !r.at_started;
+        ok = ok && machine.entry_gate.active;
+        ok = ok && machine.entry_gate.at_tier == slotv2::at_state::Tier::Upper;
+        ok = ok && machine.stock.count == 0u;
     }
 
     {
@@ -47,6 +52,8 @@ int main() {
         const auto r = slotv2::special_apply::apply(rng, machine, special);
 
         ok = ok && r.freeze;
+        ok = ok && r.at_started;
+        ok = ok && machine.at.active;
         ok = ok && machine.at.tier == slotv2::at_state::Tier::Upper;
         ok = ok && machine.stock.count >= 1 && machine.stock.count <= 5;
         ok = ok && r.stock_added == machine.stock.count;
