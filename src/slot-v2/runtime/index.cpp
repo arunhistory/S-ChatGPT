@@ -13,6 +13,7 @@
 #include "../bonus-cycle/index.hpp"
 #include "../upper-comeback-cycle/index.hpp"
 #include "../at-single-transition/index.hpp"
+#include "../normal-at-trigger/index.hpp"
 
 namespace slotv2::runtime {
 namespace {
@@ -86,6 +87,7 @@ void reset(State& state, uint64_t seed) {
     state.bonus_cycle = {};
     state.upper_comeback_cycle = {};
     state.at_single_transition = {};
+    state.normal_at_trigger = {};
 }
 
 uint32_t lever(State& state) {
@@ -284,6 +286,12 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
             state.pending
         );
 
+        state.normal_at_trigger =
+            normal_at_trigger::applyBellFive(
+                state.machine,
+                state.pending
+            );
+
         state.at_single_transition =
             at_single_transition::apply(
                 state.machine,
@@ -306,10 +314,20 @@ bool recordCZResult(State& state, bool hit) {
 }
 
 void recordNormalHit(State& state, bool was_at) {
+    state.normal_at_trigger =
+        normal_at_trigger::applyNextHitGuarantee(
+            state.machine,
+            state.pending,
+            was_at
+        );
+
+    const bool effective_was_at =
+        was_at || state.normal_at_trigger.started;
+
     progress_event::onNormalHitResolved(
         state.machine.normal_progress,
         state.pending,
-        was_at
+        effective_was_at
     );
 }
 
@@ -603,6 +621,14 @@ uint32_t upperComebackPacked(const State& state) {
 uint32_t atSingleTransitionPacked(const State& state) {
     return (state.at_single_transition.applied ? 1u : 0u)
         | (state.at_single_transition.special_started ? (1u << 1) : 0u);
+}
+
+uint32_t normalATTriggerPacked(const State& state) {
+    const auto& r = state.normal_at_trigger;
+    return (r.started ? 1u : 0u)
+        | (r.guarantee_consumed ? (1u << 1) : 0u)
+        | (r.from_bell_five ? (1u << 2) : 0u)
+        | (r.from_next_hit_guarantee ? (1u << 3) : 0u);
 }
 
 } // namespace slotv2::runtime
