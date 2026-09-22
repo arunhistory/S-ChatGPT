@@ -974,4 +974,20 @@ uint32_t revivalFinalizePacked(const State& state) {
         | (r.stock_added ? (1u << 16) : 0u);
 }
 
+uint32_t entryGatePacked(const State& state) {
+    const auto& g = state.machine.entry_gate;
+    // bit0 active / bit1 armed-this-game / 8..15 kind
+    // 16..23 AT tier or BONUS kind / 24..31 queued stock count
+    const uint32_t target =
+        g.kind == entry_gate::Kind::AT
+            ? static_cast<uint32_t>(g.at_tier)
+            : static_cast<uint32_t>(g.bonus_kind);
+
+    return (g.active ? 1u : 0u)
+        | (g.armed_this_game ? (1u << 1) : 0u)
+        | (static_cast<uint32_t>(g.kind) << 8)
+        | (target << 16)
+        | ((g.stock_to_add & 0xffu) << 24);
+}
+
 } // namespace slotv2::runtime
