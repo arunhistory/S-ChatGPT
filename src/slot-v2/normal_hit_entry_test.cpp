@@ -45,10 +45,12 @@ int main() {
             slotv2::normal_mode::Mode::Special
         );
 
-        ok = ok && r.outcome
-            == slotv2::normal_hit_entry::Outcome::UnresolvedSpecialMode;
+        ok = ok && r.outcome == slotv2::normal_hit_entry::Outcome::Bonus;
         ok = ok && machine.area == slotv2::machine_state::Area::Normal;
-        ok = ok && !machine.entry_gate.active;
+        ok = ok && !machine.bonus.active;
+        ok = ok && machine.entry_gate.active;
+        ok = ok && machine.entry_gate.kind == slotv2::entry_gate::Kind::Bonus;
+        ok = ok && machine.entry_gate.bonus_kind == slotv2::bonus_state::Kind::Regular;
     }
 
     {
