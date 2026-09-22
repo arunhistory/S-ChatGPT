@@ -19,6 +19,7 @@ import {
   ReelId,
   ReelPosition,
   RoleFlag,
+  RevivalOutcome,
   SessionPhase,
   SectionRewardKind,
   SpecialHit,
@@ -71,6 +72,9 @@ export interface SlotWasmV2 {
   slot_v2_upper_comeback(): number;
   slot_v2_at_single_transition(): number;
   slot_v2_normal_at_trigger(): number;
+  slot_v2_revival_state(): number;
+  slot_v2_revival_game(): number;
+  slot_v2_revival_finalize(): number;
   slot_v2_at_window(): number;
   slot_v2_at_cycle(): number;
   slot_v2_at_resolution(): number;
@@ -677,4 +681,61 @@ export function readSpecialZoneResult(
   wasm: SlotWasmV2,
 ): SpecialZoneHitResult {
   return wasm.slot_v2_special_zone_result() as SpecialZoneHitResult;
+}
+
+
+export interface RevivalSnapshot {
+  active: boolean;
+  kickedNormalHit: boolean;
+  gamesLeft: number;
+  reviveTier: ATTier;
+}
+
+export interface RevivalGameSnapshot {
+  active: boolean;
+  revivalHit: boolean;
+  role: RoleFlag;
+  gamesBefore: number;
+  gamesAfter: number;
+}
+
+export interface RevivalFinalizeSnapshot {
+  outcome: RevivalOutcome;
+  tier: ATTier;
+  stockAdded: boolean;
+}
+
+export function readRevivalState(wasm: SlotWasmV2): RevivalSnapshot {
+  const packed = wasm.slot_v2_revival_state() >>> 0;
+
+  return {
+    active: (packed & 1) !== 0,
+    kickedNormalHit: (packed & (1 << 1)) !== 0,
+    gamesLeft: (packed >>> 8) & 0xff,
+    reviveTier: ((packed >>> 16) & 0xff) as ATTier,
+  };
+}
+
+export function readRevivalGame(wasm: SlotWasmV2): RevivalGameSnapshot {
+  const packed = wasm.slot_v2_revival_game() >>> 0;
+
+  return {
+    active: (packed & 1) !== 0,
+    revivalHit: (packed & (1 << 1)) !== 0,
+    role: ((packed >>> 8) & 0xff) as RoleFlag,
+    gamesBefore: (packed >>> 16) & 0xff,
+    gamesAfter: (packed >>> 24) & 0xff,
+  };
+}
+
+export function readRevivalFinalize(
+  wasm: SlotWasmV2,
+): RevivalFinalizeSnapshot {
+  const packed = wasm.slot_v2_revival_finalize() >>> 0;
+
+  return {
+    outcome: (packed & 0xff) as RevivalOutcome,
+    tier: ((packed >>> 8) & 0xff) as ATTier,
+    stockAdded: ((packed >>> 16) & 1) !== 0,
+  };
 }
