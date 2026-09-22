@@ -11,12 +11,12 @@ StopPolicy stopPolicy(RoleFlag role) {
 
         case RoleFlag::WeakCherry:
         case RoleFlag::StrongCherry:
+        case RoleFlag::PenguinChance:
             return StopPolicy::EyeStop;
 
         case RoleFlag::Watermelon:
         case RoleFlag::WeakChance:
         case RoleFlag::StrongChance:
-        case RoleFlag::PenguinChance:
             return StopPolicy::SubstituteCapable;
 
         case RoleFlag::None:
