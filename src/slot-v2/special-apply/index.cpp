@@ -1,16 +1,25 @@
 #include "index.hpp"
+#include "../stock-count-lottery/index.hpp"
 
 namespace slotv2::special_apply {
 
-Result apply(machine_state::State& machine, const special_result::Result& special) {
+Result apply(
+    Rng& rng,
+    machine_state::State& machine,
+    const special_result::Result& special
+) {
     Result out{};
     out.freeze = special.freeze;
 
     if (special.hit == SpecialHit::None) return out;
 
-    if (special.stock > 0u) {
-        stock::add(machine.stock, special.stock);
-        out.stock_added = special.stock;
+    if (special.stock_profile != stock_count_lottery::Profile::None) {
+        const uint8_t stock_count = stock_count_lottery::draw(
+            rng,
+            special.stock_profile
+        );
+        stock::add(machine.stock, stock_count);
+        out.stock_added = stock_count;
     }
 
     switch (special.target) {
