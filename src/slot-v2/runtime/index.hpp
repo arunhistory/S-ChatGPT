@@ -14,6 +14,7 @@
 #include "../normal-mode/index.hpp"
 #include "../progress-event/index.hpp"
 #include "../cz-cycle/index.hpp"
+#include "../cz-finalize/index.hpp"
 #include "../at-pending/index.hpp"
 #include "../section-flow/index.hpp"
 
@@ -33,6 +34,7 @@ struct State {
     at_resolution::Result at_resolution{};
     normal_mode::Mode normal_mode{normal_mode::Mode::NormalA};
     cz_cycle::Result cz_cycle{};
+    cz_finalize::Result cz_finalize{};
     bool at_hit_stock_gained{false};
     section_flow::Result last_section_flow{};
 };
@@ -80,6 +82,7 @@ uint32_t normalMode(const State& state);
 uint32_t normalActualGames(const State& state);
 uint32_t normalDisplayGames(const State& state);
 uint32_t czCyclePacked(const State& state);
+uint32_t czFinalizePacked(const State& state);
 uint32_t sectionRewardPacked(const State& state);
 
 } // namespace slotv2::runtime
