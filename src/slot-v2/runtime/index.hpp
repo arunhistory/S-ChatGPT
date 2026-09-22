@@ -46,5 +46,8 @@ uint32_t atActive(const State& state);
 uint32_t atTier(const State& state);
 int32_t atGamesLeft(const State& state);
 uint32_t specialCommitted(const State& state);
+uint32_t bellNavigationPacked(const State& state);
+uint32_t bellNavigationNext(const State& state);
+uint32_t bellNavigationCorrect(const State& state);
 
 } // namespace slotv2::runtime
