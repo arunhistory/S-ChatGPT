@@ -4,11 +4,14 @@
 
 namespace slotv2::lever {
 
-LeverResult pull(Rng& rng) {
+LeverResult pull(Rng& rng, bool allow_special) {
     LeverResult result{};
     result.command_status = CommandStatus::Ok;
 
-    const SpecialHit special = special_lottery::draw(rng.next27());
+    const SpecialHit special = allow_special
+        ? special_lottery::draw(rng.next27())
+        : SpecialHit::None;
+
     if (special != SpecialHit::None) {
         result.special = special;
         result.role = RoleFlag::None;
