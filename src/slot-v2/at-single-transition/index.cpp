@@ -18,11 +18,8 @@ Result apply(
 
     switch (resolution.event) {
         case at_resolution::Event::Hit:
-            entry_gate::queueBonus(
-                machine.entry_gate,
-                bonus_state::Kind::Regular,
-                true
-            );
+            if (machine.at_omen.active) return {};
+            at_omen::start(machine.at_omen, false);
             (void)pending_event::consume(
                 pending,
                 pending_event::ATHit
@@ -30,11 +27,8 @@ Result apply(
             return {true, true, false, false};
 
         case at_resolution::Event::Episode:
-            entry_gate::queueBonus(
-                machine.entry_gate,
-                bonus_state::Kind::Episode,
-                true
-            );
+            if (machine.at_omen.active) return {};
+            at_omen::start(machine.at_omen, true);
             (void)pending_event::consume(
                 pending,
                 pending_event::ATEpisode
