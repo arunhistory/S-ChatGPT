@@ -27,6 +27,8 @@ struct State {
     normal_progress::State normal_progress{};
     at_state::State at{};
     bonus_state::State bonus{};
+    Area bonus_return_area{Area::Normal};
+    bool bonus_return_valid{false};
     cz_state::State cz{};
     special_zone::State special_zone{};
     upper_comeback::State upper_comeback{};
