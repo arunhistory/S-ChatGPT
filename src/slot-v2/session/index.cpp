@@ -32,9 +32,10 @@ bool begin(
         state.stop_status[i] = stop_shared::ResolveStatus::NoLegalCandidate;
     }
 
-    state.phase = lever.special == SpecialHit::None
-        ? Phase::Stopping
-        : Phase::SpecialPending;
+    state.phase =
+        (lever.special == SpecialHit::None || lever.special == SpecialHit::Freeze)
+            ? Phase::Stopping
+            : Phase::SpecialPending;
     return true;
 }
 
