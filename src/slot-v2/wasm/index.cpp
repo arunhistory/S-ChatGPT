@@ -223,6 +223,11 @@ uint32_t slot_v2_cz_cycle() {
 }
 
 __attribute__((visibility("default")))
+uint32_t slot_v2_section_reward() {
+    return slotv2::runtime::sectionRewardPacked(g_runtime);
+}
+
+__attribute__((visibility("default")))
 uint32_t slot_v2_last_special() {
     return slotv2::runtime::lastSpecial(g_runtime);
 }
