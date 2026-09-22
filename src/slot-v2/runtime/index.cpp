@@ -28,6 +28,7 @@
 #include "../normal-ceiling/index.hpp"
 #include "../normal-ceiling-transition/index.hpp"
 #include "../normal-cycle-reset/index.hpp"
+#include "../normal-role-trigger/index.hpp"
 #include "../entry-gate-transition/index.hpp"
 #include "../revival-cycle/index.hpp"
 
@@ -103,6 +104,8 @@ void reset(State& state, uint64_t seed) {
     state.normal_ceiling_reward = normal_ceiling::Reward::None;
     state.normal_ceiling_transition = {};
     state.ceiling_freeze_pending = false;
+    state.normal_role_draw = normal_role_trigger::DrawResult::None;
+    state.normal_role_apply = {};
     state.cz_cycle = {};
     state.cz_finalize = {};
     state.cz_reward = {};
@@ -233,6 +236,8 @@ uint32_t lever(State& state) {
     state.normal_at_trigger = {};
     state.normal_ceiling_reward = normal_ceiling::Reward::None;
     state.normal_ceiling_transition = {};
+    state.normal_role_draw = normal_role_trigger::DrawResult::None;
+    state.normal_role_apply = {};
     state.special_zone_result = special_zone::HitResult::None;
     state.special_zone_transition = {};
     state.upper_special_step = {};
@@ -310,6 +315,14 @@ uint32_t lever(State& state) {
             state.rng,
             allow_special
         );
+
+        if (result.special == SpecialHit::None
+            && state.machine.area == machine_state::Area::Normal) {
+            state.normal_role_draw = normal_role_trigger::draw(
+                state.rng,
+                result.role
+            );
+        }
 
         // Ceiling result is also fixed at lever-on, but it is applied only
         // after the third stop so acquired-role triggers can keep priority.
@@ -582,6 +595,18 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
                         state.machine,
                         state.pending
                     );
+
+                if (!state.machine.entry_gate.active
+                    && state.normal_role_draw
+                        != normal_role_trigger::DrawResult::None) {
+                    state.normal_role_apply =
+                        normal_role_trigger::apply(
+                            state.machine,
+                            state.pending,
+                            state.normal_mode,
+                            state.normal_role_draw
+                        );
+                }
 
                 if (state.normal_ceiling_reward != normal_ceiling::Reward::None) {
                     // Five-bell or another already-queued entry wins this game.
