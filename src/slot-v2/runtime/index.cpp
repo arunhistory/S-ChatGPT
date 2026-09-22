@@ -111,32 +111,42 @@ void reset(State& state, uint64_t seed) {
 }
 
 uint32_t lever(State& state) {
-    state.at_internal_transition = at_internal_transition::apply(
-        state.rng,
-        state.machine,
-        state.pending
-    );
+    // A fixed BONUS/AT entitlement waiting for its RED start signal has
+    // absolute priority. Freeze every other state transition until it starts.
+    const bool entry_wait_before_transition = state.machine.entry_gate.active;
 
-    // Existing stock restart owns stock consumption and table redraw.
-    state.at_stock_restart = at_stock_restart::apply(
-        state.rng,
-        state.machine,
-        state.pending
-    );
+    if (!entry_wait_before_transition) {
+        state.at_internal_transition = at_internal_transition::apply(
+            state.rng,
+            state.machine,
+            state.pending
+        );
 
-    // Only after stock restart has declined do we move to comeback/revival.
-    state.at_window_transition = at_window_transition::apply(
-        state.rng,
-        state.machine,
-        state.pending
-    );
+        // Existing stock restart owns stock consumption and table redraw.
+        state.at_stock_restart = at_stock_restart::apply(
+            state.rng,
+            state.machine,
+            state.pending
+        );
 
-    // Internal pending trigger is resolved before lever gating so the next
-    // lever enters the upper-special loop rather than stalling the machine.
-    (void)upper_special_transition::apply(
-        state.machine,
-        state.pending
-    );
+        // Only after stock restart has declined do we move to comeback/revival.
+        state.at_window_transition = at_window_transition::apply(
+            state.rng,
+            state.machine,
+            state.pending
+        );
+
+        // Internal pending trigger is resolved before lever gating so the next
+        // lever enters the upper-special loop rather than stalling the machine.
+        (void)upper_special_transition::apply(
+            state.machine,
+            state.pending
+        );
+    } else {
+        state.at_internal_transition = {};
+        state.at_stock_restart = {};
+        state.at_window_transition = {};
+    }
 
     const bool cz_transition_pending =
         state.machine.area == machine_state::Area::CZ
