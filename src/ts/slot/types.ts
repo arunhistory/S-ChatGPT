@@ -29,6 +29,12 @@ export const enum EntryTarget {
   UpperAT = 2,
 }
 
+export const enum StockProfile {
+  None = 0,
+  Middle = 1,
+  Upper = 2,
+}
+
 export type ReelId = 0 | 1 | 2;
 export type ReelPosition = number;
 
@@ -75,7 +81,7 @@ export interface LeverResult {
 export interface SpecialResult {
   hit: SpecialHit;
   target: EntryTarget;
-  stock: number;
+  stockProfile: StockProfile;
   freeze: boolean;
 }
 
