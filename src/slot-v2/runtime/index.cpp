@@ -483,4 +483,10 @@ uint32_t atWindowPacked(const State& state) {
         | ((state.at_window.stock_count & 0x00ffffffu) << 8);
 }
 
+uint32_t specialZonePacked(const State& state) {
+    // bit0 active / bits8..15 games-left
+    return (state.machine.special_zone.active ? 1u : 0u)
+        | (static_cast<uint32_t>(state.machine.special_zone.games_left) << 8);
+}
+
 } // namespace slotv2::runtime
