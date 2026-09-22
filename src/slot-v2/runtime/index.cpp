@@ -10,6 +10,7 @@
 #include "../cz-finalize/index.hpp"
 #include "../section-transition/index.hpp"
 #include "../at-window/index.hpp"
+#include "../bonus-cycle/index.hpp"
 
 namespace slotv2::runtime {
 namespace {
@@ -80,6 +81,7 @@ void reset(State& state, uint64_t seed) {
     state.last_section_flow = {};
     state.last_section_transition = {};
     state.at_window = {};
+    state.bonus_cycle = {};
 }
 
 uint32_t lever(State& state) {
@@ -97,7 +99,15 @@ uint32_t lever(State& state) {
         && state.machine.at.games_left <= 0
         && pending_event::has(state.pending, pending_event::ATWindowEmpty);
 
-    if (cz_transition_pending || at_window_pending) {
+    const bool bonus_transition_pending =
+        state.machine.area == machine_state::Area::Bonus
+        && !state.machine.bonus.active
+        && (
+            pending_event::has(state.pending, pending_event::BonusComplete)
+            || pending_event::has(state.pending, pending_event::BonusEpisodeUpgrade)
+        );
+
+    if (cz_transition_pending || at_window_pending || bonus_transition_pending) {
         const auto current = state.session.lever;
         return static_cast<uint32_t>(current.role)
             | (static_cast<uint32_t>(current.special) << 8)
@@ -294,6 +304,36 @@ accounting::Result applyPayout(State& state, int medals) {
     return result;
 }
 
+bonus_cycle::Result applyBonusNetGain(State& state, int net_gain) {
+    state.bonus_cycle = bonus_cycle::applyNetGain(
+        state.rng,
+        state.machine.bonus,
+        net_gain
+    );
+
+    switch (state.bonus_cycle.outcome) {
+        case bonus_cycle::Outcome::Completed:
+            pending_event::add(
+                state.pending,
+                pending_event::BonusComplete
+            );
+            break;
+
+        case bonus_cycle::Outcome::EpisodeUpgradePending:
+            pending_event::add(
+                state.pending,
+                pending_event::BonusEpisodeUpgrade
+            );
+            break;
+
+        case bonus_cycle::Outcome::None:
+        default:
+            break;
+    }
+
+    return state.bonus_cycle;
+}
+
 uint32_t phase(const State& state) {
     return static_cast<uint32_t>(state.session.phase);
 }
@@ -487,6 +527,21 @@ uint32_t specialZonePacked(const State& state) {
     // bit0 active / bits8..15 games-left
     return (state.machine.special_zone.active ? 1u : 0u)
         | (static_cast<uint32_t>(state.machine.special_zone.games_left) << 8);
+}
+
+uint32_t bonusPacked(const State& state) {
+    // bit0 active / bits8..15 kind / bits16..31 medals-left
+    return (state.machine.bonus.active ? 1u : 0u)
+        | (static_cast<uint32_t>(state.machine.bonus.kind) << 8)
+        | ((static_cast<uint32_t>(state.machine.bonus.medals_left) & 0xffffu) << 16);
+}
+
+uint32_t bonusCyclePacked(const State& state) {
+    const auto& r = state.bonus_cycle;
+    // bit0 active-before / bits8..15 kind / bits16..23 outcome
+    return (r.active_before ? 1u : 0u)
+        | (static_cast<uint32_t>(r.kind) << 8)
+        | (static_cast<uint32_t>(r.outcome) << 16);
 }
 
 } // namespace slotv2::runtime
