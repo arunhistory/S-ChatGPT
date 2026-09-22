@@ -4,6 +4,7 @@
 #include "bonus-upgrade/index.hpp"
 #include "upper-comeback/index.hpp"
 #include "special-zone/index.hpp"
+#include "special-ceiling/index.hpp"
 
 int main() {
     bool ok = true;
@@ -26,7 +27,21 @@ int main() {
         ok = ok && !s.active && s.games_left == 0;
     }
 
-    // 経路到達性だけ確認。確率値そのものはコード上のdenominatorで固定。
+    {
+        const auto g777 = slotv2::special_ceiling::fromRoll(0u);
+        const auto g1500 = slotv2::special_ceiling::fromRoll(999u);
+
+        ok = ok
+            && g777.ceiling == slotv2::special_ceiling::Ceiling::G777
+            && g777.reward == slotv2::special_ceiling::Reward::LowerATWithStock
+            && !g777.freeze;
+
+        ok = ok
+            && g1500.ceiling == slotv2::special_ceiling::Ceiling::G1500
+            && g1500.reward == slotv2::special_ceiling::Reward::Freeze
+            && g1500.freeze;
+    }
+
     uint64_t stock=0, episode=0, comeback=0;
     for (uint64_t i = 0; i < 1000000ULL; ++i) {
         stock += slotv2::stock_lottery::onHit(rng);
