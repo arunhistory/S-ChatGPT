@@ -89,6 +89,19 @@ uint32_t slot_v2_preflight() {
 }
 
 __attribute__((visibility("default")))
+uint32_t slot_v2_assist_failure_mask(uint32_t reel, uint32_t role) {
+    if (reel > 2u) return 0x001fffffu;
+    if (role > static_cast<uint32_t>(slotv2::RoleFlag::PenguinChance)) {
+        return 0x001fffffu;
+    }
+
+    return slotv2::reel_validator::assistFailureMask(
+        static_cast<slotv2::ReelId>(reel),
+        static_cast<slotv2::RoleFlag>(role)
+    );
+}
+
+__attribute__((visibility("default")))
 uint32_t slot_v2_validate_reel(uint32_t reel) {
     if (reel > 2u) return 0;
     return slotv2::reel_validator::validateAssist(static_cast<slotv2::ReelId>(reel));
