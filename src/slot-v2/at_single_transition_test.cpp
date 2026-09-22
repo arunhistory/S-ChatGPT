@@ -26,12 +26,13 @@ int main() {
         );
 
         ok = ok && r.applied && r.regular_bonus_started;
-        ok = ok && machine.area == slotv2::machine_state::Area::Bonus;
-        ok = ok && machine.bonus.active;
-        ok = ok && machine.bonus.kind == slotv2::bonus_state::Kind::Regular;
-        ok = ok && machine.bonus.medals_left == 50;
-        ok = ok && machine.bonus_return_valid;
-        ok = ok && machine.bonus_return_area == slotv2::machine_state::Area::AT;
+        ok = ok && machine.area == slotv2::machine_state::Area::AT;
+        ok = ok && machine.at.active;
+        ok = ok && !machine.bonus.active;
+        ok = ok && machine.entry_gate.active;
+        ok = ok && machine.entry_gate.kind == slotv2::entry_gate::Kind::Bonus;
+        ok = ok && machine.entry_gate.bonus_kind == slotv2::bonus_state::Kind::Regular;
+        ok = ok && machine.entry_gate.bonus_return_to_at;
         ok = ok && !slotv2::pending_event::has(
             pending,
             slotv2::pending_event::ATHit
@@ -60,10 +61,11 @@ int main() {
         );
 
         ok = ok && r.applied && r.episode_bonus_started;
-        ok = ok && machine.area == slotv2::machine_state::Area::Bonus;
-        ok = ok && machine.bonus.kind == slotv2::bonus_state::Kind::Episode;
-        ok = ok && machine.bonus.medals_left == 80;
-        ok = ok && machine.bonus_return_area == slotv2::machine_state::Area::AT;
+        ok = ok && machine.area == slotv2::machine_state::Area::AT;
+        ok = ok && machine.entry_gate.active;
+        ok = ok && machine.entry_gate.bonus_kind == slotv2::bonus_state::Kind::Episode;
+        ok = ok && machine.entry_gate.bonus_return_to_at;
+        ok = ok && !machine.bonus.active;
     }
 
     {
