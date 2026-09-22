@@ -9,6 +9,7 @@ public:
     void reset(uint64_t seed);
     uint64_t next64();
     uint32_t next27();
+    uint32_t uniformBelow(uint32_t bound);
     bool oneIn(uint32_t denominator);
 
 private:
