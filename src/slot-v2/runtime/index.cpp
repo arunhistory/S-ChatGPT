@@ -155,6 +155,13 @@ uint32_t lever(State& state) {
 
     state.at_window = at_window::inspect(state.machine);
 
+    if (state.at_window.status == at_window::Status::EmptyStockAvailable) {
+        pending_event::add(
+            state.pending,
+            pending_event::ATStockAvailable
+        );
+    }
+
     state.cz_cycle =
         (result.special == SpecialHit::None
             && state.machine.area == machine_state::Area::CZ
