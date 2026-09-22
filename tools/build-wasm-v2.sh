@@ -14,6 +14,7 @@ SRC="$ROOT/src/slot-v2"
   -Wl,--export=slot_v2_bonus_cycle \
   -Wl,--export=slot_v2_bonus_state \
   -Wl,--export=slot_v2_upper_comeback \
+  -Wl,--export=slot_v2_at_single_transition \
   -Wl,--export=slot_v2_section_reward \
   -Wl,--export=slot_v2_at_window \
   -Wl,--export=slot_v2_section_transition \
@@ -118,6 +119,7 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/special-ceiling/index.cpp" \
   "$SRC/normal-mode/index.cpp" \
   "$SRC/at-resolution/index.cpp" \
+  "$SRC/at-single-transition/index.cpp" \
   "$SRC/section-flow/index.cpp" \
   "$SRC/at-window/index.cpp" \
   "$SRC/section-transition/index.cpp" \
