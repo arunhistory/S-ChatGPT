@@ -90,5 +90,6 @@ uint32_t czFinalizePacked(const State& state);
 uint32_t sectionRewardPacked(const State& state);
 uint32_t sectionTransitionPacked(const State& state);
 uint32_t atWindowPacked(const State& state);
+uint32_t specialZonePacked(const State& state);
 
 } // namespace slotv2::runtime
