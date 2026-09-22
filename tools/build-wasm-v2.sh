@@ -129,6 +129,7 @@ SRC="$ROOT/src/slot-v2"
   "$SRC/bonus-transition/index.cpp" \
   "$SRC/bonus-entry-policy/index.cpp" \
   "$SRC/at-state/index.cpp" \
+  "$SRC/at-cold/index.cpp" \
   "$SRC/at-lottery/index.cpp" \
   "$SRC/progress-event/index.cpp" \
   "$SRC/at-cycle/index.cpp" \
