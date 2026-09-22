@@ -10,6 +10,7 @@ import {
   CommandStatus,
   BonusCycleOutcome,
   BonusKind,
+  BonusTransitionOutcome,
   CZFinalizeOutcome,
   EntryTarget,
   LeverResult,
@@ -64,6 +65,7 @@ export interface SlotWasmV2 {
   slot_v2_special_zone(): number;
   slot_v2_bonus_state(): number;
   slot_v2_bonus_cycle(): number;
+  slot_v2_bonus_transition(): number;
   slot_v2_upper_comeback(): number;
   slot_v2_at_single_transition(): number;
   slot_v2_normal_at_trigger(): number;
@@ -612,6 +614,8 @@ export function readUpperComeback(
 
 export interface ATSingleTransitionSnapshot {
   applied: boolean;
+  regularBonusStarted: boolean;
+  episodeBonusStarted: boolean;
   specialStarted: boolean;
 }
 
@@ -622,7 +626,9 @@ export function readATSingleTransition(
 
   return {
     applied: (packed & 1) !== 0,
-    specialStarted: (packed & (1 << 1)) !== 0,
+    regularBonusStarted: (packed & (1 << 1)) !== 0,
+    episodeBonusStarted: (packed & (1 << 2)) !== 0,
+    specialStarted: (packed & (1 << 3)) !== 0,
   };
 }
 
@@ -644,5 +650,22 @@ export function readNormalATTrigger(
     guaranteeConsumed: (packed & (1 << 1)) !== 0,
     fromBellFive: (packed & (1 << 2)) !== 0,
     fromNextHitGuarantee: (packed & (1 << 3)) !== 0,
+  };
+}
+
+
+export interface BonusTransitionSnapshot {
+  outcome: BonusTransitionOutcome;
+  returnArea: MachineArea;
+}
+
+export function readBonusTransition(
+  wasm: SlotWasmV2,
+): BonusTransitionSnapshot {
+  const packed = wasm.slot_v2_bonus_transition() >>> 0;
+
+  return {
+    outcome: (packed & 0xff) as BonusTransitionOutcome,
+    returnArea: ((packed >>> 8) & 0xff) as MachineArea,
   };
 }
