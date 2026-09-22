@@ -1,6 +1,7 @@
 #include <iostream>
 #include "normal-state/index.hpp"
 #include "cz-cycle/index.hpp"
+#include "cz-lottery/index.hpp"
 
 int main() {
     bool ok = true;
@@ -18,6 +19,12 @@ int main() {
         ok = ok && s.actual_games == 0u && s.display_games == 0u;
     }
 
+    ok = ok && !slotv2::cz_lottery::fromRoll(slotv2::RoleFlag::OneMedal, 0u);
+    ok = ok && slotv2::cz_lottery::fromRoll(slotv2::RoleFlag::StrongCherry, 999u);
+    ok = ok && slotv2::cz_lottery::fromRoll(slotv2::RoleFlag::PenguinChance, 999u);
+    ok = ok && slotv2::cz_lottery::fromRoll(slotv2::RoleFlag::Bell9, 219u);
+    ok = ok && !slotv2::cz_lottery::fromRoll(slotv2::RoleFlag::Bell9, 220u);
+
     {
         slotv2::Rng rng(0xC2C2C2ULL);
 
@@ -29,7 +36,12 @@ int main() {
             bool ended = false;
 
             while (s.active) {
-                const auto r = slotv2::cz_cycle::playOne(rng, s);
+                // One-medal never breaks through, so this path must consume all 10G.
+                const auto r = slotv2::cz_cycle::playOne(
+                    rng,
+                    s,
+                    slotv2::RoleFlag::OneMedal
+                );
                 ok = ok && r.active;
                 ++played;
 
@@ -39,7 +51,7 @@ int main() {
                 }
             }
 
-            ok = ok && played >= 1u && played <= 10u;
+            ok = ok && played == 10u;
             ok = ok && ended;
             ok = ok && !s.active;
         }
