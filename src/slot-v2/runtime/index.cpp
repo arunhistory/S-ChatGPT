@@ -195,12 +195,13 @@ uint32_t lever(State& state) {
         || pending_event::has(state.pending, pending_event::ATMultiple)
         || pending_event::has(state.pending, pending_event::SectionUpperSpec);
 
-    if (cz_transition_pending
-        || at_window_pending
-        || bonus_transition_pending
-        || upper_comeback_pending
-        || special_zone_transition_pending
-        || unresolved_at_pending) {
+    if (!state.machine.entry_gate.active
+        && (cz_transition_pending
+            || at_window_pending
+            || bonus_transition_pending
+            || upper_comeback_pending
+            || special_zone_transition_pending
+            || unresolved_at_pending)) {
         const auto current = state.session.lever;
         return static_cast<uint32_t>(current.role)
             | (static_cast<uint32_t>(current.special) << 8)
