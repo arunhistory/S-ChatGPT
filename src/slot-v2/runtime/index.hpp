@@ -26,6 +26,7 @@
 #include "../normal-at-trigger/index.hpp"
 #include "../special-zone-pending/index.hpp"
 #include "../normal-hit-entry/index.hpp"
+#include "../revival-cycle/index.hpp"
 
 namespace slotv2::runtime {
 
@@ -55,6 +56,8 @@ struct State {
     normal_at_trigger::Result normal_at_trigger{};
     special_zone::HitResult special_zone_result{special_zone::HitResult::None};
     normal_hit_entry::Result normal_hit_entry{};
+    revival_cycle::Game revival_game{};
+    revival_cycle::FinalizeResult revival_finalize{};
 };
 
 void reset(State& state, uint64_t seed);
@@ -76,6 +79,12 @@ accounting::Result applyBet(State& state, int medals);
 accounting::Result applyPayout(State& state, int medals);
 bonus_cycle::Result applyBonusNetGain(State& state, int net_gain);
 void startUpperComeback(State& state);
+
+// ATの既存継続・ストック・引戻し処理が全て終わり、完全終了が確定した時だけ呼ぶ。
+void startRevivalChallenge(State& state, at_state::Tier ended_tier);
+
+// 復活チャレンジ中に裏の通常当たり枠が成立した時だけ、C++内部から記録する。
+void recordRevivalHiddenNormalHit(State& state);
 
 uint32_t phase(const State& state);
 uint32_t specialResult(const State& state);
@@ -119,5 +128,8 @@ uint32_t upperComebackPacked(const State& state);
 uint32_t atSingleTransitionPacked(const State& state);
 uint32_t normalATTriggerPacked(const State& state);
 uint32_t specialZoneResultPacked(const State& state);
+uint32_t revivalPacked(const State& state);
+uint32_t revivalGamePacked(const State& state);
+uint32_t revivalFinalizePacked(const State& state);
 
 } // namespace slotv2::runtime
