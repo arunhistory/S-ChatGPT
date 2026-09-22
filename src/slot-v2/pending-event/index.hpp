@@ -19,7 +19,10 @@ enum Bits : uint32_t {
 
     SectionTierUp    = 1u << 10,
     SectionSpecial   = 1u << 11,
-    SectionUpperSpec = 1u << 12
+    SectionUpperSpec = 1u << 12,
+
+    CZHit            = 1u << 13,
+    ATWindowEmpty    = 1u << 14
 };
 
 struct State {
