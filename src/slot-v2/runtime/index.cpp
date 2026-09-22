@@ -18,6 +18,8 @@ void reset(State& state, uint64_t seed) {
     state.last_special_apply = {};
     pending_event::clear(state.pending);
     state.at_cycle = {};
+    state.at_resolution = {};
+    state.normal_mode = normal_mode::drawBase(state.rng);
 }
 
 uint32_t lever(State& state) {
@@ -40,6 +42,10 @@ uint32_t lever(State& state) {
     state.at_cycle = result.special == SpecialHit::None
         ? at_cycle::beginGame(state.rng, state.machine)
         : at_cycle::Result{};
+
+    state.at_resolution = state.at_cycle.active
+        ? at_resolution::classify(state.at_cycle.raw)
+        : at_resolution::Result{};
 
     const bool navigation_enabled =
         state.machine.area == machine_state::Area::AT
@@ -243,6 +249,17 @@ uint32_t atCyclePacked(const State& state) {
     // bit0 active / bits8..13 raw simultaneous AT event bits.
     return (state.at_cycle.active ? 1u : 0u)
         | ((state.at_cycle.raw.bits & 0x3fu) << 8);
+}
+
+uint32_t atResolutionPacked(const State& state) {
+    // 0..7 status / 8..15 single event / 16..23 matched count
+    return static_cast<uint32_t>(state.at_resolution.status)
+        | (static_cast<uint32_t>(state.at_resolution.event) << 8)
+        | (static_cast<uint32_t>(state.at_resolution.count) << 16);
+}
+
+uint32_t normalMode(const State& state) {
+    return static_cast<uint32_t>(state.normal_mode);
 }
 
 } // namespace slotv2::runtime
