@@ -1,5 +1,6 @@
 #include "index.hpp"
 #include "../stock-count-lottery/index.hpp"
+#include "../at-cold/index.hpp"
 
 namespace slotv2::special_apply {
 
@@ -29,6 +30,7 @@ Result apply(
             stock::add(machine.stock, stock_count);
         }
         at_state::start(machine.at, at_state::Tier::Upper);
+        at_cold::reroll(rng, machine.at);
         machine.area = machine_state::Area::AT;
         out.applied = true;
         out.at_started = true;
