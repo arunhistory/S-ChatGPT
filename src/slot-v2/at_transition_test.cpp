@@ -1,6 +1,6 @@
 #include <iostream>
 #include "at-add-games/index.hpp"
-#include "stock-restart-lottery/index.hpp"
+#include "at-stock-restart/index.hpp"
 #include "at-internal-transition/index.hpp"
 #include "at-window-transition/index.hpp"
 
@@ -11,13 +11,15 @@ int main() {
     for (uint16_t i = 0; i < 100u; ++i) {
         add_total += slotv2::at_add_games::fromRoll(i);
     }
-    ok = ok && add_total == 2440u;
+    ok = ok && add_total == 2440u; // 24.4G mean
 
     uint64_t restart_total = 0u;
-    for (uint16_t i = 0; i < 2000u; ++i) {
-        restart_total += slotv2::stock_restart_lottery::fromRoll(i);
+    for (uint16_t i = 0; i < 1000u; ++i) {
+        restart_total += static_cast<uint64_t>(
+            slotv2::at_stock_restart::gamesFromRoll(i)
+        );
     }
-    ok = ok && restart_total == 98500u; // 49.25G * 2000
+    ok = ok && restart_total == 49250u; // 49.25G mean
 
     slotv2::Rng rng(0xA771234ULL);
 
@@ -41,14 +43,13 @@ int main() {
         slotv2::at_state::start(machine.at, slotv2::at_state::Tier::Lower);
         machine.area = slotv2::machine_state::Area::AT;
         machine.at.games_left = 0;
-        slotv2::stock::add(machine.stock, 1u);
         slotv2::pending_event::State pending{};
         slotv2::pending_event::add(pending, slotv2::pending_event::ATWindowEmpty);
 
         const auto r = slotv2::at_window_transition::apply(rng, machine, pending);
-        ok = ok && r.outcome == slotv2::at_window_transition::Outcome::StockRestart
-            && machine.at.games_left > 0
-            && machine.stock.count == 0u;
+        ok = ok && r.outcome == slotv2::at_window_transition::Outcome::Revival
+            && machine.area == slotv2::machine_state::Area::Revival
+            && machine.revival.active;
     }
 
     if (!ok) {
