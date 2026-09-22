@@ -21,7 +21,7 @@ struct Result {
 
 Result draw(
     Rng& rng,
-    normal_high::State& high,
+    const normal_high::State& high,
     RoleFlag role,
     uint32_t actual_games,
     uint8_t setting
