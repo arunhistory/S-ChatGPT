@@ -566,7 +566,8 @@ export function readATWindow(wasm: SlotWasmV2): ATWindowSnapshot {
 
 export interface LowerFallChallengeSnapshot {
   phase: LowerFallPhase;
-  waitGamesLeft: number;
+  waitGameActive: boolean;
+  judgeBell: boolean;
   savedGames: number;
   buttonReady: boolean;
   lastPushOutcome: LowerFallPushOutcome;
@@ -580,7 +581,8 @@ export function readLowerFallChallenge(
 
   return {
     phase,
-    waitGamesLeft: (packed >>> 8) & 0xff,
+    waitGameActive: (packed & (1 << 8)) !== 0,
+    judgeBell: (packed & (1 << 9)) !== 0,
     savedGames: (packed >>> 16) & 0xffff,
     buttonReady: phase === LowerFallPhase.ButtonReady,
     lastPushOutcome:
