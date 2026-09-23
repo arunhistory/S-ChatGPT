@@ -1,5 +1,5 @@
 #pragma once
-#include "../shared/rng.hpp"
+#include "shared/rng.hpp"
 
 namespace slotv2::stock_lottery {
 

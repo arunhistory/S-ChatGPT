@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "stock/stock_count_lottery.hpp"
 
 namespace slotv2::stock_count_lottery {
 

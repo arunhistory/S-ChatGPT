@@ -1,6 +1,6 @@
 #include <iostream>
 #include "shared/rng.hpp"
-#include "at-lottery/index.hpp"
+#include "at/at_lottery.hpp"
 
 int main() {
     bool ok = true;

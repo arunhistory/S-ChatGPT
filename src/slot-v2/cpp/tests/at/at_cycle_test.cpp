@@ -1,7 +1,7 @@
 #include <iostream>
-#include "at-cycle/index.hpp"
-#include "at-event/index.hpp"
-#include "machine-state/index.hpp"
+#include "at/at_cycle.hpp"
+#include "at/at_event.hpp"
+#include "core/machine_state.hpp"
 
 int main() {
     bool ok = true;

@@ -1,6 +1,6 @@
 #pragma once
-#include "../machine-state/index.hpp"
-#include "../pending-event/index.hpp"
+#include "core/machine_state.hpp"
+#include "core/pending_event.hpp"
 
 namespace slotv2::upper_special_transition {
 

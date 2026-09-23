@@ -1,5 +1,5 @@
 #include <iostream>
-#include "at-omen/index.hpp"
+#include "at/at_omen.hpp"
 
 int main() {
     bool ok = true;

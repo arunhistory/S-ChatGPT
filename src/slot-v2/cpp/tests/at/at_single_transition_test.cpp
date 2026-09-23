@@ -1,5 +1,5 @@
 #include <iostream>
-#include "at-single-transition/index.hpp"
+#include "at/at_single_transition.hpp"
 
 int main() {
     bool ok = true;
