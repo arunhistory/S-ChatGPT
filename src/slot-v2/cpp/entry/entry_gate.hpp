@@ -19,6 +19,7 @@ struct State {
     Kind kind{Kind::None};
     bonus_state::Kind bonus_kind{bonus_state::Kind::Regular};
     bool bonus_return_to_at{false};
+    bool chain_multi_bonus{false};
     at_state::Tier at_tier{at_state::Tier::Lower};
     uint32_t stock_to_add{0};
 };
@@ -27,7 +28,8 @@ void clear(State& state);
 void queueBonus(
     State& state,
     bonus_state::Kind kind,
-    bool return_to_at
+    bool return_to_at,
+    bool chain_multi_bonus = false
 );
 void queueAT(
     State& state,

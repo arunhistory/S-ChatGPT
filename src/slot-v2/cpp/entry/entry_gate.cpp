@@ -9,13 +9,15 @@ void clear(State& state) {
 void queueBonus(
     State& state,
     bonus_state::Kind kind,
-    bool return_to_at
+    bool return_to_at,
+    bool chain_multi_bonus
 ) {
     state = {};
     state.active = true;
     state.kind = Kind::Bonus;
     state.bonus_kind = kind;
     state.bonus_return_to_at = return_to_at;
+    state.chain_multi_bonus = chain_multi_bonus;
 }
 
 void queueAT(

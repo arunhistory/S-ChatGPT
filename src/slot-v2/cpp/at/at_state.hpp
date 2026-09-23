@@ -19,7 +19,7 @@ enum class Table : uint8_t {
 static constexpr int kInitialSTGames = 100;
 static constexpr int kLowerNetPerGame = 6;
 static constexpr int kMiddleNetPerGame = 6;
-static constexpr int kUpperNetPerGame = 12;
+static constexpr int kUpperNetPerGame = 9;
 static constexpr int kUpperComebackGames = 64;
 
 struct State {

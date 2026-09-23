@@ -59,7 +59,8 @@ int main() {
         slotv2::at_event::AddGames |
         slotv2::at_event::Special |
         slotv2::at_event::Episode |
-        slotv2::at_event::UpperSpecial;
+        slotv2::at_event::UpperSpecial |
+        slotv2::at_event::ChainZone;
 
     ok = ok && (seen & required) == required;
 

@@ -15,6 +15,7 @@ Result classify(const at_event::Result& raw) {
         {at_event::Special, Event::Special},
         {at_event::Episode, Event::Episode},
         {at_event::UpperSpecial, Event::UpperSpecial},
+        {at_event::ChainZone, Event::ChainZone},
     };
 
     for (const auto& pair : pairs) {

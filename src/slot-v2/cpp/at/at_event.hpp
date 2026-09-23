@@ -11,7 +11,8 @@ enum Bits : uint32_t {
     AddGames     = 1u << 2,
     Special      = 1u << 3,
     Episode      = 1u << 4,
-    UpperSpecial = 1u << 5
+    UpperSpecial = 1u << 5,
+    ChainZone    = 1u << 6
 };
 
 struct Result {

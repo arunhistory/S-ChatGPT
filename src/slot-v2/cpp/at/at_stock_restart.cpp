@@ -25,6 +25,7 @@ Result apply(
     if (machine.area != machine_state::Area::AT
         || !machine.at.active
         || machine.at.games_left > 0
+        || machine.chain_zone.active
         || !pending_event::has(pending, pending_event::ATWindowEmpty)
         || !pending_event::has(pending, pending_event::ATStockAvailable)
         || machine.stock.count == 0u) {

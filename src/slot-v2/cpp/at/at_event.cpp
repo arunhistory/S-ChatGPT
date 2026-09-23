@@ -11,6 +11,7 @@ Result fromDraw(const at_lottery::Draw& draw) {
     if (draw.special) out.bits |= Special;
     if (draw.episode) out.bits |= Episode;
     if (draw.upper_special) out.bits |= UpperSpecial;
+    if (draw.chain_zone) out.bits |= ChainZone;
 
     return out;
 }

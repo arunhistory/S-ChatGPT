@@ -11,6 +11,7 @@
 #include "bonus/bonus_state.hpp"
 #include "cz/cz_state.hpp"
 #include "special/special_zone.hpp"
+#include "special/chain_zone.hpp"
 #include "special/upper_special.hpp"
 #include "entry/entry_gate.hpp"
 #include "at/upper_comeback_state.hpp"
@@ -41,6 +42,7 @@ struct State {
     bool bonus_return_valid{false};
     cz_state::State cz{};
     special_zone::State special_zone{};
+    chain_zone::State chain_zone{};
     upper_special::State upper_special{};
     entry_gate::State entry_gate{};
     upper_comeback::State upper_comeback{};

@@ -41,7 +41,12 @@ Result apply(
         case section_reward::Kind::Special:
             if (machine.area != machine_state::Area::AT
                 || !machine.at.active
-                || machine.at.tier != at_state::Tier::Upper) {
+                || machine.at.tier != at_state::Tier::Upper
+                || machine.chain_zone.active
+                || machine.special_zone.active
+                || machine.upper_special.active
+                || machine.entry_gate.active) {
+                // Keep SectionSpecial pending for the runtime deferred route.
                 return out;
             }
 

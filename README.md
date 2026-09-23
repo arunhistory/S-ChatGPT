@@ -1,3 +1,16 @@
+> **v2 setting-6-only development (2026-09-23):** The new work lives in
+> `src/slot-v2/cpp/`. Only setting **6** has executable profile odds;
+> setting IDs 1–5 and 7 are placeholders and v2 rejects starting them.
+> The existing `src/slot_engine.cpp` simulator and `web/slot.wasm` are
+> **legacy** and their results are not a measurement of the new setting-6 game.
+> Detailed current odds, AT rules, outstanding features, and validation
+> status: [docs/setting-policy.md](docs/setting-policy.md).
+> For the v2 setting-6 regression suite, run
+> `bash tools/check-setting6-v2.sh` locally. The 114% machine payout is
+> a design target, **not** a tested long-run value or legal certification.
+
+---
+
 # S-ChatGPT
 
 個人用パチスロ試作。計算・抽選・状態遷移は C++、ブラウザ側は WebAssembly 経由で利用する。

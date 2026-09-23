@@ -50,7 +50,8 @@ namespace slotv2::runtime {
 
 enum class SettingResetStatus : uint8_t {
     Applied = 0,
-    InvalidSetting = 1
+    InvalidSetting = 1,
+    NotImplemented = 2
 };
 
 struct State {
@@ -97,6 +98,8 @@ struct State {
     };
     normal_at_trigger::Result normal_at_trigger{};
     special_zone::HitResult special_zone_result{special_zone::HitResult::None};
+    chain_zone::Step chain_zone_step{};
+    chain_zone::Release chain_zone_release{};
     special_zone_transition::Result special_zone_transition{};
     upper_special::Step upper_special_step{};
     normal_hit_entry::Result normal_hit_entry{};

@@ -36,7 +36,8 @@ Result apply(
             return {true, false, true, false};
 
         case at_resolution::Event::Special:
-            if (machine.special_zone.active) return {};
+            if (machine.special_zone.active || machine.chain_zone.active
+                || machine.upper_special.active) return {};
 
             special_zone::start(machine.special_zone);
             (void)pending_event::consume(
@@ -44,6 +45,13 @@ Result apply(
                 pending_event::ATSpecial
             );
             return {true, false, false, true};
+
+        case at_resolution::Event::ChainZone:
+            if (machine.chain_zone.active || machine.special_zone.active
+                || machine.upper_special.active || machine.at_omen.active) return {};
+            chain_zone::start(machine.chain_zone);
+            (void)pending_event::consume(pending, pending_event::ATChainZone);
+            return {true, false, false, false};
 
         case at_resolution::Event::Fall:
         case at_resolution::Event::AddGames:
