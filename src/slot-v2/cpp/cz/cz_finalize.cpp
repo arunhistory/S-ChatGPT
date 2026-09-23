@@ -1,5 +1,5 @@
-#include "index.hpp"
-#include "../progress-event/index.hpp"
+#include "cz/cz_finalize.hpp"
+#include "core/progress_event.hpp"
 
 namespace slotv2::cz_finalize {
 

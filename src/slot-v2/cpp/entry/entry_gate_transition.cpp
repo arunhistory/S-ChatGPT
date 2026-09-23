@@ -1,6 +1,6 @@
-#include "index.hpp"
-#include "../line/index.hpp"
-#include "../bonus-transition/index.hpp"
+#include "entry/entry_gate_transition.hpp"
+#include "reel/reel_line.hpp"
+#include "bonus/bonus_transition.hpp"
 
 namespace slotv2::entry_gate_transition {
 

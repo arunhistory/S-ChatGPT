@@ -1,7 +1,7 @@
 #pragma once
-#include "../machine-state/index.hpp"
-#include "../pending-event/index.hpp"
-#include "../cz-cycle/index.hpp"
+#include "core/machine_state.hpp"
+#include "core/pending_event.hpp"
+#include "cz/cz_cycle.hpp"
 
 namespace slotv2::cz_finalize {
 

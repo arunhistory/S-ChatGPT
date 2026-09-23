@@ -1,9 +1,9 @@
 #pragma once
 #include <stdint.h>
-#include "../shared/rng.hpp"
-#include "../shared/types.hpp"
-#include "../at-state/index.hpp"
-#include "../bonus-state/index.hpp"
+#include "shared/rng.hpp"
+#include "shared/types.hpp"
+#include "at/at_state.hpp"
+#include "bonus/bonus_state.hpp"
 
 namespace slotv2::entry_gate {
 

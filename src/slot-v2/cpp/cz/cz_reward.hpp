@@ -1,8 +1,8 @@
 #pragma once
-#include "../shared/rng.hpp"
-#include "../machine-state/index.hpp"
-#include "../pending-event/index.hpp"
-#include "../normal-mode/index.hpp"
+#include "shared/rng.hpp"
+#include "core/machine_state.hpp"
+#include "core/pending_event.hpp"
+#include "normal/normal_mode.hpp"
 
 namespace slotv2::cz_reward {
 

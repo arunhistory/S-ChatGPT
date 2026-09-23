@@ -1,7 +1,7 @@
-#include "index.hpp"
-#include "../normal-at-trigger/index.hpp"
-#include "../normal-hit-entry/index.hpp"
-#include "../progress-event/index.hpp"
+#include "cz/cz_reward.hpp"
+#include "normal/normal_at_trigger.hpp"
+#include "normal/normal_hit_entry.hpp"
+#include "core/progress_event.hpp"
 
 namespace slotv2::cz_reward {
 

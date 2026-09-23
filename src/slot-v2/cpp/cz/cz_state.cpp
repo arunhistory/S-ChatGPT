@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "cz/cz_state.hpp"
 
 namespace slotv2::cz_state {
 

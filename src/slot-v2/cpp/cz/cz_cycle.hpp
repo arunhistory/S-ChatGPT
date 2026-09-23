@@ -1,8 +1,8 @@
 #pragma once
 #include <stdint.h>
-#include "../shared/rng.hpp"
-#include "../shared/types.hpp"
-#include "../cz-state/index.hpp"
+#include "shared/rng.hpp"
+#include "shared/types.hpp"
+#include "cz/cz_state.hpp"
 
 namespace slotv2::cz_cycle {
 

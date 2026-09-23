@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "cz/cz_lottery.hpp"
 
 namespace slotv2::cz_lottery {
 

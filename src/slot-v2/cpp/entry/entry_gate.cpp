@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "entry/entry_gate.hpp"
 
 namespace slotv2::entry_gate {
 
