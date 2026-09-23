@@ -1,7 +1,7 @@
 #include <iostream>
-#include "section/index.hpp"
-#include "stock/index.hpp"
-#include "normal-progress/index.hpp"
+#include "section/section_state.hpp"
+#include "stock/stock_state.hpp"
+#include "normal/normal_progress.hpp"
 
 int main() {
     bool ok = true;

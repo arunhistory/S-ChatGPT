@@ -1,5 +1,5 @@
 #include <iostream>
-#include "preflight/index.hpp"
+#include "core/preflight.hpp"
 
 int main() {
     const uint32_t bits = slotv2::preflight::check();

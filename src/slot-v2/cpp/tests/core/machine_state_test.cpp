@@ -1,7 +1,7 @@
 #include <iostream>
-#include "machine-state/index.hpp"
-#include "accounting/index.hpp"
-#include "point-ledger/index.hpp"
+#include "core/machine_state.hpp"
+#include "core/accounting.hpp"
+#include "core/point_ledger.hpp"
 
 int main() {
     bool ok = true;

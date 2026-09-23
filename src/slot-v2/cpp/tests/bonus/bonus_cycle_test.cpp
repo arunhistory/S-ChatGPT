@@ -1,5 +1,5 @@
 #include <iostream>
-#include "bonus-cycle/index.hpp"
+#include "bonus/bonus_cycle.hpp"
 
 int main() {
     bool ok = true;

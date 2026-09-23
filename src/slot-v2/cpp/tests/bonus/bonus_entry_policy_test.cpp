@@ -1,5 +1,5 @@
 #include <iostream>
-#include "bonus-entry-policy/index.hpp"
+#include "bonus/bonus_entry_policy.hpp"
 
 int main() {
     bool ok = true;

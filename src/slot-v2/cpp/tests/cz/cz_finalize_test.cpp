@@ -1,5 +1,5 @@
 #include <iostream>
-#include "cz-finalize/index.hpp"
+#include "cz/cz_finalize.hpp"
 
 int main() {
     bool ok = true;

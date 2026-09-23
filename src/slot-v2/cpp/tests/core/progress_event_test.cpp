@@ -1,5 +1,5 @@
 #include <iostream>
-#include "progress-event/index.hpp"
+#include "core/progress_event.hpp"
 
 int main() {
     bool ok = true;

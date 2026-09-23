@@ -1,5 +1,5 @@
 #include <iostream>
-#include "bonus-transition/index.hpp"
+#include "bonus/bonus_transition.hpp"
 
 int main() {
     bool ok = true;

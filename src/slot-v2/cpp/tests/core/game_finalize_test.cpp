@@ -1,5 +1,5 @@
 #include <iostream>
-#include "game-finalize/index.hpp"
+#include "core/game_finalize.hpp"
 
 int main() {
     bool ok = true;

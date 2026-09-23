@@ -1,8 +1,8 @@
 #include <iostream>
-#include "at-add-games/index.hpp"
-#include "at-stock-restart/index.hpp"
-#include "at-internal-transition/index.hpp"
-#include "at-window-transition/index.hpp"
+#include "at/at_add_games.hpp"
+#include "at/at_stock_restart.hpp"
+#include "at/at_internal_transition.hpp"
+#include "at/at_window_transition.hpp"
 
 int main() {
     bool ok = true;

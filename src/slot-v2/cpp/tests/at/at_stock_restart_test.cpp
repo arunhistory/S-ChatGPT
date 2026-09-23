@@ -1,6 +1,6 @@
 #include <iostream>
-#include "at-stock-restart/index.hpp"
-#include "at-table-transition/index.hpp"
+#include "at/at_stock_restart.hpp"
+#include "at/at_table_transition.hpp"
 
 int main() {
     bool ok = true;
