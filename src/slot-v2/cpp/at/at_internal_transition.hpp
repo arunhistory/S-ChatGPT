@@ -13,6 +13,7 @@ struct Result {
     bool fall_applied{false};
     bool at_end_pending{false};
     bool lower_fall_challenge_started{false};
+    bool lower_fall_challenge_started{false};
     at_state::Tier before{at_state::Tier::Lower};
     at_state::Tier after{at_state::Tier::Lower};
 };
