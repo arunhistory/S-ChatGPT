@@ -17,6 +17,7 @@ bool runOne(uint64_t seed, bool want_success) {
         state.machine.at,
         slotv2::at_state::Tier::Lower
     );
+    state.machine.at.games_left = 50;
     state.machine.area = slotv2::machine_state::Area::AT;
 
     const uint32_t lever = slotv2::runtime::lever(state);
@@ -36,8 +37,8 @@ bool runOne(uint64_t seed, bool want_success) {
     if (armed.phase != slotv2::lower_fall_challenge::Phase::Armed) {
         return false;
     }
-    if (armed.saved_games != 100) return false;
-    if (state.machine.at.games_left != 99) return false;
+    if (armed.saved_games != 50) return false;
+    if (state.machine.at.games_left != 49) return false;
     if (armed.success_fixed != want_success) return false;
 
     // The Fall game itself finishes normally.
@@ -54,7 +55,7 @@ bool runOne(uint64_t seed, bool want_success) {
         return false;
     }
     if (state.at_cycle.active) return false;
-    if (state.machine.at.games_left != 99) return false;
+    if (state.machine.at.games_left != 49) return false;
 
     stopAll(state);
     if (state.machine.lower_fall_challenge.wait_games_left != 1u) {
@@ -98,8 +99,8 @@ bool runOne(uint64_t seed, bool want_success) {
             return false;
         }
 
-        // Exact pre-Fall value is restored: 100G, not 99G.
-        if (state.machine.at.games_left != 100) return false;
+        // Exact pre-Fall value is restored: 50G, not 49G.
+        if (state.machine.at.games_left != 50) return false;
         if (state.machine.area != slotv2::machine_state::Area::AT) return false;
         if (!state.machine.at.active) return false;
         if (state.machine.at.tier != slotv2::at_state::Tier::Lower) return false;
