@@ -365,6 +365,22 @@ uint32_t lever(State& state) {
         result.role = RoleFlag::None;
         result.main_lottery_ran = false;
         result.entry_wait = false;
+    } else if (lower_fall_wait_game_active) {
+        // Fall後は通常AT抽選を止め、各G 1/2の専用ジャッジベルだけを抽選する。
+        // 成立時は左第一の9枚ベルを開始合図として出す。
+        state.lower_fall_wait_game =
+            lower_fall_challenge::beginWaitGame(
+                state.rng,
+                state.machine.lower_fall_challenge
+            );
+
+        result.command_status = CommandStatus::Ok;
+        result.special = SpecialHit::None;
+        result.role = state.lower_fall_wait_game.judge_bell
+            ? RoleFlag::Bell9
+            : RoleFlag::None;
+        result.main_lottery_ran = false;
+        result.entry_wait = false;
     } else {
         // 特殊直撃は通常時だけ。復活チャレンジは通常小役だけを同率で抽選する。
         const bool allow_special =
@@ -485,15 +501,6 @@ uint32_t lever(State& state) {
         }
     }
 
-    if (lower_fall_wait_game_active
-        && !result.entry_wait
-        && result.special == SpecialHit::None) {
-        state.lower_fall_wait_game =
-            lower_fall_challenge::beginWaitGame(
-                state.machine.lower_fall_challenge
-            );
-    }
-
     state.at_cycle =
         (!result.entry_wait
             && result.special == SpecialHit::None
@@ -576,13 +583,22 @@ uint32_t lever(State& state) {
         state.machine.area == machine_state::Area::AT
         && state.machine.at.active;
 
+    auto bell_plan = bell_navigation::make(
+        state.rng,
+        result.role,
+        navigation_enabled
+    );
+
+    if (state.lower_fall_wait_game.active
+        && state.lower_fall_wait_game.judge_bell) {
+        bell_plan.active = true;
+        bell_plan.order_index = 0u;
+        bell_plan.order = navigation::fromIndex(0u);
+    }
+
     session::setBellNavigation(
         state.session,
-        bell_navigation::make(
-            state.rng,
-            result.role,
-            navigation_enabled
-        )
+        bell_plan
     );
 
     state.acquisition = {};
@@ -1423,10 +1439,12 @@ uint32_t revivalFinalizePacked(const State& state) {
 
 uint32_t lowerFallChallengePacked(const State& state) {
     const auto& challenge = state.machine.lower_fall_challenge;
-    // 0..7 phase / 8..15 waiting games left / 16..31 saved AT games.
+    const auto& wait = state.lower_fall_wait_game;
+    // 0..7 phase / bit8 wait game active / bit9 judge bell / 16..31 saved AT games.
     // The fixed success/failure result is intentionally not exposed before PUSH.
     return static_cast<uint32_t>(challenge.phase)
-        | (static_cast<uint32_t>(challenge.wait_games_left) << 8)
+        | (wait.active ? (1u << 8) : 0u)
+        | (wait.judge_bell ? (1u << 9) : 0u)
         | ((static_cast<uint32_t>(challenge.saved_games) & 0xffffu) << 16);
 }
 
