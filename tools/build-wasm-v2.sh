@@ -23,6 +23,9 @@ SRC="$ROOT/src/slot-v2/cpp"
   -Wl,--export=slot_v2_normal_at_trigger \
   -Wl,--export=slot_v2_section_reward \
   -Wl,--export=slot_v2_at_window \
+  -Wl,--export=slot_v2_lower_fall_push \
+  -Wl,--export=slot_v2_lower_fall_challenge \
+  -Wl,--export=slot_v2_lower_fall_push_outcome \
   -Wl,--export=slot_v2_section_transition \
   -Wl,--export=slot_v2_special_zone \
   -Wl,--export=slot_v2_special_zone_result \
@@ -158,6 +161,7 @@ SRC="$ROOT/src/slot-v2/cpp"
   "$SRC/at/at_pending.cpp" \
   "$SRC/at/at_add_games.cpp" \
   "$SRC/at/at_internal_transition.cpp" \
+  "$SRC/at/lower_fall_challenge.cpp" \
   "$SRC/at/at_window_transition.cpp" \
   "$SRC/at/at_event.cpp" \
   "$SRC/special/special_zone.cpp" \
