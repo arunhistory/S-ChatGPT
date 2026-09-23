@@ -1,6 +1,6 @@
 #pragma once
-#include "../special-zone/index.hpp"
-#include "../pending-event/index.hpp"
+#include "special/special_zone.hpp"
+#include "core/pending_event.hpp"
 
 namespace slotv2::special_zone_pending {
 

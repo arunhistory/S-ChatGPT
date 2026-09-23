@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "special/special_zone_pending.hpp"
 
 namespace slotv2::special_zone_pending {
 

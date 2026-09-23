@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "special/special_result.hpp"
 
 namespace slotv2::special_result {
 

@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "special/special_zone_transition.hpp"
 
 namespace slotv2::special_zone_transition {
 

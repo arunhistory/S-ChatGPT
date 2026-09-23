@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "special/upper_special_transition.hpp"
 
 namespace slotv2::upper_special_transition {
 

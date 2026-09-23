@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
-#include "../machine-state/index.hpp"
-#include "../pending-event/index.hpp"
+#include "core/machine_state.hpp"
+#include "core/pending_event.hpp"
 
 namespace slotv2::special_zone_transition {
 

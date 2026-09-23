@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
-#include "../shared/types.hpp"
-#include "../stock-count-lottery/index.hpp"
+#include "shared/types.hpp"
+#include "stock/stock_count_lottery.hpp"
 
 namespace slotv2::special_result {
 
