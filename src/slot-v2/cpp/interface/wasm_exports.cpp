@@ -7,7 +7,7 @@
 #include "normal/normal_progress_view.hpp"
 
 namespace {
-slotv2::runtime::State g_runtime{};
+constinit slotv2::runtime::State g_runtime{};
 }
 
 extern "C" {
@@ -377,9 +377,110 @@ uint32_t slot_v2_last_role() {
     return slotv2::runtime::lastRole(g_runtime);
 }
 
+// Accounting belongs to the native engine. The browser sends the bet and
+// the measured, accepted acquisition; it never modifies the game lottery.
+__attribute__((visibility("default")))
+void slot_v2_bet(uint32_t medals) {
+    if (medals <= 15u) (void)slotv2::runtime::applyBet(g_runtime, static_cast<int>(medals));
+}
+__attribute__((visibility("default")))
+void slot_v2_payout(uint32_t medals) {
+    if (medals <= 1000u) (void)slotv2::runtime::applyPayout(g_runtime, static_cast<int>(medals));
+}
+__attribute__((visibility("default")))
+void slot_v2_bonus_net_gain(int32_t net) {
+    if (net >= -100 && net <= 1000) (void)slotv2::runtime::applyBonusNetGain(g_runtime, net);
+}
+__attribute__((visibility("default")))
+int64_t slot_v2_total_diff() {
+    return g_runtime.accounting.total_diff;
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_at_table() {
+    return static_cast<uint32_t>(g_runtime.machine.at.table);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_normal_latent() {
+    return slotv2::runtime::normalLatentPacked(g_runtime);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_latent_completion() {
+    return static_cast<uint32_t>(g_runtime.last_latent_completion);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_debug_count() {
+    return slotv2::debug::kCatalogueCount;
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_debug_channel(uint32_t index) {
+    if (index >= slotv2::debug::kCatalogueCount) return 0xffffffffu;
+    return static_cast<uint32_t>(slotv2::debug::kCatalogue[index].channel);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_debug_value(uint32_t index) {
+    if (index >= slotv2::debug::kCatalogueCount) return 0xffffffffu;
+    return slotv2::debug::kCatalogue[index].value;
+}
+
+__attribute__((visibility("default")))
+const char* slot_v2_debug_name(uint32_t index) {
+    if (index >= slotv2::debug::kCatalogueCount) return nullptr;
+    return slotv2::debug::kCatalogue[index].name;
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_debug_arm(uint32_t channel, uint32_t value) {
+    if (channel > static_cast<uint32_t>(slotv2::debug::Channel::Presentation)) {
+        return 0u;
+    }
+    return slotv2::runtime::armDebugFlag(
+        g_runtime, static_cast<slotv2::debug::Channel>(channel), value
+    ) ? 1u : 0u;
+}
+
 __attribute__((visibility("default")))
 uint32_t slot_v2_freeze_active() {
     return slotv2::runtime::freezeActive(g_runtime);
 }
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_debug_name_ptr(uint32_t index) {
+    if (index >= slotv2::debug::kCatalogueCount) return 0u;
+    return static_cast<uint32_t>(
+        reinterpret_cast<uintptr_t>(slotv2::debug::kCatalogue[index].name)
+    );
+}
+
+// Browser test adapter: explicit accounting, not silent/automatic C++ spins.
+// The frontend must call these once per completed spin.
+__attribute__((visibility("default")))
+int64_t slot_v2_test_bet(uint32_t medals) {
+    if (medals > 3u) return slotv2::runtime::sectionDiff(g_runtime);
+    return slotv2::runtime::applyBet(g_runtime, static_cast<int>(medals)).total_diff;
+}
+
+__attribute__((visibility("default")))
+int64_t slot_v2_test_payout(uint32_t medals) {
+    if (medals > 100u) return slotv2::runtime::sectionDiff(g_runtime);
+    return slotv2::runtime::applyPayout(g_runtime, static_cast<int>(medals)).total_diff;
+}
+
+// BONUS award targets 50/80 by existing C++ engine. This adapter
+// specifies the net-gain amount from the browser's test payout model.
+__attribute__((visibility("default")))
+uint32_t slot_v2_test_bonus_gain(uint32_t net_medals) {
+    if (net_medals > 100u) return 0u;
+    return static_cast<uint32_t>(
+        slotv2::runtime::applyBonusNetGain(g_runtime, static_cast<int>(net_medals)).outcome
+    );
+}
+
+
 
 }
