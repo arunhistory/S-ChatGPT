@@ -1,4 +1,4 @@
-#include "fallback.hpp"
+#include "reel/stop/rules/fallback_rule.hpp"
 
 namespace slotv2::stop_rules::fallback {
 

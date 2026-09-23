@@ -1,6 +1,6 @@
 #pragma once
-#include "../reel-strip/index.hpp"
-#include "../stop-shared/index.hpp"
+#include "reel/reel_strip.hpp"
+#include "reel/stop/stop_types.hpp"
 
 namespace slotv2::stop_rules {
 

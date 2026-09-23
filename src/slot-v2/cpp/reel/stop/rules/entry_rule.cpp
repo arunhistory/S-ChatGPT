@@ -1,4 +1,4 @@
-#include "entry.hpp"
+#include "reel/stop/rules/entry_rule.hpp"
 
 namespace slotv2::stop_rules::entry {
 

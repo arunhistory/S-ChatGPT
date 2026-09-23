@@ -1,4 +1,4 @@
-#include "miss.hpp"
+#include "reel/stop/rules/miss_rule.hpp"
 
 namespace slotv2::stop_rules::miss {
 

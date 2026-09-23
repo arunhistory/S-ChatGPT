@@ -1,4 +1,4 @@
-#include "cherry.hpp"
+#include "reel/stop/rules/cherry_rule.hpp"
 
 namespace slotv2::stop_rules::cherry {
 

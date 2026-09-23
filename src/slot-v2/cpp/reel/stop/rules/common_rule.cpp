@@ -1,4 +1,4 @@
-#include "common.hpp"
+#include "reel/stop/rules/common_rule.hpp"
 
 namespace slotv2::stop_rules {
 

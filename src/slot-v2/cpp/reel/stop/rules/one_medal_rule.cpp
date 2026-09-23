@@ -1,4 +1,4 @@
-#include "one-medal.hpp"
+#include "reel/stop/rules/one_medal_rule.hpp"
 
 namespace slotv2::stop_rules::one_medal {
 
