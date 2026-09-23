@@ -1,7 +1,7 @@
 #pragma once
-#include "../machine-state/index.hpp"
-#include "../pending-event/index.hpp"
-#include "../section-flow/index.hpp"
+#include "core/machine_state.hpp"
+#include "core/pending_event.hpp"
+#include "section/section_flow.hpp"
 
 namespace slotv2::section_transition {
 

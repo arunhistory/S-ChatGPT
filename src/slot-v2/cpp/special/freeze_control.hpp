@@ -1,6 +1,6 @@
 #pragma once
-#include "../shared/types.hpp"
-#include "../stop-shared/index.hpp"
+#include "shared/types.hpp"
+#include "reel/stop/stop_types.hpp"
 
 namespace slotv2::freeze {
 

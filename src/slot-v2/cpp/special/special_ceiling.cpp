@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "special/special_ceiling.hpp"
 
 namespace slotv2::special_ceiling {
 

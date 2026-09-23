@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "special/special_lottery.hpp"
 
 namespace slotv2::special_lottery {
 

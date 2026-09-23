@@ -1,8 +1,8 @@
 #pragma once
 #include <stdint.h>
-#include "../machine-state/index.hpp"
-#include "../shared/rng.hpp"
-#include "../special-result/index.hpp"
+#include "core/machine_state.hpp"
+#include "shared/rng.hpp"
+#include "special/special_result.hpp"
 
 namespace slotv2::special_apply {
 

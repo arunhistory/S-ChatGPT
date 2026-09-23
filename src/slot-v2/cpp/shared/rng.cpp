@@ -1,5 +1,5 @@
-#include "rng.hpp"
-#include "types.hpp"
+#include "shared/rng.hpp"
+#include "shared/types.hpp"
 
 namespace slotv2 {
 

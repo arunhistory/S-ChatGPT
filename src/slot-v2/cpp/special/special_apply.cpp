@@ -1,6 +1,6 @@
-#include "index.hpp"
-#include "../stock-count-lottery/index.hpp"
-#include "../at-cold/index.hpp"
+#include "special/special_apply.hpp"
+#include "stock/stock_count_lottery.hpp"
+#include "at/at_cold.hpp"
 
 namespace slotv2::special_apply {
 

@@ -1,5 +1,5 @@
-#include "index.hpp"
-#include "../reel-strip/index.hpp"
+#include "special/freeze_control.hpp"
+#include "reel/reel_strip.hpp"
 
 namespace slotv2::freeze {
 
