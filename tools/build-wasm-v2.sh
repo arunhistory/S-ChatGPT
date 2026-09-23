@@ -9,6 +9,8 @@ SRC="$ROOT/src/slot-v2/cpp"
   -nostdlib -ffreestanding -fno-exceptions -fno-rtti \
   -Wl,--no-entry -Wl,--export-memory \
   -Wl,--export=slot_v2_reset \
+  -Wl,--export=slot_v2_reset_setting \
+  -Wl,--export=slot_v2_setting \
   -Wl,--export=slot_v2_lever \
   -Wl,--export=slot_v2_last_special \
   -Wl,--export=slot_v2_revival_finalize \
