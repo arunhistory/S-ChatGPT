@@ -41,7 +41,22 @@ Result apply(
         return out;
     }
 
-    // Lower and Upper falls terminate the current AT set.
+    if (machine.at.tier == at_state::Tier::Lower) {
+        if (lower_fall_challenge::beginWaiting(
+                machine.lower_fall_challenge
+            )) {
+            out.lower_fall_challenge_started = true;
+            return out;
+        }
+
+        // A lower Fall must have been armed on the Fall game's lever-on.
+        // Do not guess a fallback termination rule if that invariant is broken.
+        out.applied = false;
+        out.fall_applied = false;
+        return out;
+    }
+
+    // Upper Fall terminates the current AT set.
     // Keep AT active at 0G so the shared AT-window resolver can apply
     // stock / upper comeback / revival in the correct order.
     machine.at.games_left = 0;
