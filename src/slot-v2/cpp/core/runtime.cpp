@@ -157,6 +157,10 @@ SettingResetStatus resetWithSetting(
     state.entry_gate_transition = {};
     state.revival_game = {};
     state.revival_finalize = {};
+    state.latent = {};
+    state.last_latent_capture = {};
+    state.last_latent_completion = normal_latent::Completion::None;
+    state.latent_omen_game = false;
 
     return SettingResetStatus::Applied;
 }
@@ -340,6 +344,9 @@ uint32_t lever(State& state) {
     state.entry_gate_transition = {};
     state.revival_game = {};
     state.revival_finalize = {};
+    state.last_latent_capture = {};
+    state.last_latent_completion = normal_latent::Completion::None;
+    state.latent_omen_game = normal_latent::inOmen(state.latent);
 
     const bool entry_wait_active = state.machine.entry_gate.active;
 
@@ -348,18 +355,21 @@ uint32_t lever(State& state) {
         && !state.ceiling_freeze_pending) {
         normal_state::onLever(state.machine.normal);
 
-        (void)normal_route::checkSpecialWindow(
-            state.rng,
-            state.normal_mode,
-            state.normal_route,
-            state.machine.normal.actual_games
-        );
-
-        state.upper_comeback_cycle =
-            upper_comeback_cycle::playOne(
+        if (!normal_latent::active(state.latent)) {
+            (void)normal_route::checkSpecialWindow(
                 state.rng,
-                state.machine.upper_comeback
+                state.normal_mode,
+                state.normal_route,
+                state.machine.normal.actual_games
             );
+            state.upper_comeback_cycle =
+                upper_comeback_cycle::playOne(
+                    state.rng,
+                    state.machine.upper_comeback
+                );
+        } else {
+            state.upper_comeback_cycle = {};
+        }
 
         if (state.upper_comeback_cycle.ended
             && state.upper_comeback_cycle.hit) {
@@ -432,7 +442,8 @@ uint32_t lever(State& state) {
         // 特殊直撃は通常時だけ。復活チャレンジは通常小役だけを同率で抽選する。
         const bool allow_special =
             state.machine.area == machine_state::Area::Normal
-            && !revival_game_active;
+            && !revival_game_active
+            && !state.latent_omen_game;
 
         result = slotv2::lever::pull(
             state.rng,
@@ -440,7 +451,8 @@ uint32_t lever(State& state) {
         );
 
         if (result.special == SpecialHit::None
-            && state.machine.area == machine_state::Area::Normal) {
+            && state.machine.area == machine_state::Area::Normal
+            && !state.latent_omen_game) {
             state.normal_role_draw = normal_role_trigger::draw(
                 state.rng,
                 result.role
@@ -634,6 +646,15 @@ uint32_t lever(State& state) {
         ? cz_cycle::playOne(state.rng, state.machine.cz, result.role)
         : cz_cycle::Result{};
 
+    // A staged CZ is an animation route for a previously awarded hit.
+    // The tenth miss cannot discard that fixed award.
+    if (normal_latent::inCZ(state.latent)
+        && state.cz_cycle.active
+        && state.cz_cycle.ended
+        && !state.cz_cycle.base_hit) {
+        state.cz_cycle.base_hit = true;
+        cz_state::resolve(state.machine.cz);
+    }
     state.cz_finalize = cz_finalize::apply(
         state.machine,
         state.pending,
@@ -798,7 +819,8 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
                     state.pending
                 );
 
-            if (state.machine.area == machine_state::Area::Normal) {
+            if (state.machine.area == machine_state::Area::Normal
+                && !state.latent_omen_game) {
                 (void)game_finalize::apply(
                     state.session.lever.role,
                     state.acquisition,
@@ -929,12 +951,59 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
 
             // CZ result is fixed at lever-on, but the reward transition begins
             // only after the winning game's third reel has stopped.
-            state.cz_reward = cz_reward::apply(
-                state.rng,
-                state.machine,
-                state.pending,
-                state.normal_mode
-            );
+            bool scripted_cz_finished = false;
+            if (normal_latent::inCZ(state.latent)
+                && (pending_event::has(state.pending, pending_event::CZHit)
+                    || pending_event::has(
+                        state.pending, pending_event::CZThreeMissHit
+                    ))) {
+                // The CZ never rerolls the award already fixed at the
+                // original normal hit. The usual CZ success has already
+                // been recorded by cz_finalize above.
+                (void)pending_event::consume(
+                    state.pending, pending_event::CZHit
+                );
+                (void)pending_event::consume(
+                    state.pending, pending_event::CZThreeMissHit
+                );
+                state.machine.area = machine_state::Area::Normal;
+                scripted_cz_finished = normal_latent::completeScriptedCZ(
+                    state.latent, state.machine.entry_gate
+                );
+                state.cz_reward = {};
+            } else {
+                state.cz_reward = cz_reward::apply(
+                    state.rng,
+                    state.machine,
+                    state.pending,
+                    state.normal_mode
+                );
+            }
+
+            if (state.latent_omen_game) {
+                state.last_latent_completion =
+                    normal_latent::completeOmenGame(
+                        state.latent, state.machine.entry_gate
+                    );
+                if (state.last_latent_completion
+                    == normal_latent::Completion::CZStarted) {
+                    cz_state::start(state.machine.cz);
+                    state.machine.area = machine_state::Area::CZ;
+                }
+            } else if (!scripted_cz_finished
+                && !state.session.lever.entry_wait
+                && state.session.lever.special == SpecialHit::None
+                && state.machine.area == machine_state::Area::Normal
+                && !normal_latent::active(state.latent)
+                && state.machine.entry_gate.active) {
+                // Capture all ordinary normal awards, including strong-role
+                // triggers, ceiling, fifth Bell and ordinary CZ successes.
+                // Standalone special-direct and AT-internal awards bypass it.
+                state.last_latent_capture = normal_latent::capture(
+                    state.rng, state.latent, state.machine.entry_gate,
+                    !state.cz_cycle.active
+                );
+            }
 
             if (state.cz_finalize.outcome
                     == cz_finalize::Outcome::MissReturnNormal
@@ -1604,6 +1673,15 @@ uint32_t entryGatePacked(const State& state) {
         | (static_cast<uint32_t>(g.kind) << 8)
         | (target << 16)
         | ((g.stock_to_add & 0xffu) << 24);
+}
+
+uint32_t normalLatentPacked(const State& state) {
+    // bits 0..7 stage / 8..15 omen G remaining / 16..23 omen G total /
+    // 24..31 chosen route. 0 means no pending presentation.
+    return static_cast<uint32_t>(state.latent.stage)
+        | (static_cast<uint32_t>(state.latent.omen_games_left) << 8)
+        | (static_cast<uint32_t>(state.latent.omen_games_total) << 16)
+        | (static_cast<uint32_t>(state.latent.route) << 24);
 }
 
 } // namespace slotv2::runtime

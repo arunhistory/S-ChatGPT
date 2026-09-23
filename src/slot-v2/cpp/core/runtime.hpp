@@ -43,6 +43,7 @@
 #include "special/special_zone_transition.hpp"
 #include "special/upper_special_transition.hpp"
 #include "normal/normal_hit_entry.hpp"
+#include "normal/normal_latent.hpp"
 #include "entry/entry_gate_transition.hpp"
 #include "revival/revival_cycle.hpp"
 
@@ -106,6 +107,10 @@ struct State {
     entry_gate_transition::Result entry_gate_transition{};
     revival_cycle::Game revival_game{};
     revival_cycle::FinalizeResult revival_finalize{};
+    normal_latent::State latent{};
+    normal_latent::Capture last_latent_capture{};
+    normal_latent::Completion last_latent_completion{normal_latent::Completion::None};
+    bool latent_omen_game{false};
 };
 
 void reset(State& state, uint64_t seed);
@@ -189,6 +194,7 @@ uint32_t revivalPacked(const State& state);
 uint32_t revivalGamePacked(const State& state);
 uint32_t revivalFinalizePacked(const State& state);
 uint32_t entryGatePacked(const State& state);
+uint32_t normalLatentPacked(const State& state);
 uint32_t lowerFallChallengePacked(const State& state);
 uint32_t lowerFallPushOutcome(const State& state);
 
