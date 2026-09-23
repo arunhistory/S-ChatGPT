@@ -2,9 +2,13 @@
 
 namespace slotv2::setting_profile {
 
+bool validSetting(uint8_t setting) {
+    return setting >= kMinSetting && setting <= kMaxSetting;
+}
+
 uint8_t clampSetting(uint8_t setting) {
-    if (setting < 1u) return 1u;
-    if (setting > 7u) return 7u;
+    if (setting < kMinSetting) return kMinSetting;
+    if (setting > kMaxSetting) return kMaxSetting;
     return setting;
 }
 
