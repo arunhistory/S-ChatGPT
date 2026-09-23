@@ -1,8 +1,8 @@
 #pragma once
-#include "../shared/types.hpp"
-#include "../acquisition/index.hpp"
-#include "../normal-progress/index.hpp"
-#include "../pending-event/index.hpp"
+#include "shared/types.hpp"
+#include "reel/reel_acquisition.hpp"
+#include "normal/normal_progress.hpp"
+#include "core/pending_event.hpp"
 
 namespace slotv2::game_finalize {
 

@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "core/main_lottery.hpp"
 
 namespace slotv2::main_lottery {
 

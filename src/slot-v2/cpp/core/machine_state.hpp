@@ -1,19 +1,19 @@
 #pragma once
 #include <stdint.h>
-#include "../section/index.hpp"
-#include "../stock/index.hpp"
-#include "../normal-progress/index.hpp"
-#include "../normal-state/index.hpp"
-#include "../normal-high/index.hpp"
-#include "../at-state/index.hpp"
-#include "../at-omen/index.hpp"
-#include "../bonus-state/index.hpp"
-#include "../cz-state/index.hpp"
-#include "../special-zone/index.hpp"
-#include "../upper-special/index.hpp"
+#include "section/section_state.hpp"
+#include "stock/stock_state.hpp"
+#include "normal/normal_progress.hpp"
+#include "normal/normal_state.hpp"
+#include "normal/normal_high.hpp"
+#include "at/at_state.hpp"
+#include "at/at_omen.hpp"
+#include "bonus/bonus_state.hpp"
+#include "cz/cz_state.hpp"
+#include "special/special_zone.hpp"
+#include "special/upper_special.hpp"
 #include "entry/entry_gate.hpp"
-#include "../upper-comeback/index.hpp"
-#include "../revival-state/index.hpp"
+#include "at/upper_comeback_state.hpp"
+#include "revival/revival_state.hpp"
 
 namespace slotv2::machine_state {
 

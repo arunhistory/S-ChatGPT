@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "core/game_finalize.hpp"
 
 namespace slotv2::game_finalize {
 

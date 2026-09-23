@@ -1,6 +1,6 @@
 #pragma once
 #include <stdint.h>
-#include "../section/index.hpp"
+#include "section/section_state.hpp"
 
 namespace slotv2::accounting {
 

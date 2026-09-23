@@ -1,6 +1,6 @@
-#include "index.hpp"
-#include "../main-lottery/index.hpp"
-#include "../special-lottery/index.hpp"
+#include "core/lever.hpp"
+#include "core/main_lottery.hpp"
+#include "special/special_lottery.hpp"
 
 namespace slotv2::lever {
 
