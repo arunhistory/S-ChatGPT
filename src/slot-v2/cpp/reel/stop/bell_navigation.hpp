@@ -10,6 +10,7 @@ struct Plan {
     bool active{false};
     uint8_t order_index{0};
     navigation::Order order{};
+    uint8_t required_stops{3};
 };
 
 // AT/ボーナス等の上位状態が navigation_enabled=true を渡した時だけ生成。
