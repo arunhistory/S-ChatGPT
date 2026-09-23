@@ -1,0 +1,36 @@
+name: Release build latest setting6 v2 browser WASM (one shot)
+on:
+  push:
+    branches: [build/v2-browser-release-20260924-once]
+    paths: [.github/workflows/v2-browser-release-one-shot.yml]
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install linker
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lld
+      - name: Compile current C++ without diagnostics
+        run: bash tools/build-wasm-v2.sh
+      - name: Install exact same binary beside browser UI
+        run: |
+          cp src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
+          cmp src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
+      - name: Validate compiled game and browser
+        run: |
+          node --check web/setting6-v2.js
+          node --check web/v2.js
+          node tools/verify-setting6-wasm.mjs
+          node tools/verify-setting6-v2-ui.mjs
+      - name: Commit release binaries to isolated build branch
+        run: |
+          git config user.name "setting6-v2-build"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
+          git commit -m "build: latest setting6 playable WASM [skip ci]"
+          git push origin HEAD:build/v2-browser-release-20260924-once
