@@ -7,7 +7,7 @@ SRC="$ROOT/src/slot-v2/cpp"
 WASM_DIR="$ROOT/src/slot-v2/wasm"
 mkdir -p "$WASM_DIR"
 
-"$CLANGXX" --target=wasm32-unknown-unknown -std=c++20 -O3 \
+"$CLANGXX" --target=wasm32-unknown-unknown -std=c++20 -O3 -I"$SRC" \
   -nostdlib -ffreestanding -fno-exceptions -fno-rtti \
   -Wl,--no-entry -Wl,--export-memory \
   -Wl,--export=slot_v2_reset \
