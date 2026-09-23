@@ -111,6 +111,7 @@ add_library(slot_v2_core
   src/slot-v2/cpp/at/lower_fall_challenge.cpp
   src/slot-v2/cpp/at/at_window_transition.cpp
   src/slot-v2/cpp/at/at_event.cpp
+  src/slot-v2/cpp/special/chain_zone.cpp
   src/slot-v2/cpp/special/special_zone.cpp
   src/slot-v2/cpp/special/special_zone_pending.cpp
   src/slot-v2/cpp/special/special_zone_transition.cpp
@@ -364,3 +365,10 @@ add_executable(slot_v2_setting6_odds_test
   src/slot-v2/cpp/core/setting_profile.cpp
 )
 target_include_directories(slot_v2_setting6_odds_test PRIVATE src/slot-v2/cpp)
+
+# Approved 5G chain-zone pure state-machine regression test.
+add_executable(slot_v2_chain_zone_test
+  src/slot-v2/cpp/tests/special/chain_zone_test.cpp
+  src/slot-v2/cpp/special/chain_zone.cpp
+)
+target_include_directories(slot_v2_chain_zone_test PRIVATE src/slot-v2/cpp)
