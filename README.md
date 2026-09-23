@@ -6,7 +6,9 @@
 > Detailed current odds, AT rules, outstanding features, and validation
 > status: [docs/setting-policy.md](docs/setting-policy.md).
 > For the v2 setting-6 regression suite, run
-> `bash tools/check-setting6-v2.sh` locally. The 114% machine payout is
+> `bash tools/check-setting6-v2.sh` locally. For the browser-independent
+> setting-6 WASM build, run `bash tools/build-wasm-v2.sh`; the binary goes
+> into `src/slot-v2/wasm/slot-v2.wasm` (not the legacy `web/slot.wasm`). The 114% machine payout is
 > a design target, **not** a tested long-run value or legal certification.
 
 ---

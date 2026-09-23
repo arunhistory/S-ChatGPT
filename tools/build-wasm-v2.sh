@@ -4,6 +4,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CLANGXX="${CLANGXX:-clang++}"
 SRC="$ROOT/src/slot-v2/cpp"
+WASM_DIR="$ROOT/src/slot-v2/wasm"
+mkdir -p "$WASM_DIR"
 
 "$CLANGXX" --target=wasm32-unknown-unknown -std=c++20 -O3 \
   -nostdlib -ffreestanding -fno-exceptions -fno-rtti \
@@ -74,7 +76,7 @@ SRC="$ROOT/src/slot-v2/cpp"
   -Wl,--export=slot_v2_visible_symbol \
   -Wl,--export=slot_v2_symbol_at \
   -Wl,--initial-memory=131072 -Wl,--max-memory=16777216 \
-  -o "$ROOT/web/slot-v2.wasm" \
+  -o "$WASM_DIR/slot-v2.wasm" \
   "$SRC/shared/memory.cpp" \
   "$SRC/shared/rng.cpp" \
   "$SRC/special/special_lottery.cpp" \
@@ -86,6 +88,7 @@ SRC="$ROOT/src/slot-v2/cpp"
   "$SRC/reel/reel_validator.cpp" \
   "$SRC/core/preflight.cpp" \
   "$SRC/reel/reel_read.cpp" \
+  "$SRC/reel/stop/reel_candidate.cpp" \
   "$SRC/reel/stop/stop_candidate.cpp" \
   "$SRC/reel/stop/rules/common_rule.cpp" \
   "$SRC/reel/stop/rules/bell_rule.cpp" \
@@ -166,6 +169,7 @@ SRC="$ROOT/src/slot-v2/cpp"
   "$SRC/at/lower_fall_challenge.cpp" \
   "$SRC/at/at_window_transition.cpp" \
   "$SRC/at/at_event.cpp" \
+  "$SRC/special/chain_zone.cpp" \
   "$SRC/special/special_zone.cpp" \
   "$SRC/special/special_zone_pending.cpp" \
   "$SRC/special/special_zone_transition.cpp" \
@@ -187,4 +191,4 @@ SRC="$ROOT/src/slot-v2/cpp"
   "$SRC/core/session.cpp" \
   "$SRC/interface/wasm_exports.cpp"
 
-echo "Built web/slot-v2.wasm from structured slot-v2/cpp sources."
+echo "Built $WASM_DIR/slot-v2.wasm from structured slot-v2/cpp sources."
