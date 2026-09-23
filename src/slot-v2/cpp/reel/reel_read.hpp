@@ -1,5 +1,5 @@
 #pragma once
-#include "../shared/types.hpp"
+#include "shared/types.hpp"
 
 namespace slotv2::reel_read {
 

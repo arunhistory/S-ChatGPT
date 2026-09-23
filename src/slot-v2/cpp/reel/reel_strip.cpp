@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "reel/reel_strip.hpp"
 
 namespace slotv2::reel_strip {
 

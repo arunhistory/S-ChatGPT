@@ -1,5 +1,5 @@
-#include "index.hpp"
-#include "../reel-strip/index.hpp"
+#include "reel/reel_read.hpp"
+#include "reel/reel_strip.hpp"
 
 namespace slotv2::reel_read {
 

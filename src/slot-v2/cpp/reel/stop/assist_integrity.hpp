@@ -1,5 +1,5 @@
 #pragma once
-#include "../stop-shared/index.hpp"
+#include "reel/stop/stop_types.hpp"
 
 namespace slotv2::assist_integrity {
 

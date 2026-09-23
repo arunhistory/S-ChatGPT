@@ -1,6 +1,6 @@
-#include "index.hpp"
-#include "../assist-target/index.hpp"
-#include "../reel-read/index.hpp"
+#include "reel/stop/assist_integrity.hpp"
+#include "reel/stop/assist_target.hpp"
+#include "reel/reel_read.hpp"
 
 namespace slotv2::assist_integrity {
 

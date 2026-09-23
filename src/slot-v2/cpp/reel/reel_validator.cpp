@@ -1,6 +1,6 @@
-#include "index.hpp"
-#include "../reel-strip/index.hpp"
-#include "../assist-target/index.hpp"
+#include "reel/reel_validator.hpp"
+#include "reel/reel_strip.hpp"
+#include "reel/stop/assist_target.hpp"
 
 namespace slotv2::reel_validator {
 namespace {

@@ -1,5 +1,5 @@
-#include "index.hpp"
-#include "../line/index.hpp"
+#include "reel/reel_acquisition.hpp"
+#include "reel/reel_line.hpp"
 
 namespace slotv2::acquisition {
 namespace {

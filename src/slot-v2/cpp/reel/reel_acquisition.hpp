@@ -1,6 +1,6 @@
 #pragma once
 #include <stdint.h>
-#include "../shared/types.hpp"
+#include "shared/types.hpp"
 
 namespace slotv2::acquisition {
 
