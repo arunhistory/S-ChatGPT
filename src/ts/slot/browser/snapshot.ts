@@ -13,6 +13,7 @@ import {
   readCZFinalize,
   readEntryGate,
   readMachineSnapshot,
+  readLowerFallChallenge,
   readNormalATTrigger,
   readNormalMode,
   readNormalRoute,
@@ -52,6 +53,7 @@ import {
   CZFinalizeSnapshot,
   EntryGateSnapshot,
   MachineSnapshot,
+  LowerFallChallengeSnapshot,
   NormalATTriggerSnapshot,
   NormalProgressSnapshot,
   NormalRouteSnapshot,
@@ -75,6 +77,7 @@ export interface SlotV2Snapshot {
   atResolution: ATResolutionSnapshot;
   atSingleTransition: ATSingleTransitionSnapshot;
   atWindow: ATWindowSnapshot;
+  lowerFallChallenge: LowerFallChallengeSnapshot;
   bellNavigation: BellNavigationSnapshot;
   bonus: BonusSnapshot;
   bonusCycle: BonusCycleSnapshot;
@@ -113,6 +116,7 @@ export function readSlotV2Snapshot(
     atResolution: readATResolution(wasm),
     atSingleTransition: readATSingleTransition(wasm),
     atWindow: readATWindow(wasm),
+    lowerFallChallenge: readLowerFallChallenge(wasm),
     bellNavigation: readBellNavigation(wasm),
     bonus: readBonusState(wasm),
     bonusCycle: readBonusCycle(wasm),
