@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#090b12" />
   <title>S-ChatGPT SLOT｜設定6 V2</title>
   <link rel="stylesheet" href="styles.css?v=20260921-textreel1" />
-  <link rel="stylesheet" href="v2-ui.css?v=v2-20260924a" />
+  <link rel="stylesheet" href="v2-ui.css?v=v2-20260924-debugfix2" />
 </head>
 <body>
   <main class="machine">
@@ -160,13 +160,13 @@
       <ol id="history"></ol>
     </details>
 
-    <details class="debug compact-drawer v2-debug" id="v2Debug">
-      <summary>DEBUG FLAGS / 内部フラグ70項目</summary>
+    <details class="v2-debug" id="v2Debug" aria-label="右下デバッグフラグ">
+      <summary><span>DEBUG FLAGS</span><strong id="debugCount">70</strong></summary>
       <div class="debug-tools v2-debug-tools">
         <label for="flagPicker">成立させる内部フラグ</label>
         <select id="flagPicker"><option value="">最新WASM読込中...</option></select>
         <button type="button" id="applyFlag">指定フラグを設定</button>
-        <small id="flagStatus">抽選を変えずに内部フラグをテストできます。</small>
+        <small id="flagStatus" role="status" aria-live="polite">フラグを選択して「指定フラグを設定」を押してください。</small>
         <label for="routePicker">潜伏演出ルート</label>
         <select id="routePicker">
           <option value="">C++通常抽選：95% CZ / 4%通常 / 1%イベント</option>
@@ -180,6 +180,6 @@
     </details>
   </main>
 
-  <script defer src="app-v2.js?v=v2-20260924a"></script>
+  <script defer src="app-v2.js?v=v2-20260924-debugfix2"></script>
 </body>
 </html>

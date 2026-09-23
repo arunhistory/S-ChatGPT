@@ -75,6 +75,9 @@
       group.append(option);
     }
     for(let channel=1;channel<=11;channel++)if(groups[channel])root.append(groups[channel]);
+    $("debugCount").textContent=String(e.slot_v2_debug_count());
+    if(root.querySelectorAll("option").length!==e.slot_v2_debug_count()+1)
+      throw Error("デバッグフラグ一覧の件数が一致しません");
   }
   function reelRender(i,pos){
     const reel=$("reel"+(i+1));reel.replaceChildren();

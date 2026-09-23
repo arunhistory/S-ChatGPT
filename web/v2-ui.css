@@ -25,3 +25,114 @@ body{padding:8px;overflow-x:hidden}
  .reel span:nth-child(2){font-size:27px}.controls{gap:6px}
  .utility{padding-bottom:40px;flex-wrap:wrap}.status-lamp{padding:6px 8px;font-size:11px}
  .reel-result{gap:5px;font-size:10px}}
+
+/* v2 right-bottom debugger: independent of the old compact-drawer rules. */
+details#v2Debug {
+  position: fixed;
+  right: max(8px, env(safe-area-inset-right));
+  bottom: max(8px, env(safe-area-inset-bottom));
+  z-index: 200;
+  width: min(196px, calc(51vw - 8px));
+  max-height: none;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  color: #f4f7ff;
+  background: #111d33;
+  border: 2px solid #78aafa;
+  border-radius: 14px;
+  box-shadow: 0 4px 22px #000c;
+}
+details#v2Debug > summary {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  box-sizing: border-box;
+  min-height: 46px;
+  padding: 10px 14px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  color: #fff;
+  border-radius: 12px;
+  background: #183154;
+  touch-action: manipulation;
+}
+details#v2Debug > summary::-webkit-details-marker { display: none; }
+details#v2Debug > summary::before { content: "⚙"; font-size: 16px; margin-right: 2px; }
+details#v2Debug > summary strong {
+  padding: 3px 7px;
+  color: #0c1930;
+  background: #b4d4ff;
+  border-radius: 999px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+details#v2Debug[open] {
+  width: min(380px, calc(100vw - 16px));
+  max-height: min(78dvh, 670px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-shadow: 0 12px 56px #000e;
+}
+details#v2Debug .v2-debug-tools {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 9px;
+  padding: 12px;
+  margin: 0;
+}
+details#v2Debug .v2-debug-tools label {
+  font-size: 13px;
+  color: #d5e5ff;
+  font-weight: 700;
+}
+details#v2Debug .v2-debug-tools select,
+details#v2Debug .v2-debug-tools button {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 10px;
+  font-size: 16px; /* prevent iOS auto-zoom */
+  line-height: 1.25;
+  border: 1px solid #637ca2;
+  border-radius: 9px;
+  background: #0e1a2f;
+  color: #fff;
+}
+details#v2Debug .v2-debug-tools button {
+  background: #235da0;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+details#v2Debug #flagStatus {
+  display: block;
+  min-height: 34px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #c6e6ff;
+}
+details#v2Debug #debugState {
+  box-sizing: border-box;
+  display: block;
+  max-height: 170px;
+  overflow: auto;
+  margin: 0 12px 12px;
+  padding: 9px;
+  font-size: 11px;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #060b15;
+}
