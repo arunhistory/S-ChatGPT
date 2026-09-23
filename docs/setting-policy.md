@@ -1,98 +1,58 @@
-# Setting policy
+# S-ChatGPT v2: setting profile policy (2026-09-23)
 
-## Setting layout
+## Playable profiles
 
-| ID | Role |
-|---:|---|
-| 1 | Japanese-compliance profile (lowest / L-style tuning may be used) |
-| 2 | Japanese-compliance profile |
-| 3 | Japanese-compliance profile |
-| 4 | Japanese-compliance profile |
-| 5 | Japanese-compliance profile |
-| 6 | Highest-performance profile that is tuned to Japanese pachislot technical/regulatory targets |
-| 7 / EX | Exhibition / personal-use full-spec profile; current game design baseline |
+Only **setting 6** is implemented. Settings 1–5 and 7 retain their numeric
+IDs and shared engine shape but have **no odds, payout calibration or playable
+runtime state**. `resetWithSetting` rejects their selection as
+`NotImplemented` without mutating the running game. Older
+`src/slot_engine.cpp` and `web/slot.wasm` are legacy prototypes, **not** a
+measurement or build of this setting-6 design.
 
-## Design rule
+## Approved setting 6: normal play
 
-- EX is the source design for the intended game feel and full performance.
-- Settings 1-6 reuse the same game rules and state machine, but their probabilities / payout parameters may be reduced or adjusted to meet the Japanese target profile.
-- Setting 6 should preserve EX behavior as much as practical while staying inside the Japanese target envelope.
-- EX is not used as the compliance reference profile.
-- Runtime supports explicit setting selection from 1 through 7. The compatibility reset path defaults to setting 6; changing the setting uses an atomic reset so one play state never mixes two settings.
+Draws are on separate 2^27 boxes in AT > bonus > CZ priority order. Later
+thresholds compensate for earlier wins. The observed, ceiling-EXCLUDED basic
+outcomes target:
 
-## Target payout ratios
-
-These are calibration targets, not measured results.
-
-| Setting | Target payout ratio |
-|---:|---:|
-| 1 / L | 85% |
-| 2 | 96% |
-| 3 | 99% |
-| 4 | 103% |
-| 5 | 108% |
-| 6 | 114% |
-| 7 / EX | 150% |
-
-Setting 6 is the highest Japanese-target profile. EX is the unconstrained personal/exhibition profile and is not part of the Japanese-compliance target set.
-
-## Current EX payout targets
-
-- Lower AT: approximately +6 medals/game net.
-- Middle AT: approximately +6 medals/game net.
-- Upper AT: approximately +9 medals/game net.
-
-## Implementation note
-
-Do not fork the game engine per setting. Keep one state machine and select a setting parameter profile. This allows the same normal-mode, table, omen, CZ, bonus, AT, stock, favorable-section, and reel-control logic to be shared across settings.
-
-
-## Settings 1-5 calibrated profiles
-
-Current completed-logic calibration check after locking section roulette and strong-chance direct AT. Settings 1-6 use 3,000,000 games x 5 deterministic seeds; EX is additionally checked over 6,000,000 games x 5 seeds because its unbounded upper-special tail has much larger variance:
-
-| Setting | Target | Measured mean |
-|---:|---:|---:|
-| 1 / L | 85% | 85.12% |
-| 2 | 96% | 95.98% |
-| 3 | 99% | 99.01% |
-| 4 | 103% | 102.98% |
-| 5 | 108% | 108.27% |
-| 6 | 114% | 114.30% |
-| 7 / EX | 150% | ~150% (149.96% at 6,000,000G x 5 seeds) |
-
-Setting 1/L keeps the global five-regular-hit rescue rule. Its 85% target is achieved by suppressing optional AT conversion, continuation and growth rather than disabling that rescue. Settings 2-6 progressively increase AT conversion, stock, comeback and AT-event strength without forking the state machine.
-
-## Current calibration candidate
-
-Setting 6 and EX share the same core game rules, initial AT-game distribution, ordinary add distribution, and net rates (+6 / +6 / +9). Their probability profiles differ.
-
-| Parameter | Setting 6 | EX |
+| Outcome | Basic observed rate | Threshold / 134217728 |
 |---|---:|---:|
-| Long-run target | 114% | 150% |
-| Raw CZ route | 1/440 | 1/414 |
-| Raw bonus route | 1/600 | 1/548 |
-| Raw AT route | 1/1200 | 1/1065 |
-| Bonus stock lottery | 12% | 14.5% |
-| Upper comeback | 22% | 25.5% |
-| Lower AT hit base | 1/180 | 1/164 |
-| Lower AT add base | 1/240 | 1/203 |
-| Lower AT special base | 1/600 | 1/502 |
-| Upper-special base | 1/4000 | 1/3075 |
-| Middle/upper event scale | 2.10x | 2.37x |
+| CZ | 1/1150 | 116824 |
+| Ordinary bonus | 1/1700 | 78981 |
+| Direct lower AT | 1/2650 | 50648 |
 
-Upper-special continuation is no longer hard-capped. The whole continuation chain is pre-decided at entry (lever-style predetermined result) using an unbounded geometric continuation process. Settings 1-6 use p=0.7543 (about 4.07 chains / about 167G expected add) and EX uses p=0.94055 (about 16.82 chains / about 690G expected add).
+All normal modes, ceiling tables, rare-role direct hits, CZ rescue and
+five-consecutive-nine-medal-bell rescue remain part of the shared state machine.
+Preliminary ceiling-INCLUDED odds from a separate approximate model were
+CZ ~1/551, normal bonus ~1/506, AT ~1/670, bonus+AT ~1/288;
+**those are estimates, not runtime measurements**.
 
-Implemented core logic now includes the six rare roles, strong-cherry guaranteed reward split, five consecutive 9-medal-bell AT, actual/display game separation, high-probability entry/exit and shortening, segment cold treatment, AT table transition matrix, +2400 favorable-section cut, stock-level section reward handling, CZ/bonus/AT/stock logic, and unbounded upper special.
+## Approved setting 6: AT
 
-The favorable-section cut roulette is now locked by stock thresholds 0/1/3/5. In lower/middle AT, tier-up rates are 0.5% / 10% / 25% / 50%. In upper AT, special-zone entry rates are 0% / 10% / 50% / 75%; when this wins, 1/3 enters upper special and 2/3 enters the normal special zone.
+- Lower tier: approximate AT event total **1/80**.
+- Middle and upper tiers: approximate AT event total **1/50**.
+- Fall: separate fixed **1/400** for all tiers.
+- New chain special zone: lower **1/500**, middle **1/450**, upper **1/400**,
+  counted **inside** the AT event totals.
+- Scale other AT event frequencies proportionally, keeping all four
+  table-specific rate ratios and relative event weights. Preserve the
+  existing 60% cold entry / 70% growth rate on cold starts. Global rates
+  are statistical targets dependent on table occupancy, not a claim of
+  identical odds in each AT table or during every cold/warm interval.
+- Lower/middle AT net +6 per game, upper +9.
+- Keep lower Fall's 50% predetermined PUSH revival, generic 5G revival,
+  specials, upper comeback and existing bonus/stock/section mechanisms.
 
-Strong-chance is fixed at approximately 1/180 and has a 1% direct lower-AT route in normal play, in addition to its high-probability behavior.
+Withdrawn: independent 1/100 AT +5–50G reward and independent 1/100
+normal-play 15-medal small hit. Neither may appear in setting 6.
 
-### Reproducible payout check
+## Validation / open items
 
-Run:
+114% is the **target**, not an achieved or legally certified payout. A complete
+payout run must be measured from real total bets and payouts after the
+remaining subsystems are wired. Unspecified rules must not be silently invented:
+normal Penguin ZONE / Kingdom ZONE entry odds, any still-unapproved 30–100
+medal reward weighting, and remaining mismatches between v2 and design notes.
+Do not borrow earlier setting-specific legacy performance calibration.
 
-`tools/check-payout.sh 5000000`
-
-This compiles the native simulator without GitHub Actions and runs all settings across five deterministic seeds. The simulator reports both the target payout ratio and measured payout ratio.
+No GitHub Actions loop or simulator deployment is required for this branch.

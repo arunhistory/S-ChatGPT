@@ -50,7 +50,8 @@ namespace slotv2::runtime {
 
 enum class SettingResetStatus : uint8_t {
     Applied = 0,
-    InvalidSetting = 1
+    InvalidSetting = 1,
+    NotImplemented = 2
 };
 
 struct State {

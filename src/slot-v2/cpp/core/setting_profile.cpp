@@ -12,18 +12,18 @@ uint8_t clampSetting(uint8_t setting) {
     return setting;
 }
 
+bool implementedSetting(uint8_t setting) {
+    return setting == 6u;
+}
+
 NormalRaw normalRaw(uint8_t setting) {
-    switch (clampSetting(setting)) {
-        case 1: return {11623u, 424392u, 191740u};
-        case 2: return {78694u, 165226u, 280222u};
-        case 3: return {86265u, 177925u, 284764u};
-        case 4: return {93381u, 190517u, 290987u};
-        case 5: return {100772u, 204521u, 299714u};
-        case 6: return {108269u, 216538u, 305040u};
-        case 7:
-        default:
-            return {132579u, 257659u, 324197u};
-    }
+    if (!implementedSetting(setting)) return {}; // 1-5 and 7: reserved, no speculative odds.
+
+    // 2^27 draws per check, priority AT > BONUS > CZ.
+    // Correct the later thresholds for mutually exclusive outcomes, so the
+    // *observed raw results* (not just the underlying trials) approach:
+    // AT=1/2650, BONUS=1/1700, CZ=1/1150, ceiling excluded.
+    return {50648u, 78981u, 116824u};
 }
 
 } // namespace slotv2::setting_profile

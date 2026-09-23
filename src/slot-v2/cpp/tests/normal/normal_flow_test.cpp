@@ -8,9 +8,9 @@ int main() {
 
     {
         const auto p = slotv2::setting_profile::normalRaw(6u);
-        ok = ok && p.at_threshold_27 == 108269u;
-        ok = ok && p.bonus_threshold_27 == 216538u;
-        ok = ok && p.cz_threshold_27 == 305040u;
+        ok = ok && p.at_threshold_27 == 50648u;
+        ok = ok && p.bonus_threshold_27 == 78981u;
+        ok = ok && p.cz_threshold_27 == 116824u;
     }
 
     ok = ok && slotv2::normal_high::entryThresholdPerThousand(

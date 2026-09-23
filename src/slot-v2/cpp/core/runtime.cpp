@@ -103,6 +103,9 @@ SettingResetStatus resetWithSetting(
     if (!setting_profile::validSetting(setting)) {
         return SettingResetStatus::InvalidSetting;
     }
+    if (!setting_profile::implementedSetting(setting)) {
+        return SettingResetStatus::NotImplemented;
+    }
 
     state.rng.reset(seed);
     session::reset(state.session);
