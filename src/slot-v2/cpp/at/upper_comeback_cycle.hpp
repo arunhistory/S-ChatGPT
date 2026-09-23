@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
-#include "../shared/rng.hpp"
-#include "../upper-comeback/index.hpp"
+#include "shared/rng.hpp"
+#include "at/upper_comeback_state.hpp"
 
 namespace slotv2::upper_comeback_cycle {
 

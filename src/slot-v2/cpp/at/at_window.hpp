@@ -1,6 +1,6 @@
 #pragma once
 #include <stdint.h>
-#include "../machine-state/index.hpp"
+#include "core/machine_state.hpp"
 
 namespace slotv2::at_window {
 

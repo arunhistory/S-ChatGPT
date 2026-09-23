@@ -1,6 +1,6 @@
 #pragma once
 #include <stdint.h>
-#include "../shared/rng.hpp"
+#include "shared/rng.hpp"
 
 namespace slotv2::upper_comeback {
 
