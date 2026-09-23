@@ -25,6 +25,8 @@ import {
   RevivalOutcome,
   SessionPhase,
   SectionRewardKind,
+  SettingResetStatus,
+  SlotSetting,
   SpecialHit,
   SpecialResult,
   StopResult,
@@ -36,6 +38,8 @@ import {
 
 export interface SlotWasmV2 {
   slot_v2_reset(seedLo: number, seedHi: number): void;
+  slot_v2_reset_setting(seedLo: number, seedHi: number, setting: number): number;
+  slot_v2_setting(): number;
   slot_v2_lever(): number;
   slot_v2_stop(reel: number, pressedPosition: number): number;
   slot_v2_phase(): number;
@@ -115,6 +119,23 @@ export function decodeStopResult(packed: number): StopResult {
     slip: (packed >>> 8) & 0xff,
     status: ((packed >>> 16) & 0xff) as StopStatus,
   };
+}
+
+export function resetWithSetting(
+  wasm: SlotWasmV2,
+  seedLo: number,
+  seedHi: number,
+  setting: SlotSetting,
+): SettingResetStatus {
+  return wasm.slot_v2_reset_setting(
+    seedLo >>> 0,
+    seedHi >>> 0,
+    setting,
+  ) as SettingResetStatus;
+}
+
+export function readSetting(wasm: SlotWasmV2): SlotSetting {
+  return wasm.slot_v2_setting() as SlotSetting;
 }
 
 // TSは結果を決めない。C++/WASMが返した確定値を型付きで受け取るだけ。
