@@ -1,5 +1,5 @@
-#include "replay.hpp"
-#include "../assist-target/index.hpp"
+#include "reel/stop/rules/replay_rule.hpp"
+#include "reel/stop/assist_target.hpp"
 
 namespace slotv2::stop_rules::replay {
 

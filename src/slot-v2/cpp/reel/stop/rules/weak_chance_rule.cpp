@@ -1,4 +1,4 @@
-#include "weak-chance.hpp"
+#include "reel/stop/rules/weak_chance_rule.hpp"
 
 namespace slotv2::stop_rules::weak_chance {
 

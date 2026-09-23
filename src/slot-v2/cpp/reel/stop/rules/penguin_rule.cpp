@@ -1,4 +1,4 @@
-#include "penguin.hpp"
+#include "reel/stop/rules/penguin_rule.hpp"
 
 namespace slotv2::stop_rules::penguin {
 

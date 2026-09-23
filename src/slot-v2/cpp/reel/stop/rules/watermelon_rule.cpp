@@ -1,4 +1,4 @@
-#include "watermelon.hpp"
+#include "reel/stop/rules/watermelon_rule.hpp"
 
 namespace slotv2::stop_rules::watermelon {
 

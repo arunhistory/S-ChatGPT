@@ -1,4 +1,4 @@
-#include "strong-chance.hpp"
+#include "reel/stop/rules/strong_chance_rule.hpp"
 
 namespace slotv2::stop_rules::strong_chance {
 
