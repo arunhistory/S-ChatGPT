@@ -7,7 +7,7 @@
 #include "normal/normal_progress_view.hpp"
 
 namespace {
-slotv2::runtime::State g_runtime{};
+constinit slotv2::runtime::State g_runtime{};
 }
 
 extern "C" {
