@@ -2,6 +2,8 @@ import { SlotWasmV2 } from "../bridge/index.js";
 
 const REQUIRED_EXPORTS = [
   "slot_v2_reset",
+  "slot_v2_reset_setting",
+  "slot_v2_setting",
   "slot_v2_lever",
   "slot_v2_stop",
   "slot_v2_phase",
