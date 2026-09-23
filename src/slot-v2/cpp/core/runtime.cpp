@@ -30,6 +30,7 @@
 #include "normal/normal_cycle_reset.hpp"
 #include "normal/normal_role_trigger.hpp"
 #include "at/at_cold.hpp"
+#include "at/at_omen.hpp"
 #include "normal/normal_flow.hpp"
 #include "normal/normal_flow_transition.hpp"
 #include "entry/entry_gate_transition.hpp"
@@ -124,6 +125,8 @@ void reset(State& state, uint64_t seed) {
     state.bonus_transition = {};
     state.upper_comeback_cycle = {};
     state.at_single_transition = {};
+    state.at_omen_game = {};
+    state.at_omen_finalize = at_omen::FinalizeOutcome::None;
     state.normal_at_trigger = {};
     state.normal_hit_entry = {};
     state.entry_gate_transition = {};
@@ -135,8 +138,12 @@ uint32_t lever(State& state) {
     // A fixed BONUS/AT entitlement waiting for its RED start signal has
     // absolute priority. Freeze every other state transition until it starts.
     const bool entry_wait_before_transition = state.machine.entry_gate.active;
+    const bool at_omen_before_transition =
+        state.machine.area == machine_state::Area::AT
+        && state.machine.at.active
+        && state.machine.at_omen.active;
 
-    if (!entry_wait_before_transition) {
+    if (!entry_wait_before_transition && !at_omen_before_transition) {
         state.at_internal_transition = at_internal_transition::apply(
             state.rng,
             state.machine,
@@ -181,6 +188,7 @@ uint32_t lever(State& state) {
         state.machine.area == machine_state::Area::AT
         && state.machine.at.active
         && state.machine.at.games_left <= 0
+        && !state.machine.at_omen.active
         && pending_event::has(state.pending, pending_event::ATWindowEmpty);
 
     const bool bonus_transition_pending =
@@ -239,6 +247,8 @@ uint32_t lever(State& state) {
     }
 
     state.at_single_transition = {};
+    state.at_omen_game = {};
+    state.at_omen_finalize = at_omen::FinalizeOutcome::None;
     state.normal_at_trigger = {};
     state.normal_ceiling_reward = normal_ceiling::Reward::None;
     state.normal_ceiling_transition = {};
@@ -287,6 +297,11 @@ uint32_t lever(State& state) {
     const bool revival_game_active =
         state.machine.area == machine_state::Area::Revival
         && state.machine.revival.active;
+
+    const bool at_omen_game_active =
+        state.machine.area == machine_state::Area::AT
+        && state.machine.at.active
+        && state.machine.at_omen.active;
 
     // During BONUS/AT start wait, the hit is already internally fixed.
     // Normal/special lotteries pause; each wait game only draws the 1/2
@@ -417,11 +432,28 @@ uint32_t lever(State& state) {
 
     // 特化中は通常ATのST残Gと内部抽選を進めない。
     // 特殊直撃が割り込み中のゲームでもAT内部結果は同時確定させない。
+    if (at_omen_game_active
+        && !result.entry_wait
+        && result.special == SpecialHit::None) {
+        state.at_omen_game = at_omen::beginGame(
+            state.machine.at,
+            state.machine.at_omen
+        );
+
+        if (state.at_omen_game.at_window_empty) {
+            pending_event::add(
+                state.pending,
+                pending_event::ATWindowEmpty
+            );
+        }
+    }
+
     state.at_cycle =
         (!result.entry_wait
             && result.special == SpecialHit::None
             && !special_zone_game
-            && !upper_special_game)
+            && !upper_special_game
+            && !at_omen_game_active)
         ? at_cycle::beginGame(state.rng, state.machine)
         : at_cycle::Result{};
 
@@ -689,6 +721,15 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
 
                     state.normal_ceiling_reward = normal_ceiling::Reward::None;
                 }
+            }
+
+            if (state.at_omen_game.active) {
+                state.at_omen_finalize = at_omen::finalize(
+                    state.machine.at,
+                    state.machine.entry_gate,
+                    state.machine.at_omen,
+                    state.at_omen_game
+                );
             }
 
             state.at_single_transition =
