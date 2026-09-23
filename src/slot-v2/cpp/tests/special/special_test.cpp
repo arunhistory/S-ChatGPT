@@ -1,8 +1,8 @@
 #include <iostream>
-#include "special-lottery/index.hpp"
-#include "special-result/index.hpp"
-#include "session/index.hpp"
-#include "freeze/index.hpp"
+#include "special/special_lottery.hpp"
+#include "special/special_result.hpp"
+#include "core/session.hpp"
+#include "special/freeze_control.hpp"
 
 int main() {
     bool ok = true;

@@ -1,5 +1,5 @@
 #include <iostream>
-#include "navigation/index.hpp"
+#include "reel/stop/navigation.hpp"
 
 int main() {
     bool ok = true;

@@ -1,8 +1,8 @@
 #include <cmath>
 #include <iostream>
-#include "revival-lottery/index.hpp"
-#include "revival-cycle/index.hpp"
-#include "revival-state/index.hpp"
+#include "revival/revival_lottery.hpp"
+#include "revival/revival_cycle.hpp"
+#include "revival/revival_state.hpp"
 
 namespace {
 

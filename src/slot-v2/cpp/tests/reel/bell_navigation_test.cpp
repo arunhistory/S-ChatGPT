@@ -1,5 +1,5 @@
 #include <iostream>
-#include "bell-navigation/index.hpp"
+#include "reel/stop/bell_navigation.hpp"
 
 int main() {
     bool ok = true;

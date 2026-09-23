@@ -1,6 +1,6 @@
 #include <iostream>
-#include "reel-candidate/index.hpp"
-#include "assist-target/index.hpp"
+#include "reel/stop/reel_candidate.hpp"
+#include "reel/stop/assist_target.hpp"
 
 namespace {
 

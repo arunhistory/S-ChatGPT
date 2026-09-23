@@ -1,5 +1,5 @@
 #include <iostream>
-#include "section-reward/index.hpp"
+#include "section/section_reward.hpp"
 
 int main() {
     bool ok = true;

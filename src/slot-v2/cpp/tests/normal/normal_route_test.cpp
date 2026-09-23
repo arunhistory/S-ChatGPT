@@ -1,6 +1,6 @@
 #include <iostream>
-#include "normal-route/index.hpp"
-#include "normal-ceiling/index.hpp"
+#include "normal/normal_route.hpp"
+#include "normal/normal_ceiling.hpp"
 
 int main() {
     bool ok = true;

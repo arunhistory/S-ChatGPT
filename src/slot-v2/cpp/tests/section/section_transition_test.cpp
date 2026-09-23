@@ -1,6 +1,6 @@
 #include <iostream>
-#include "section-transition/index.hpp"
-#include "at-window/index.hpp"
+#include "section/section_transition.hpp"
+#include "at/at_window.hpp"
 
 int main() {
     bool ok = true;

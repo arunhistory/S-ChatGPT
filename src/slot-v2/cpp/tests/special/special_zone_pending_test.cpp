@@ -1,5 +1,5 @@
 #include <iostream>
-#include "special-zone-pending/index.hpp"
+#include "special/special_zone_pending.hpp"
 
 int main() {
     bool ok = true;

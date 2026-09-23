@@ -1,7 +1,7 @@
 #include <iostream>
-#include "machine-state/index.hpp"
-#include "special-result/index.hpp"
-#include "special-apply/index.hpp"
+#include "core/machine_state.hpp"
+#include "special/special_result.hpp"
+#include "special/special_apply.hpp"
 
 int main() {
     bool ok = true;

@@ -1,9 +1,9 @@
 #include <iostream>
 #include "shared/types.hpp"
-#include "reel-strip/index.hpp"
-#include "reel-validator/index.hpp"
-#include "stop-controller/index.hpp"
-#include "acquisition/index.hpp"
+#include "reel/reel_strip.hpp"
+#include "reel/reel_validator.hpp"
+#include "reel/stop/stop_controller.hpp"
+#include "reel/reel_acquisition.hpp"
 
 namespace {
 
