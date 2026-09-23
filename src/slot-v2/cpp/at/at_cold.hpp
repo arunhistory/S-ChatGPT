@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
-#include "../shared/rng.hpp"
-#include "../at-state/index.hpp"
+#include "shared/rng.hpp"
+#include "at/at_state.hpp"
 
 namespace slotv2::at_cold {
 

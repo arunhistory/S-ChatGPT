@@ -1,5 +1,5 @@
-#include "index.hpp"
-#include "../at-lottery/index.hpp"
+#include "at/at_cycle.hpp"
+#include "at/at_lottery.hpp"
 
 namespace slotv2::at_cycle {
 

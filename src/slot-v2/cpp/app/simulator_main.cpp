@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 #include "shared/rng.hpp"
-#include "lever/index.hpp"
+#include "core/lever.hpp"
 
 int main(int argc, char** argv) {
     long long spins = 1000000;

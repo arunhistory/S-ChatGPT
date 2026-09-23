@@ -1,6 +1,6 @@
-#include "index.hpp"
-#include "../shared/types.hpp"
-#include "../at-cold/index.hpp"
+#include "at/at_lottery.hpp"
+#include "shared/types.hpp"
+#include "at/at_cold.hpp"
 
 namespace slotv2::at_lottery {
 namespace {

@@ -1,8 +1,8 @@
 #pragma once
 #include <stdint.h>
-#include "../shared/rng.hpp"
-#include "../machine-state/index.hpp"
-#include "../at-event/index.hpp"
+#include "shared/rng.hpp"
+#include "core/machine_state.hpp"
+#include "at/at_event.hpp"
 
 namespace slotv2::at_cycle {
 

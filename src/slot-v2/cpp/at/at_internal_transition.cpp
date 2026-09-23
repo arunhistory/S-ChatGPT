@@ -1,5 +1,5 @@
-#include "index.hpp"
-#include "../at-add-games/index.hpp"
+#include "at/at_internal_transition.hpp"
+#include "at/at_add_games.hpp"
 
 namespace slotv2::at_internal_transition {
 

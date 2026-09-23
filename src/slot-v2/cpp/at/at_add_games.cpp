@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "at/at_add_games.hpp"
 
 namespace slotv2::at_add_games {
 

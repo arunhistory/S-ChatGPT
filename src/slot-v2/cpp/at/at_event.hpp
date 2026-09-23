@@ -1,6 +1,6 @@
 #pragma once
 #include <stdint.h>
-#include "../at-lottery/index.hpp"
+#include "at/at_lottery.hpp"
 
 namespace slotv2::at_event {
 
