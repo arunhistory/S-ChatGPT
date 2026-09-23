@@ -590,6 +590,7 @@ uint32_t lever(State& state) {
         bell_plan.active = true;
         bell_plan.order_index = 0u;
         bell_plan.order = navigation::fromIndex(0u);
+        bell_plan.required_stops = 1u;
     } else {
         bell_plan = bell_navigation::make(
             state.rng,
@@ -1251,14 +1252,16 @@ uint32_t bellNavigationPacked(const State& state) {
     const auto& plan = state.session.bell_navigation;
     if (!plan.active) return 0u;
 
-    // bit0 active / bits8..15 order index
-    return 1u | (static_cast<uint32_t>(plan.order_index) << 8);
+    // bit0 active / bits8..15 order index / bits16..23 required stop count
+    return 1u
+        | (static_cast<uint32_t>(plan.order_index) << 8)
+        | (static_cast<uint32_t>(plan.required_stops) << 16);
 }
 
 uint32_t bellNavigationNext(const State& state) {
     const auto& plan = state.session.bell_navigation;
     if (!plan.active || !state.session.navigation_correct) return 0xffffffffu;
-    if (state.session.stop_count >= 3u) return 0xffffffffu;
+    if (state.session.stop_count >= plan.required_stops) return 0xffffffffu;
 
     return static_cast<uint32_t>(
         plan.order.reel[state.session.stop_count]
