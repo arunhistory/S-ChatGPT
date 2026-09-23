@@ -22,7 +22,7 @@ jobs:
         run: |
           cp src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
           cmp src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
-      - name: Validate both WASM and the real browser's C++ engine
+      - name: Validate persistent runtime storage and browser test
         run: |
           node --check web/setting6-v2.js
           node --check web/v2.js
