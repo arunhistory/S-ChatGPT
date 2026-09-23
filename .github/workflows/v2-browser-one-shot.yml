@@ -17,7 +17,6 @@ jobs:
           sudo apt-get install -y lld
       - name: Compile actual v2 C++ to latest WebAssembly
         run: |
-          sed -i 's/ -O3 / -O0 /' tools/build-wasm-v2.sh
           bash tools/build-wasm-v2.sh
       - name: Stage identical browser binary
         run: |

@@ -11,6 +11,9 @@ slotv2::runtime::State g_runtime{};
 }
 
 extern "C" {
+// WASM start section guarantees static C++ constructors execute exactly once.
+void slot_v2_wasm_start() {}
+
 
 __attribute__((visibility("default")))
 void slot_v2_reset(uint32_t seed_lo, uint32_t seed_hi) {
