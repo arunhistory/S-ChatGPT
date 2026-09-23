@@ -19,7 +19,12 @@ NormalRaw normalRaw(uint8_t setting) {
         case 3: return {86265u, 177925u, 284764u};
         case 4: return {93381u, 190517u, 290987u};
         case 5: return {100772u, 204521u, 299714u};
-        case 6: return {108269u, 216538u, 305040u};
+        // Setting 6 only: approved *observable* raw rewards per eligible normal draw.
+        // Raw draw priority is AT -> Bonus -> CZ (three independent RNG draws),
+        // so lower-priority thresholds compensate for the probability that
+        // an earlier reward has already won this game.
+        // 1/2650 lower AT, 1/1700 bonus, 1/1150 CZ, excluding ceilings etc.
+        case 6: return {50648u, 78981u, 116824u};
         case 7:
         default:
             return {132579u, 257659u, 324197u};
