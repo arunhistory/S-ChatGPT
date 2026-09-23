@@ -11,6 +11,8 @@ mkdir -p "$WASM_DIR"
   -nostdlib -ffreestanding -fno-exceptions -fno-rtti \
   -Wl,--no-entry -Wl,--export-memory \
   -Wl,--export=slot_v2_reset \
+  -Wl,--export=slot_v2_diag_assign_phase \
+  -Wl,--export=slot_v2_diag_probe_lever \
   -Wl,--export=slot_v2_reset_setting \
   -Wl,--export=slot_v2_setting \
   -Wl,--export=slot_v2_lever \

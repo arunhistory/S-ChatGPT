@@ -483,4 +483,18 @@ uint32_t slot_v2_test_bonus_gain(uint32_t net_medals) {
 
 
 
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_diag_assign_phase() {
+  g_runtime.session.phase = slotv2::session::Phase::Stopping;
+  return slotv2::runtime::phase(g_runtime);
+}
+__attribute__((visibility("default")))
+uint32_t slot_v2_diag_probe_lever() {
+  const uint32_t before = slotv2::runtime::phase(g_runtime);
+  const uint32_t lever = slotv2::runtime::lever(g_runtime);
+  const uint32_t after = slotv2::runtime::phase(g_runtime);
+  return before | (after << 8) | ((lever & 0xffu) << 16) | ((lever >> 24) << 24);
+}
+
 }
