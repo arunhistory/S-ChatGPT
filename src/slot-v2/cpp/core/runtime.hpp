@@ -37,6 +37,7 @@
 #include "at/upper_comeback_transition.hpp"
 #include "at/at_single_transition.hpp"
 #include "at/at_omen.hpp"
+#include "at/lower_fall_challenge.hpp"
 #include "normal/normal_at_trigger.hpp"
 #include "special/special_zone_pending.hpp"
 #include "special/special_zone_transition.hpp"
@@ -85,6 +86,10 @@ struct State {
     at_single_transition::Result at_single_transition{};
     at_omen::Game at_omen_game{};
     at_omen::FinalizeOutcome at_omen_finalize{at_omen::FinalizeOutcome::None};
+    lower_fall_challenge::WaitGame lower_fall_wait_game{};
+    lower_fall_challenge::PushOutcome lower_fall_push_outcome{
+        lower_fall_challenge::PushOutcome::NotReady
+    };
     normal_at_trigger::Result normal_at_trigger{};
     special_zone::HitResult special_zone_result{special_zone::HitResult::None};
     special_zone_transition::Result special_zone_transition{};
@@ -98,6 +103,7 @@ struct State {
 void reset(State& state, uint64_t seed);
 uint32_t lever(State& state);
 uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position);
+uint32_t pushLowerFallChallenge(State& state);
 
 // C++内部オーケストレーション用。TSからは呼ばせない。
 bool recordCZResult(State& state, bool hit);
@@ -169,5 +175,7 @@ uint32_t revivalPacked(const State& state);
 uint32_t revivalGamePacked(const State& state);
 uint32_t revivalFinalizePacked(const State& state);
 uint32_t entryGatePacked(const State& state);
+uint32_t lowerFallChallengePacked(const State& state);
+uint32_t lowerFallPushOutcome(const State& state);
 
 } // namespace slotv2::runtime
