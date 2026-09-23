@@ -99,6 +99,7 @@ add_library(slot_v2_core
   src/slot-v2/cpp/normal/normal_flow_transition.cpp
   src/slot-v2/cpp/at/at_resolution.cpp
   src/slot-v2/cpp/at/at_single_transition.cpp
+  src/slot-v2/cpp/at/at_omen.cpp
   src/slot-v2/cpp/section/section_flow.cpp
   src/slot-v2/cpp/at/at_window.cpp
   src/slot-v2/cpp/at/at_table_transition.cpp
@@ -288,6 +289,9 @@ target_link_libraries(slot_v2_runtime_bonus_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_at_single_transition_test src/slot-v2/cpp/tests/at/at_single_transition_test.cpp)
 target_link_libraries(slot_v2_at_single_transition_test PRIVATE slot_v2_core)
+
+add_executable(slot_v2_at_omen_test src/slot-v2/cpp/tests/at/at_omen_test.cpp)
+target_link_libraries(slot_v2_at_omen_test PRIVATE slot_v2_core)
 
 
 add_executable(slot_v2_normal_at_trigger_test src/slot-v2/cpp/tests/normal/normal_at_trigger_test.cpp)
