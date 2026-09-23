@@ -26,6 +26,7 @@ import {
   readSectionReward,
   readSectionTransition,
   readSessionPhase,
+  readSetting,
   readSpecialResult,
   readSpecialZone,
   readSpecialZoneResult,
@@ -36,6 +37,7 @@ import {
   AcquisitionResult,
   NormalMode,
   SessionPhase,
+  SlotSetting,
   SpecialResult,
   SpecialZoneHitResult,
 } from "../types.js";
@@ -68,6 +70,7 @@ import {
 } from "../bridge/index.js";
 
 export interface SlotV2Snapshot {
+  setting: SlotSetting;
   phase: SessionPhase;
   special: SpecialResult;
   acquisition: AcquisitionResult;
@@ -107,6 +110,7 @@ export function readSlotV2Snapshot(
   wasm: SlotWasmV2,
 ): SlotV2Snapshot {
   return {
+    setting: readSetting(wasm),
     phase: readSessionPhase(wasm),
     special: readSpecialResult(wasm),
     acquisition: readAcquisition(wasm),
