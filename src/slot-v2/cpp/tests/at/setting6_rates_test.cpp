@@ -44,6 +44,7 @@ int main() {
                 (tier==slotv2::at_state::Tier::Lower ? 500u :
                 (tier==slotv2::at_state::Tier::Middle ? 450u : 400u));
             ok=ok && warm.chain_zone==expected_chain;
+            ok=ok && cold.chain_zone==expected_chain;
             average+=weights[j]*(0.4*warm.eligibleTotal()
                                   +0.6*cold.eligibleTotal())/n;
         }

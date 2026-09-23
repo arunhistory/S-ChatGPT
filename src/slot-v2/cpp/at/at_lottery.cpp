@@ -55,12 +55,14 @@ Regions regionsFor(const at_state::State& state) {
     // table-specific distributions. Stationary table mixture:
     // Normal/Heaven/SuperHeaven/Specialized = 7/16,4/16,1/16,4/16.
     // The normalization assumes 60% cold and 70% cold growth (=0.82 mean).
+    // The new zone remains fixed per tier even while cold; only the other
+    // growth events use the 0.82 mean factor.
     // 1/80 lower and 1/50 middle/upper are statistical targets, not
     // per-table or per-session guarantees.
     const uint32_t scale_ppm = state.tier == at_state::Tier::Lower
-        ? 1145794u
+        ? 1107812u
         : (state.tier == at_state::Tier::Middle
-            ? 932185u : 920504u);
+            ? 911673u : 897428u);
     const uint32_t chain_den = state.tier == at_state::Tier::Lower
         ? 500u
         : (state.tier == at_state::Tier::Middle ? 450u : 400u);
@@ -72,7 +74,7 @@ Regions regionsFor(const at_state::State& state) {
         normalized(rates.special, scale_ppm, state.cold),
         normalized(rates.episode, scale_ppm, state.cold),
         normalized(rates.upper_special, scale_ppm, state.cold),
-        normalized(chain_den, 1000000u, state.cold)
+        kRngSpace / chain_den // New zone has fixed odds even while cold.
     };
 }
 

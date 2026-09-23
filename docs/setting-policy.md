@@ -33,7 +33,7 @@ CZ ~1/551, normal bonus ~1/506, AT ~1/670, bonus+AT ~1/288;
 - Middle and upper tiers: approximate AT event total **1/50**.
 - Fall: separate fixed **1/400** for all tiers.
 - New chain special zone: lower **1/500**, middle **1/450**, upper **1/400**,
-  counted **inside** the AT event totals.
+  counted **inside** the AT event totals and unchanged during cold.
 - Scale other AT event frequencies proportionally, keeping all four
   table-specific rate ratios and relative event weights. Preserve the
   existing 60% cold entry / 70% growth rate on cold starts. Global rates
@@ -64,8 +64,9 @@ events and the new chain special zone. The existing non-Fall event rates
 share a single scalar per tier, preserving their inter-event ratios in
 each table and relative table strengths. Fall remains separate 1/400.
 For the stationary table weights (7/16,4/16,1/16,4/16), including a
-60%-cold population with 70% cold growth, approximate scalars are
-lower 1.145794, middle 0.932185 and upper 0.920504. All three are
+60%-cold population with 70% cold growth on ordinary events,
+but FIXED new-zone rates even while cold, approximate scalars are
+lower 1.107812, middle 0.911673 and upper 0.897428. All three are
 estimates for the corresponding 1/80 and 1/50 *statistical* averages,
 not guarantees of actual aggregate odds.
 
