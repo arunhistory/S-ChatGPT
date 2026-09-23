@@ -87,6 +87,19 @@ export const enum ATTier {
   Upper = 2,
 }
 
+export const enum LowerFallPhase {
+  Inactive = 0,
+  Armed = 1,
+  Waiting = 2,
+  ButtonReady = 3,
+}
+
+export const enum LowerFallPushOutcome {
+  NotReady = 0,
+  Continued = 1,
+  Failed = 2,
+}
+
 export const enum MachineArea {
   Normal = 0,
   CZ = 1,
