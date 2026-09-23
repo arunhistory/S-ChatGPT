@@ -1,5 +1,5 @@
 #include <iostream>
-#include "cz-reward/index.hpp"
+#include "cz/cz_reward.hpp"
 
 int main() {
     bool ok = true;

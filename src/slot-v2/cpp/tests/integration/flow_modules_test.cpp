@@ -1,8 +1,8 @@
 #include <iostream>
-#include "at-resolution/index.hpp"
-#include "normal-mode/index.hpp"
-#include "special-ceiling/index.hpp"
-#include "cz-lottery/index.hpp"
+#include "at/at_resolution.hpp"
+#include "normal/normal_mode.hpp"
+#include "special/special_ceiling.hpp"
+#include "cz/cz_lottery.hpp"
 
 int main() {
     bool ok = true;

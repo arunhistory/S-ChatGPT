@@ -1,6 +1,6 @@
 #include <iostream>
-#include "at-pending/index.hpp"
-#include "section-flow/index.hpp"
+#include "at/at_pending.hpp"
+#include "section/section_flow.hpp"
 
 int main() {
     bool ok = true;

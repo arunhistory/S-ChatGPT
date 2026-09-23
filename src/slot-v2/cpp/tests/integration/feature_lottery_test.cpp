@@ -1,10 +1,10 @@
 #include <iostream>
 #include "shared/rng.hpp"
-#include "stock-lottery/index.hpp"
-#include "bonus-upgrade/index.hpp"
-#include "upper-comeback/index.hpp"
-#include "special-zone/index.hpp"
-#include "special-ceiling/index.hpp"
+#include "stock/stock_lottery.hpp"
+#include "bonus/bonus_upgrade.hpp"
+#include "at/upper_comeback_state.hpp"
+#include "special/special_zone.hpp"
+#include "special/special_ceiling.hpp"
 
 int main() {
     bool ok = true;

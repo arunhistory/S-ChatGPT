@@ -1,7 +1,7 @@
 #include <iostream>
-#include "entry-gate/index.hpp"
-#include "entry-gate-transition/index.hpp"
-#include "machine-state/index.hpp"
+#include "entry/entry_gate.hpp"
+#include "entry/entry_gate_transition.hpp"
+#include "core/machine_state.hpp"
 
 int main() {
     bool ok = true;

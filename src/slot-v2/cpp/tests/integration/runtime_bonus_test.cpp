@@ -1,6 +1,6 @@
 #include <iostream>
-#include "runtime/index.hpp"
-#include "bonus-transition/index.hpp"
+#include "core/runtime.hpp"
+#include "bonus/bonus_transition.hpp"
 
 int main() {
     bool ok = true;
