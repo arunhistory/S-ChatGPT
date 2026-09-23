@@ -1,6 +1,6 @@
 #pragma once
 #include <stdint.h>
-#include "../at-state/index.hpp"
+#include "at/at_state.hpp"
 
 namespace slotv2::revival_state {
 

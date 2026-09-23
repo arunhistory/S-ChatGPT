@@ -1,9 +1,9 @@
 #pragma once
-#include "../shared/rng.hpp"
-#include "../section/index.hpp"
-#include "../section-reward/index.hpp"
-#include "../stock/index.hpp"
-#include "../at-state/index.hpp"
+#include "shared/rng.hpp"
+#include "section/section_state.hpp"
+#include "section/section_reward.hpp"
+#include "stock/stock_state.hpp"
+#include "at/at_state.hpp"
 
 namespace slotv2::section_flow {
 

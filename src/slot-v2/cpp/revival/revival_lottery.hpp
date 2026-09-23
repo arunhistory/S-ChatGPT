@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
-#include "../shared/rng.hpp"
-#include "../shared/types.hpp"
+#include "shared/rng.hpp"
+#include "shared/types.hpp"
 
 namespace slotv2::revival_lottery {
 

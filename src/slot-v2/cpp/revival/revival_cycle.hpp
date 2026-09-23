@@ -1,9 +1,9 @@
 #pragma once
 #include <stdint.h>
-#include "../shared/rng.hpp"
-#include "../shared/types.hpp"
-#include "../machine-state/index.hpp"
-#include "../revival-state/index.hpp"
+#include "shared/rng.hpp"
+#include "shared/types.hpp"
+#include "core/machine_state.hpp"
+#include "revival/revival_state.hpp"
 
 namespace slotv2::revival_cycle {
 

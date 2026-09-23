@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "revival/revival_lottery.hpp"
 
 namespace slotv2::revival_lottery {
 
