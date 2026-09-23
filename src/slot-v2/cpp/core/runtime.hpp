@@ -48,6 +48,11 @@
 
 namespace slotv2::runtime {
 
+enum class SettingResetStatus : uint8_t {
+    Applied = 0,
+    InvalidSetting = 1
+};
+
 struct State {
     Rng rng{};
     session::State session{};
@@ -69,7 +74,7 @@ struct State {
     bool ceiling_freeze_pending{false};
     normal_role_trigger::DrawResult normal_role_draw{normal_role_trigger::DrawResult::None};
     normal_role_trigger::ApplyResult normal_role_apply{};
-    uint8_t setting{6u};
+    uint8_t setting{setting_profile::kDefaultSetting};
     normal_flow::Result normal_flow_result{};
     normal_flow_transition::Result normal_flow_transition{};
     cz_cycle::Result cz_cycle{};
@@ -101,6 +106,12 @@ struct State {
 };
 
 void reset(State& state, uint64_t seed);
+SettingResetStatus resetWithSetting(
+    State& state,
+    uint64_t seed,
+    uint8_t setting
+);
+uint32_t currentSetting(const State& state);
 uint32_t lever(State& state);
 uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position);
 uint32_t pushLowerFallChallenge(State& state);
