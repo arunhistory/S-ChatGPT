@@ -276,6 +276,7 @@ export function readATSnapshot(wasm: SlotWasmV2): ATSnapshot {
 export interface BellNavigationSnapshot {
   active: boolean;
   orderIndex: number | null;
+  requiredStops: number;
   nextReel: ReelId | null;
   correctSoFar: boolean;
 }
@@ -291,6 +292,7 @@ export function readBellNavigation(
   return {
     active,
     orderIndex: active ? ((packed >>> 8) & 0xff) : null,
+    requiredStops: active ? ((packed >>> 16) & 0xff) : 0,
     nextReel: active && nextRaw !== 0xffffffff ? (nextRaw as ReelId) : null,
     correctSoFar: active && wasm.slot_v2_bell_navigation_correct() !== 0,
   };
