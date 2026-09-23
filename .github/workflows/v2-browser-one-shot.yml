@@ -1,0 +1,36 @@
+name: One-shot native v2 browser WASM build
+on:
+  push:
+    branches: [build/v2-browser-one-shot-20260924]
+    paths: [.github/workflows/v2-browser-one-shot.yml]
+permissions:
+  contents: write
+jobs:
+  once:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install WebAssembly toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lld
+      - name: Compile actual v2 C++ to latest WebAssembly
+        run: bash tools/build-wasm-v2.sh
+      - name: Stage identical browser binary
+        run: |
+          cp src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
+          cmp src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
+      - name: Validate both WASM and the real browser's C++ engine
+        run: |
+          node --check web/setting6-v2.js
+          node --check web/v2.js
+          node tools/verify-setting6-wasm.mjs
+          node tools/verify-setting6-v2-ui.mjs
+      - name: Save compiled files on build-only branch (does not retrigger)
+        run: |
+          git config user.name "setting6-v2-builder"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
+          git commit -m "build: compiled v2 WASM for playable browser [skip ci]"
+          git push origin HEAD:build/v2-browser-one-shot-20260924
