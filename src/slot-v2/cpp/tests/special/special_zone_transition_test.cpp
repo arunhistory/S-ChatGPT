@@ -64,11 +64,11 @@ int main() {
         );
 
         ok = ok && r.outcome
-            == slotv2::special_zone_transition::Outcome::BonusQueued;
-        ok = ok && machine.entry_gate.active;
-        ok = ok && machine.entry_gate.kind
-            == slotv2::entry_gate::Kind::Bonus;
-        ok = ok && machine.entry_gate.bonus_return_to_at;
+            == slotv2::special_zone_transition::Outcome::BonusOmenStarted;
+        ok = ok && machine.at_omen.active;
+        ok = ok && !machine.at_omen.episode;
+        ok = ok && machine.at_omen.games_left == 1u;
+        ok = ok && !machine.entry_gate.active;
         ok = ok && !machine.bonus.active;
         ok = ok && !slotv2::pending_event::has(
             pending,
