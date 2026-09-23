@@ -9,7 +9,9 @@ const e = instance.exports;
 
 for (const key of ["slot_v2_reset","slot_v2_reset_setting","slot_v2_setting",
   "slot_v2_lever","slot_v2_stop","slot_v2_at_resolution",
-  "slot_v2_special_zone","slot_v2_bonus_cycle"]) {
+  "slot_v2_special_zone","slot_v2_bonus_cycle",
+  "slot_v2_normal_latent","slot_v2_debug_count","slot_v2_debug_channel",
+  "slot_v2_debug_value","slot_v2_debug_name_ptr","slot_v2_debug_arm"]) {
   assert.equal(typeof e[key], "function", `missing WASM export: ${key}`);
 }
 
@@ -25,6 +27,15 @@ assert.equal(e.slot_v2_reset_setting(0x1003,0,6),0);
 assert.equal(e.slot_v2_setting(),6);
 assert.equal(e.slot_v2_reset_setting(0x1004,0,0),1);
 assert.equal(e.slot_v2_reset_setting(0x1005,0,8),1);
+
+assert.equal(e.slot_v2_debug_count(),70,"all 70 native flags available to browser");
+for(let i=0;i<70;i++) {
+  const ch=e.slot_v2_debug_channel(i), v=e.slot_v2_debug_value(i), ptr=e.slot_v2_debug_name_ptr(i);
+  assert(ch>=1 && ch<=11 && ptr>0,`debug catalogue entry ${i} is accessible`);
+}
+assert.equal(e.slot_v2_debug_arm(3,2),1,"arm next normal BONUS via WASM");
+assert.equal(e.slot_v2_debug_arm(250,2),0,"unknown debug channel rejected");
+e.slot_v2_reset(0x1003,0);
 
 // Exercise lever + three reel stops over deterministic normal games.
 // Some spins may enter an entitlement waiting state, and third-stop checks
