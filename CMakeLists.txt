@@ -173,6 +173,9 @@ target_link_libraries(slot_v2_reel_candidate_test PRIVATE slot_v2_core)
 add_executable(slot_v2_machine_state_test src/slot-v2/cpp/tests/core/machine_state_test.cpp)
 target_link_libraries(slot_v2_machine_state_test PRIVATE slot_v2_core)
 
+add_executable(slot_v2_setting_change_test src/slot-v2/cpp/tests/core/setting_change_test.cpp)
+target_link_libraries(slot_v2_setting_change_test PRIVATE slot_v2_core)
+
 
 add_executable(slot_v2_at_lottery_test src/slot-v2/cpp/tests/at/at_lottery_test.cpp)
 target_link_libraries(slot_v2_at_lottery_test PRIVATE slot_v2_core)
