@@ -491,4 +491,33 @@ uint32_t slot_v2_debug_arm(uint32_t channel, uint32_t value) {
     ) ? 1u : 0u;
 }
 
+// Browser test adapter: explicit accounting, not silent/automatic C++ spins.
+// The frontend must call these once per completed spin.
+__attribute__((visibility("default")))
+int64_t slot_v2_test_bet(uint32_t medals) {
+    if (medals > 3u) return slotv2::runtime::sectionDiff(g_runtime);
+    return slotv2::runtime::applyBet(g_runtime, static_cast<int>(medals)).total_diff;
+}
+
+__attribute__((visibility("default")))
+int64_t slot_v2_test_payout(uint32_t medals) {
+    if (medals > 100u) return slotv2::runtime::sectionDiff(g_runtime);
+    return slotv2::runtime::applyPayout(g_runtime, static_cast<int>(medals)).total_diff;
+}
+
+// BONUS award targets 50/80 by existing C++ engine. This adapter
+// specifies the net-gain amount from the browser's test payout model.
+__attribute__((visibility("default")))
+uint32_t slot_v2_test_bonus_gain(uint32_t net_medals) {
+    if (net_medals > 100u) return 0u;
+    return static_cast<uint32_t>(
+        slotv2::runtime::applyBonusNetGain(g_runtime, static_cast<int>(net_medals)).outcome
+    );
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_at_table() {
+    return static_cast<uint32_t>(g_runtime.machine.at.table);
+}
+
 }
