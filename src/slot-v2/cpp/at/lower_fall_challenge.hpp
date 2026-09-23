@@ -5,8 +5,6 @@
 
 namespace slotv2::lower_fall_challenge {
 
-static constexpr uint8_t kWaitGames = 2u;
-
 enum class Phase : uint8_t {
     Inactive = 0,
     Armed = 1,
@@ -23,13 +21,12 @@ enum class PushOutcome : uint8_t {
 struct State {
     Phase phase{Phase::Inactive};
     bool success_fixed{false};
-    uint8_t wait_games_left{0};
     int32_t saved_games{0};
 };
 
 struct WaitGame {
     bool active{false};
-    uint8_t games_before{0};
+    bool judge_bell{false};
 };
 
 void clear(State& state);
@@ -44,16 +41,18 @@ void arm(
 );
 
 // Called when the Fall event is resolved after the Fall game.
-// Starts the visible two-game wait without changing saved_games.
+// Starts the variable wait without changing saved_games.
 bool beginWaiting(State& state);
 
 bool blocksATFlow(const State& state);
 bool buttonReady(const State& state);
 
-WaitGame beginWaitGame(const State& state);
+// Each waiting lever-on independently creates the judge-start bell at 1/2.
+// No AT-internal lottery or AT remaining-game decrement occurs here.
+WaitGame beginWaitGame(Rng& rng, const State& state);
 
 // Called after all three reels stop for a wait game.
-// After the second completed wait game, the one-shot button becomes ready.
+// Only a judge-bell game moves the challenge to the one-shot PUSH.
 bool finalizeWaitGame(
     State& state,
     const WaitGame& game
