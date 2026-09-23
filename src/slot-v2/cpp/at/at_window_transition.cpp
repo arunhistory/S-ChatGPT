@@ -10,7 +10,8 @@ Result apply(
     if (!pending_event::has(pending, pending_event::ATWindowEmpty)) {
         return {};
     }
-    if (machine.area != machine_state::Area::AT || !machine.at.active) {
+    if (machine.area != machine_state::Area::AT || !machine.at.active
+        || machine.chain_zone.active) {
         return {};
     }
     if (machine.at.games_left > 0) {

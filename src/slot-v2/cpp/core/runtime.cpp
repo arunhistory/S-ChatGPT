@@ -192,7 +192,8 @@ uint32_t lever(State& state) {
 
     if (!entry_wait_before_transition
         && !at_omen_before_transition
-        && !lower_fall_wait_before_transition) {
+        && !lower_fall_wait_before_transition
+        && !state.machine.chain_zone.active) {
         state.at_internal_transition = at_internal_transition::apply(
             state.rng,
             state.machine,
@@ -230,6 +231,23 @@ uint32_t lever(State& state) {
         state.at_internal_transition = {};
         state.at_stock_restart = {};
         state.at_window_transition = {};
+    }
+
+    // A section-cut special reward cannot preempt an active chain zone or
+    // its still-queued bonuses. Dispatch it after the chain has emptied.
+    if (!state.machine.chain_zone.active
+        && !state.machine.entry_gate.active
+        && !state.machine.at_omen.active
+        && !state.machine.special_zone.active
+        && !state.machine.upper_special.active
+        && state.machine.area == machine_state::Area::AT
+        && state.machine.at.active
+        && state.machine.at.tier == at_state::Tier::Upper
+        && pending_event::has(state.pending, pending_event::SectionSpecial)) {
+        special_zone::start(state.machine.special_zone);
+        (void)pending_event::consume(
+            state.pending, pending_event::SectionSpecial
+        );
     }
 
     const bool cz_transition_pending =

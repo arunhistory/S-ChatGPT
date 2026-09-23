@@ -36,7 +36,8 @@ Result apply(
             return {true, false, true, false};
 
         case at_resolution::Event::Special:
-            if (machine.special_zone.active) return {};
+            if (machine.special_zone.active || machine.chain_zone.active
+                || machine.upper_special.active) return {};
 
             special_zone::start(machine.special_zone);
             (void)pending_event::consume(
