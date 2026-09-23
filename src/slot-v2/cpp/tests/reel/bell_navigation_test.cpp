@@ -26,7 +26,10 @@ int main() {
             slotv2::RoleFlag::Bell9,
             true
         );
-        ok = ok && plan.active && plan.order_index < 6u;
+        ok = ok
+            && plan.active
+            && plan.order_index < 6u
+            && plan.required_stops == 3u;
         firstSeen[static_cast<uint8_t>(plan.order.reel[0])] = true;
     }
 
