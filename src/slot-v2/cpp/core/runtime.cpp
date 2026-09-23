@@ -161,6 +161,7 @@ SettingResetStatus resetWithSetting(
     state.last_latent_capture = {};
     state.last_latent_completion = normal_latent::Completion::None;
     state.latent_omen_game = false;
+    state.debug_flags = {};
 
     return SettingResetStatus::Applied;
 }
@@ -327,6 +328,12 @@ uint32_t lever(State& state) {
             | (static_cast<uint32_t>(CommandStatus::RejectedPhase) << 24);
     }
 
+    const debug::Request forced = state.debug_flags.next_armed
+        ? state.debug_flags.next : debug::Request{};
+    state.debug_flags.last_applied = forced;
+    state.debug_flags.next_armed = false;
+    state.debug_flags.next = {};
+
     state.at_single_transition = {};
     state.at_omen_game = {};
     state.at_omen_finalize = at_omen::FinalizeOutcome::None;
@@ -449,24 +456,70 @@ uint32_t lever(State& state) {
             state.rng,
             allow_special
         );
+        if (forced.channel == debug::Channel::Special) {
+            result.special = static_cast<SpecialHit>(forced.value);
+            result.role = RoleFlag::None;
+            result.main_lottery_ran = false;
+        } else if (forced.channel == debug::Channel::Role) {
+            result.special = SpecialHit::None;
+            result.role = static_cast<RoleFlag>(forced.value);
+            result.main_lottery_ran = false;
+        } else if ((forced.channel == debug::Channel::NormalFlow
+                || forced.channel == debug::Channel::NormalHigh
+                || forced.channel == debug::Channel::NormalRole
+                || forced.channel == debug::Channel::NormalCeiling)
+            && result.special != SpecialHit::None) {
+            // A forced ordinary normal outcome supersedes a natural rare
+            // direct event on this test spin; production rolls are untouched.
+            result.special = SpecialHit::None;
+            result.role = RoleFlag::None;
+            result.main_lottery_ran = false;
+        }
 
         if (result.special == SpecialHit::None
             && state.machine.area == machine_state::Area::Normal
             && !state.latent_omen_game) {
-            state.normal_role_draw = normal_role_trigger::draw(
-                state.rng,
-                result.role
-            );
+            if (forced.channel == debug::Channel::NormalRole) {
+                state.normal_role_draw =
+                    static_cast<normal_role_trigger::DrawResult>(forced.value);
+            } else if (forced.channel == debug::Channel::NormalFlow
+                || forced.channel == debug::Channel::NormalHigh
+                || forced.channel == debug::Channel::NormalCeiling) {
+                state.normal_role_draw = normal_role_trigger::DrawResult::None;
+            } else {
+                state.normal_role_draw = normal_role_trigger::draw(
+                    state.rng, result.role
+                );
+            }
 
             if (state.normal_role_draw
                 == normal_role_trigger::DrawResult::None) {
-                state.normal_flow_result = normal_flow::draw(
-                    state.rng,
-                    state.machine.normal_high,
-                    result.role,
-                    state.machine.normal.actual_games,
-                    state.setting
-                );
+                if (forced.channel == debug::Channel::NormalFlow
+                    || forced.channel == debug::Channel::NormalHigh
+                    || forced.channel == debug::Channel::NormalCeiling) {
+                    state.normal_flow_result = {};
+                    state.normal_flow_result.high.next_state =
+                        state.machine.normal_high;
+                    if (forced.channel == debug::Channel::NormalFlow) {
+                        state.normal_flow_result.reward =
+                            static_cast<normal_flow::Reward>(forced.value);
+                    } else if (forced.channel == debug::Channel::NormalHigh) {
+                        state.normal_flow_result.high.reward =
+                            static_cast<normal_high::Reward>(forced.value);
+                        state.normal_flow_result.reward = forced.value
+                            == static_cast<uint32_t>(normal_high::Reward::CZ)
+                            ? normal_flow::Reward::CZ
+                            : normal_flow::Reward::Bonus;
+                    }
+                } else {
+                    state.normal_flow_result = normal_flow::draw(
+                        state.rng,
+                        state.machine.normal_high,
+                        result.role,
+                        state.machine.normal.actual_games,
+                        state.setting
+                    );
+                }
             }
         }
 
@@ -478,17 +531,29 @@ uint32_t lever(State& state) {
                 == normal_role_trigger::DrawResult::None
             && state.normal_flow_result.reward
                 == normal_flow::Reward::None
-            && normal_route::reached(
-                state.normal_route,
-                state.machine.normal.display_games
-                    + state.normal_flow_result.high.shorten_games
-            )) {
-            state.normal_ceiling_reward = normal_ceiling::draw(
-                state.rng,
-                state.normal_mode,
-                state.normal_route.ceiling
-            );
+            && (forced.channel == debug::Channel::NormalCeiling
+                || (!state.latent_omen_game && normal_route::reached(
+                    state.normal_route,
+                    state.machine.normal.display_games
+                        + state.normal_flow_result.high.shorten_games
+                )))) {
+            state.normal_ceiling_reward =
+                forced.channel == debug::Channel::NormalCeiling
+                ? static_cast<normal_ceiling::Reward>(forced.value)
+                : normal_ceiling::draw(
+                    state.rng,
+                    state.normal_mode,
+                    state.normal_route.ceiling
+                );
         }
+    }
+
+    if (forced.channel == debug::Channel::Role
+        && entry_wait_active) {
+        const auto role = static_cast<RoleFlag>(forced.value);
+        state.machine.entry_gate.armed_this_game =
+            role == RoleFlag::EntryAT || role == RoleFlag::EntryBonus;
+        result.role = role;
     }
 
     if (revival_game_active && !result.entry_wait) {
@@ -584,6 +649,10 @@ uint32_t lever(State& state) {
         ? at_cycle::beginGame(state.rng, state.machine)
         : at_cycle::Result{};
 
+    if (state.at_cycle.active
+        && forced.channel == debug::Channel::ATEvent) {
+        state.at_cycle.raw.bits = forced.value;
+    }
     state.at_resolution = state.at_cycle.active
         ? at_resolution::classify(state.at_cycle.raw)
         : at_resolution::Result{};
@@ -645,6 +714,22 @@ uint32_t lever(State& state) {
             && state.machine.cz.active)
         ? cz_cycle::playOne(state.rng, state.machine.cz, result.role)
         : cz_cycle::Result{};
+
+    if (state.cz_cycle.active
+        && forced.channel == debug::Channel::CZOutcome) {
+        cz_state::resolve(state.machine.cz);
+        if (forced.value == static_cast<uint32_t>(
+                debug::CZOutcome::ThirdMiss
+            )) {
+            state.machine.normal_progress.cz_misses = 2u;
+        }
+        state.cz_cycle = {
+            true,
+            forced.value == static_cast<uint32_t>(debug::CZOutcome::Hit),
+            0u,
+            true
+        };
+    }
 
     // A staged CZ is an animation route for a previously awarded hit.
     // The tenth miss cannot discard that fixed award.
@@ -999,10 +1084,20 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
                 // Capture all ordinary normal awards, including strong-role
                 // triggers, ceiling, fifth Bell and ordinary CZ successes.
                 // Standalone special-direct and AT-internal awards bypass it.
+                const uint8_t requested_route =
+                    state.debug_flags.presentation_armed
+                    ? state.debug_flags.presentation
+                    : normal_latent::kRandomRoute;
                 state.last_latent_capture = normal_latent::capture(
                     state.rng, state.latent, state.machine.entry_gate,
-                    !state.cz_cycle.active
+                    !state.cz_cycle.active,
+                    requested_route
                 );
+                if (state.last_latent_capture.captured) {
+                    state.debug_flags.presentation_armed = false;
+                    state.debug_flags.presentation =
+                        normal_latent::kRandomRoute;
+                }
             }
 
             if (state.cz_finalize.outcome
@@ -1673,6 +1768,80 @@ uint32_t entryGatePacked(const State& state) {
         | (static_cast<uint32_t>(g.kind) << 8)
         | (target << 16)
         | ((g.stock_to_add & 0xffu) << 24);
+}
+
+bool armDebugFlag(State& state, debug::Channel channel, uint32_t value) {
+    if (!debug::valid(channel, value)
+        || !session::canLever(state.session)) return false;
+
+    const bool clean_normal =
+        state.machine.area == machine_state::Area::Normal
+        && !normal_latent::active(state.latent)
+        && !state.machine.entry_gate.active;
+
+    if (channel == debug::Channel::Presentation) {
+        if (!clean_normal) return false;
+        state.debug_flags.presentation = static_cast<uint8_t>(value);
+        state.debug_flags.presentation_armed = true;
+        return true;
+    }
+    if (channel == debug::Channel::Mode) {
+        if (!clean_normal) return false;
+        state.normal_mode = static_cast<normal_mode::Mode>(value);
+        return true;
+    }
+    if (channel == debug::Channel::Pending) {
+        // Raw internal flags are for expert tests; their owner still applies
+        // the normal state/phase restrictions when consuming them.
+        pending_event::add(
+            state.pending, static_cast<pending_event::Bits>(value)
+        );
+        return true;
+    }
+
+    if (channel == debug::Channel::NormalFlow
+        || channel == debug::Channel::NormalHigh
+        || channel == debug::Channel::NormalRole
+        || channel == debug::Channel::NormalCeiling
+        || channel == debug::Channel::Special) {
+        if (!clean_normal) return false;
+    } else if (channel == debug::Channel::ATEvent) {
+        if (state.machine.area != machine_state::Area::AT
+            || !state.machine.at.active
+            || state.machine.special_zone.active
+            || state.machine.upper_special.active
+            || state.machine.chain_zone.active
+            || state.machine.at_omen.active
+            || lower_fall_challenge::blocksATFlow(
+                state.machine.lower_fall_challenge
+            )
+            || state.machine.entry_gate.active) {
+            return false;
+        }
+    } else if (channel == debug::Channel::CZOutcome) {
+        if (state.machine.area != machine_state::Area::CZ
+            || !state.machine.cz.active
+            || (normal_latent::inCZ(state.latent)
+                && value != static_cast<uint32_t>(debug::CZOutcome::Hit))) {
+            return false;
+        }
+    } else if (channel == debug::Channel::Role) {
+        if (value == static_cast<uint32_t>(RoleFlag::EntryAT)
+            || value == static_cast<uint32_t>(RoleFlag::EntryBonus)) {
+            if (!state.machine.entry_gate.active) return false;
+            const auto kind = value == static_cast<uint32_t>(RoleFlag::EntryAT)
+                ? entry_gate::Kind::AT : entry_gate::Kind::Bonus;
+            if (state.machine.entry_gate.kind != kind) return false;
+        } else if (state.machine.entry_gate.active
+            && value != static_cast<uint32_t>(RoleFlag::Miss)
+            && value != static_cast<uint32_t>(RoleFlag::None)) {
+            return false;
+        }
+    }
+
+    state.debug_flags.next = {channel, value};
+    state.debug_flags.next_armed = true;
+    return true;
 }
 
 uint32_t normalLatentPacked(const State& state) {
