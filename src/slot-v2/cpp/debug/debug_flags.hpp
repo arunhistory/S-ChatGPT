@@ -55,6 +55,7 @@ inline constexpr Descriptor kCatalogue[] = {
     SLOT_DEBUG_FLAG(Role, RoleFlag::PenguinChance),
     SLOT_DEBUG_FLAG(Role, RoleFlag::EntryAT),
     SLOT_DEBUG_FLAG(Role, RoleFlag::EntryBonus),
+    SLOT_DEBUG_FLAG(Role, RoleFlag::ThreeMedal),
 
     SLOT_DEBUG_FLAG(Special, SpecialHit::MiddleATStock),
     SLOT_DEBUG_FLAG(Special, SpecialHit::UpperAT),

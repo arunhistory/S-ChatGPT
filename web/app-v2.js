@@ -9,7 +9,7 @@
   let prev = { area:0, gate:0, latent:0 }, startedSnapshot = null;
   const ROLE = ["なし","ハズレ","1枚役","9枚ベル","15枚ベル","リプレイ",
      "弱チェリー","強チェリー","スイカ","弱チャンス目","強チャンス目",
-     "ペンギンチャンス","AT開始7","BONUS開始7"];
+     "ペンギンチャンス","AT開始7","BONUS開始7","3枚役"];
   const SYM = ["?","7","7","BAR","🔔","↻","🍒","🍉","🐧","❄️"];
   const KIND = ["unknown","seven","alt-seven","bar","bell","replay","cherry","watermelon","penguin","miss"];
   const CHANNEL = {"1":"小役・開始図柄","2":"特殊直撃","3":"通常抽選","4":"高確抽選",
@@ -17,7 +17,7 @@
     "9":"内部Pendingフラグ","10":"通常モード","11":"潜伏経路"};
   const TRANSLATE = {
     "RoleFlag::None":"なし","RoleFlag::Miss":"ハズレ","RoleFlag::OneMedal":"1枚役",
-    "RoleFlag::Bell9":"9枚ベル","RoleFlag::Bell15":"15枚ベル",
+    "RoleFlag::Bell9":"9枚ベル","RoleFlag::Bell15":"15枚ベル","RoleFlag::ThreeMedal":"3枚役",
     "RoleFlag::Replay":"リプレイ","RoleFlag::WeakCherry":"弱チェリー",
     "RoleFlag::StrongCherry":"強チェリー","RoleFlag::Watermelon":"スイカ",
     "RoleFlag::WeakChance":"弱チャンス目","RoleFlag::StrongChance":"強チャンス目",
@@ -382,7 +382,7 @@
         "slot_v2_debug_count","slot_v2_test_bet","slot_v2_test_payout","slot_v2_test_bonus_gain"]){
         if(typeof e[key]!=="function")throw Error("新C++ API不足: "+key);
       }
-      if(e.slot_v2_debug_count()!==70)throw Error("デバッグ定義が70件ではありません");
+      if(e.slot_v2_debug_count()!==71)throw Error("デバッグ定義が71件ではありません");
       engineReady=true;populateFlags();
       $("flagStatus").textContent="最新のC++設定6 WASMから全70項目を取得済み";
       reset();

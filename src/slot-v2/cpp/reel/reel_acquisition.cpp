@@ -1,16 +1,8 @@
 #include "reel/reel_acquisition.hpp"
 #include "reel/reel_line.hpp"
+#include "reel/stop/bell_shape.hpp"
 
 namespace slotv2::acquisition {
-namespace {
-
-bool bellRight(Symbol s) {
-    // 右リールだけ、ベル内部フラグ時は赤7をベル代用として許可する設計。
-    return s == Symbol::Bell || s == Symbol::Red7;
-}
-
-}
-
 Result judge(
     RoleFlag internal_role,
     uint8_t left_pos,
@@ -35,19 +27,23 @@ Result judge(
 
     switch (internal_role) {
         case RoleFlag::Bell9:
-            if (line.left == Symbol::Bell
-                && line.middle == Symbol::Bell
-                && bellRight(line.right)) {
+            if (bell_shape::matchesFinal(
+                    internal_role, left_pos, middle_pos, right_pos)) {
                 return {internal_role, Status::Acquired, 9};
             }
             return {internal_role, Status::Missed, 0};
 
         case RoleFlag::Bell15:
-            // 新制御は中段1ラインのみ。15枚ベルも別ラインへ逃がさない。
-            if (line.left == Symbol::Bell
-                && line.middle == Symbol::Bell
-                && bellRight(line.right)) {
+            if (bell_shape::matchesFinal(
+                    internal_role, left_pos, middle_pos, right_pos)) {
                 return {internal_role, Status::Acquired, 15};
+            }
+            return {internal_role, Status::Missed, 0};
+
+        case RoleFlag::ThreeMedal:
+            if (bell_shape::matchesFinal(
+                    internal_role, left_pos, middle_pos, right_pos)) {
+                return {internal_role, Status::Acquired, 3};
             }
             return {internal_role, Status::Missed, 0};
 

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <array>
 #include "shared/types.hpp"
 #include "reel/reel_strip.hpp"
 #include "reel/reel_validator.hpp"
@@ -67,9 +68,38 @@ int main() {
 
     ok = ok && ((validator & required) == required);
 
-    // A non-bell internal flag must never visually complete a three-bell
-    // line. Positions 4 / 0 / 0 form BELL(upper) -> BELL(center) ->
-    // BELL(lower), i.e. a visible ↘ line with the current strips.
+    // Bell payout geometry:
+    // 9枚 = middle, 15枚 = ↗ (left lower -> right upper),
+    // 3枚 = ↘ / top / bottom. A 1枚役 must not steal these payout lines.
+    {
+        const auto bell9 = slotv2::acquisition::judge(
+            slotv2::RoleFlag::Bell9, 3u, 0u, 1u,
+            false, false, false
+        );
+        ok = ok && bell9.status == slotv2::acquisition::Status::Acquired;
+        ok = ok && bell9.medals == 9;
+    }
+    {
+        const auto bell15 = slotv2::acquisition::judge(
+            slotv2::RoleFlag::Bell15, 2u, 0u, 2u,
+            false, false, false
+        );
+        ok = ok && bell15.status == slotv2::acquisition::Status::Acquired;
+        ok = ok && bell15.medals == 15;
+    }
+    for (const auto positions : {
+        std::array<uint8_t,3>{4u,0u,0u},  // ↘
+        std::array<uint8_t,3>{4u,1u,2u},  // top
+        std::array<uint8_t,3>{2u,20u,0u}  // bottom
+    }) {
+        const auto bell3 = slotv2::acquisition::judge(
+            slotv2::RoleFlag::ThreeMedal,
+            positions[0], positions[1], positions[2],
+            false, false, false
+        );
+        ok = ok && bell3.status == slotv2::acquisition::Status::Acquired;
+        ok = ok && bell3.medals == 3;
+    }
     {
         slotv2::stop_shared::Context ctx{};
         ctx.role = slotv2::RoleFlag::OneMedal;

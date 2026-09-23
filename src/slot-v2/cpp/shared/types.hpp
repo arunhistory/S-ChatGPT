@@ -33,7 +33,8 @@ enum class RoleFlag : uint8_t {
     StrongChance,
     PenguinChance,
     EntryAT,
-    EntryBonus
+    EntryBonus,
+    ThreeMedal // 3枚役: 右下がり / 上段 / 下段 BELL
 };
 
 enum class ReelId : uint8_t { Left = 0, Middle = 1, Right = 2 };

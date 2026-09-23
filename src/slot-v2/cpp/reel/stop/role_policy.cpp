@@ -6,6 +6,7 @@ StopPolicy stopPolicy(RoleFlag role) {
     switch (role) {
         case RoleFlag::Bell9:
         case RoleFlag::Bell15:
+        case RoleFlag::ThreeMedal:
         case RoleFlag::Replay:
         case RoleFlag::EntryAT:
         case RoleFlag::EntryBonus:

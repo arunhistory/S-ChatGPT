@@ -29,8 +29,8 @@ assert.equal(e.slot_v2_setting(),6);
 assert.equal(e.slot_v2_reset_setting(0x1004,0,0),1);
 assert.equal(e.slot_v2_reset_setting(0x1005,0,8),1);
 
-assert.equal(e.slot_v2_debug_count(),70,"all 70 native flags available to browser");
-for(let i=0;i<70;i++) {
+assert.equal(e.slot_v2_debug_count(),71,"all 71 native flags available to browser");
+for(let i=0;i<71;i++) {
   const ch=e.slot_v2_debug_channel(i), v=e.slot_v2_debug_value(i), ptr=e.slot_v2_debug_name_ptr(i);
   assert(ch>=1 && ch<=11 && ptr>0,`debug catalogue entry ${i} is accessible`);
 }

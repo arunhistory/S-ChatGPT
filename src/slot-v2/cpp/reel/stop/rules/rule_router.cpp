@@ -17,6 +17,7 @@ bool accepts(const stop_shared::Context& ctx, const reel_strip::StripView& strip
     switch (ctx.role) {
         case RoleFlag::Bell9:
         case RoleFlag::Bell15:
+        case RoleFlag::ThreeMedal:
             return bell::accepts(ctx, strip, candidate);
 
         case RoleFlag::Replay:

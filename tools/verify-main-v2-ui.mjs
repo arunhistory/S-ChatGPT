@@ -17,7 +17,7 @@ for(const key of ["slot_v2_reset","slot_v2_lever","slot_v2_stop","slot_v2_phase"
    "slot_v2_debug_arm","slot_v2_debug_count","slot_v2_debug_name_ptr",
    "slot_v2_test_bet","slot_v2_test_payout","slot_v2_test_bonus_gain",
    "slot_v2_at_table"])assert.equal(typeof e[key],"function",key);
-assert.equal(e.slot_v2_debug_count(),70);
+assert.equal(e.slot_v2_debug_count(),71);
 e.slot_v2_reset(0x12341234,0);
 assert.equal(e.slot_v2_setting(),6);
 assert.equal(e.slot_v2_debug_arm(11,2),1,"configure CZ presentation");

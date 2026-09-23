@@ -1,12 +1,15 @@
 #include "reel/stop/rules/bell_rule.hpp"
-#include "reel/stop/assist_target.hpp"
+#include "reel/stop/bell_shape.hpp"
 
 namespace slotv2::stop_rules::bell {
 
-bool accepts(const stop_shared::Context& ctx, const reel_strip::StripView& strip, uint8_t candidate) {
+bool accepts(
+    const stop_shared::Context& ctx,
+    const reel_strip::StripView& strip,
+    uint8_t candidate
+) {
     if (!leftCherrySafe(ctx, strip, candidate)) return false;
-    const auto symbol = strip.data[candidate % strip.size];
-    return assist_target::accepts(ctx.role, ctx.reel, symbol);
+    return bell_shape::candidateCompatible(ctx, candidate);
 }
 
 } // namespace slotv2::stop_rules::bell
