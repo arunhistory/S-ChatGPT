@@ -149,6 +149,7 @@ SRC="$ROOT/src/slot-v2/cpp"
   "$SRC/normal/normal_flow_transition.cpp" \
   "$SRC/at/at_resolution.cpp" \
   "$SRC/at/at_single_transition.cpp" \
+  "$SRC/at/at_omen.cpp" \
   "$SRC/section/section_flow.cpp" \
   "$SRC/at/at_window.cpp" \
   "$SRC/at/at_table_transition.cpp" \
