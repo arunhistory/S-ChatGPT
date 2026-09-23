@@ -18,7 +18,7 @@
 - Settings 1-6 reuse the same game rules and state machine, but their probabilities / payout parameters may be reduced or adjusted to meet the Japanese target profile.
 - Setting 6 should preserve EX behavior as much as practical while staying inside the Japanese target envelope.
 - EX is not used as the compliance reference profile.
-- Current runtime defaults to EX until settings 1-6 receive their final tuned parameter sets.
+- Runtime supports explicit setting selection from 1 through 7. The compatibility reset path defaults to setting 6; changing the setting uses an atomic reset so one play state never mixes two settings.
 
 ## Target payout ratios
 
