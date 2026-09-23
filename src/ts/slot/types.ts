@@ -138,6 +138,13 @@ export const enum BonusTransitionOutcome {
   Returned = 2,
 }
 
+export type SlotSetting = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+export const enum SettingResetStatus {
+  Applied = 0,
+  InvalidSetting = 1,
+}
+
 export const enum CommandStatus {
   Ok = 0,
   RejectedPhase = 1,
