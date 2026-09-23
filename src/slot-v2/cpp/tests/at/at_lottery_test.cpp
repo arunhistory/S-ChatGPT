@@ -18,7 +18,7 @@ int main() {
         slotv2::at_state::Tier::Upper,
     };
 
-    uint64_t hit=0, fall=0, add=0, special=0, episode=0, upper=0;
+    uint64_t hit=0, fall=0, add=0, special=0, episode=0, upper=0, chain=0;
 
     for (const auto tier : tiers) {
         for (const auto table : tables) {
@@ -37,12 +37,13 @@ int main() {
                 special += d.special;
                 episode += d.episode;
                 upper += d.upper_special;
+                chain += d.chain_zone;
             }
         }
     }
 
     ok = ok && hit > 0 && fall > 0 && add > 0
-        && special > 0 && episode > 0 && upper > 0;
+        && special > 0 && episode > 0 && upper > 0 && chain > 0;
 
     if (!ok) {
         std::cerr << "slot_v2_at_lottery_test: FAILED\n";
@@ -56,6 +57,7 @@ int main() {
               << " special=" << special
               << " episode=" << episode
               << " upper=" << upper
+              << " chain=" << chain
               << "\n";
     return 0;
 }

@@ -111,6 +111,7 @@ add_library(slot_v2_core
   src/slot-v2/cpp/at/lower_fall_challenge.cpp
   src/slot-v2/cpp/at/at_window_transition.cpp
   src/slot-v2/cpp/at/at_event.cpp
+  src/slot-v2/cpp/special/chain_zone.cpp
   src/slot-v2/cpp/special/special_zone.cpp
   src/slot-v2/cpp/special/special_zone_pending.cpp
   src/slot-v2/cpp/special/special_zone_transition.cpp
@@ -357,3 +358,10 @@ target_link_libraries(slot_v2_revival_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_runtime_revival_test src/slot-v2/cpp/tests/integration/runtime_revival_test.cpp)
 target_link_libraries(slot_v2_runtime_revival_test PRIVATE slot_v2_core)
+
+add_executable(slot_v2_chain_zone_test src/slot-v2/cpp/tests/special/chain_zone_test.cpp)
+target_link_libraries(slot_v2_chain_zone_test PRIVATE slot_v2_core)
+add_executable(slot_v2_setting6_rates_test src/slot-v2/cpp/tests/at/setting6_rates_test.cpp)
+target_link_libraries(slot_v2_setting6_rates_test PRIVATE slot_v2_core)
+add_executable(slot_v2_runtime_chain_zone_test src/slot-v2/cpp/tests/integration/runtime_chain_zone_test.cpp)
+target_link_libraries(slot_v2_runtime_chain_zone_test PRIVATE slot_v2_core)

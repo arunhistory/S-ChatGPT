@@ -147,6 +147,8 @@ SettingResetStatus resetWithSetting(
     state.at_single_transition = {};
     state.at_omen_game = {};
     state.at_omen_finalize = at_omen::FinalizeOutcome::None;
+    state.chain_zone_step = {};
+    state.chain_zone_release = {};
     state.lower_fall_wait_game = {};
     state.lower_fall_push_outcome =
         lower_fall_challenge::PushOutcome::NotReady;
@@ -166,6 +168,8 @@ uint32_t currentSetting(const State& state) {
 uint32_t lever(State& state) {
     // A fixed BONUS/AT entitlement waiting for its RED start signal has
     // absolute priority. Freeze every other state transition until it starts.
+    state.chain_zone_step = {};
+    state.chain_zone_release = {};
     const bool entry_wait_before_transition = state.machine.entry_gate.active;
     const bool at_omen_before_transition =
         state.machine.area == machine_state::Area::AT
@@ -477,6 +481,13 @@ uint32_t lever(State& state) {
         && state.machine.at.active
         && state.machine.special_zone.active;
 
+    const bool chain_zone_game =
+        !result.entry_wait
+        && result.special == SpecialHit::None
+        && state.machine.area == machine_state::Area::AT
+        && state.machine.at.active
+        && state.machine.chain_zone.active;
+
     const bool upper_special_game =
         !result.entry_wait
         && result.special == SpecialHit::None
@@ -492,6 +503,12 @@ uint32_t lever(State& state) {
         special_zone_pending::publish(
             state.special_zone_result,
             state.pending
+        );
+    }
+
+    if (chain_zone_game) {
+        state.chain_zone_step = chain_zone::playOne(
+            state.machine.chain_zone, state.rng, result.role
         );
     }
 
@@ -531,6 +548,7 @@ uint32_t lever(State& state) {
             && result.special == SpecialHit::None
             && !special_zone_game
             && !upper_special_game
+            && !chain_zone_game
             && !at_omen_game_active
             && !lower_fall_wait_game_active)
         ? at_cycle::beginGame(state.rng, state.machine)
@@ -858,6 +876,39 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
                     state.at_resolution
                 );
 
+            // An AT-final-game chain event must finish before the empty-window
+            // resolver can consume stock or enter revival/comeback.
+            if (state.at_resolution.event == at_resolution::Event::ChainZone
+                && state.at_single_transition.applied) {
+                (void)pending_event::consume(
+                    state.pending, pending_event::ATWindowEmpty
+                );
+                (void)pending_event::consume(
+                    state.pending, pending_event::ATStockAvailable
+                );
+            }
+
+            if (state.chain_zone_step.ended
+                && state.machine.area == machine_state::Area::AT) {
+                state.chain_zone_release = chain_zone::releaseNext(
+                    state.machine.chain_zone, state.rng
+                );
+                if (state.chain_zone_release.queued) {
+                    entry_gate::queueBonus(
+                        state.machine.entry_gate,
+                        state.chain_zone_release.episode
+                            ? bonus_state::Kind::Episode
+                            : bonus_state::Kind::Regular,
+                        true,
+                        state.chain_zone_release.multi
+                    );
+                } else if (state.machine.at.games_left <= 0) {
+                    pending_event::add(
+                        state.pending, pending_event::ATWindowEmpty
+                    );
+                }
+            }
+
             // CZ result is fixed at lever-on, but the reward transition begins
             // only after the winning game's third reel has stopped.
             state.cz_reward = cz_reward::apply(
@@ -1153,6 +1204,38 @@ bonus_cycle::Result applyBonusNetGain(State& state, int net_gain) {
         state.pending,
         state.bonus_cycle
     );
+
+    if (state.bonus_transition.outcome
+            == bonus_transition::Outcome::Returned
+        && state.bonus_transition.return_area
+            == machine_state::Area::AT
+        && !state.machine.entry_gate.active
+        && state.machine.chain_zone.bonus_remaining > 0u) {
+        state.chain_zone_release = chain_zone::releaseNext(
+            state.machine.chain_zone, state.rng
+        );
+        if (state.chain_zone_release.queued) {
+            entry_gate::queueBonus(
+                state.machine.entry_gate,
+                state.chain_zone_release.episode
+                    ? bonus_state::Kind::Episode
+                    : bonus_state::Kind::Regular,
+                true,
+                state.chain_zone_release.multi
+            );
+        }
+    }
+
+    if (state.bonus_transition.outcome
+            == bonus_transition::Outcome::Returned
+        && state.bonus_transition.return_area
+            == machine_state::Area::AT
+        && state.machine.at.games_left <= 0
+        && !state.machine.entry_gate.active) {
+        pending_event::add(
+            state.pending, pending_event::ATWindowEmpty
+        );
+    }
 
     if (state.bonus_transition.outcome
             == bonus_transition::Outcome::Returned
