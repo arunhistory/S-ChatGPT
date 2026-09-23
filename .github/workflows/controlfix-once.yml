@@ -1,0 +1,37 @@
+name: One-shot control-fix C++ WASM build
+on:
+  push:
+    branches: [build/controlfix-20260924-once]
+    paths: [.github/workflows/controlfix-once.yml]
+permissions:
+  contents: write
+jobs:
+  build:
+    if: github.ref == 'refs/heads/build/controlfix-20260924-once'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lld
+      - name: Native regressions
+        run: |
+          cmake -S . -B build-native -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-native --target slot_v2_stop_test slot_v2_runtime_debug_flags_test slot_v2_runtime_normal_hit_test slot_v2_setting6_rates_test --parallel 2
+          ./build-native/slot_v2_stop_test
+          ./build-native/slot_v2_runtime_debug_flags_test
+          ./build-native/slot_v2_runtime_normal_hit_test
+          ./build-native/slot_v2_setting6_rates_test
+      - name: Compile latest WASM
+        run: bash tools/build-wasm-v2.sh
+      - name: Verify latest WASM
+        run: node tools/verify-setting6-wasm.mjs
+      - name: Ship exact page binary on this build branch
+        run: |
+          cp src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
+          git config user.name "setting6-wasm-builder"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
+          git commit -m "build: control fix WASM [skip ci]"
+          git push origin HEAD:build/controlfix-20260924-once
