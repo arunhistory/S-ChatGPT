@@ -1,4 +1,5 @@
 name: Build setting 6 WASM once
+# Manual second attempt: repair duplicate member declaration found by compiler.
 on:
   push:
     branches:
