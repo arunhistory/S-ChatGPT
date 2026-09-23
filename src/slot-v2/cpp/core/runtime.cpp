@@ -583,17 +583,19 @@ uint32_t lever(State& state) {
         state.machine.area == machine_state::Area::AT
         && state.machine.at.active;
 
-    auto bell_plan = bell_navigation::make(
-        state.rng,
-        result.role,
-        navigation_enabled
-    );
+    bell_navigation::Plan bell_plan{};
 
     if (state.lower_fall_wait_game.active
         && state.lower_fall_wait_game.judge_bell) {
         bell_plan.active = true;
         bell_plan.order_index = 0u;
         bell_plan.order = navigation::fromIndex(0u);
+    } else {
+        bell_plan = bell_navigation::make(
+            state.rng,
+            result.role,
+            navigation_enabled
+        );
     }
 
     session::setBellNavigation(
@@ -901,6 +903,11 @@ uint32_t pushLowerFallChallenge(State& state) {
             state.machine.lower_fall_challenge,
             state.machine.at
         );
+
+    if (state.lower_fall_push_outcome
+        != lower_fall_challenge::PushOutcome::NotReady) {
+        state.lower_fall_wait_game = {};
+    }
 
     if (state.lower_fall_push_outcome
         == lower_fall_challenge::PushOutcome::Continued) {
