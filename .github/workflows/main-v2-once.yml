@@ -1,0 +1,50 @@
+name: Compile main-slot V2 UI once
+on:
+  push:
+    branches: [checks/main-v2-existing-ui-one-off]
+    paths: [.github/workflows/main-v2-once.yml]
+permissions:
+  contents: write
+jobs:
+  build:
+    if: github.ref == 'refs/heads/checks/main-v2-existing-ui-one-off'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install WASM linker
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lld
+      - name: Verify existing main page JavaScript
+        run: |
+          node --check web/app-v2.js
+          node --check tools/verify-main-v2-ui.mjs
+      - name: Build and test latest C++ v2 engine
+        run: |
+          cmake -S . -B build-native -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-native --target slot_v2_core slot_v2_setting6_rates_test slot_v2_runtime_normal_hit_test slot_v2_runtime_entry_gate_test --parallel 2
+          ./build-native/slot_v2_setting6_rates_test
+          ./build-native/slot_v2_runtime_normal_hit_test
+          ./build-native/slot_v2_runtime_entry_gate_test
+          c++ -std=c++20 -O2 -Isrc/slot-v2/cpp src/slot-v2/cpp/tests/integration/runtime_normal_latent_test.cpp build-native/libslot_v2_core.a -o /tmp/latency
+          /tmp/latency
+          c++ -std=c++20 -O2 -Isrc/slot-v2/cpp src/slot-v2/cpp/tests/integration/runtime_debug_flags_test.cpp build-native/libslot_v2_core.a -o /tmp/debug
+          /tmp/debug
+      - name: Compile setting6 with all 70 native debug exports
+        run: |
+          bash tools/build-wasm-v2.sh
+          cp src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
+      - name: Verify both WASM and existing main playable UI
+        run: |
+          node tools/verify-setting6-wasm.mjs
+          node tools/verify-main-v2-ui.mjs
+      - name: Save compiled binary on isolated check branch
+        run: |
+          git config user.name "setting6-wasm-builder"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
+          if ! git diff --cached --quiet; then
+            git commit -m "build(v2): main UI native WASM [skip ci]"
+            git push origin HEAD:checks/main-v2-existing-ui-one-off
+          fi
