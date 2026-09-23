@@ -357,3 +357,10 @@ target_link_libraries(slot_v2_revival_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_runtime_revival_test src/slot-v2/cpp/tests/integration/runtime_revival_test.cpp)
 target_link_libraries(slot_v2_runtime_revival_test PRIVATE slot_v2_core)
+
+# Setting 6 design check only. Standalone: no full-game build or GitHub Actions.
+add_executable(slot_v2_setting6_odds_test
+  src/slot-v2/cpp/tests/at/setting6_odds_test.cpp
+  src/slot-v2/cpp/core/setting_profile.cpp
+)
+target_include_directories(slot_v2_setting6_odds_test PRIVATE src/slot-v2/cpp)
