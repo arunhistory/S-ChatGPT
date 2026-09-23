@@ -1,7 +1,7 @@
 #include <iostream>
 #include <stdint.h>
 #include "shared/rng.hpp"
-#include "stock-count-lottery/index.hpp"
+#include "stock/stock_count_lottery.hpp"
 
 int main() {
     bool ok = true;

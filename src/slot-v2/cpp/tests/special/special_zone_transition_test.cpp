@@ -1,6 +1,6 @@
 #include <iostream>
-#include "special-zone/index.hpp"
-#include "special-zone-transition/index.hpp"
+#include "special/special_zone.hpp"
+#include "special/special_zone_transition.hpp"
 
 int main() {
     bool ok = true;

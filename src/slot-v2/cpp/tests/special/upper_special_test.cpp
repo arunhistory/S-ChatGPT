@@ -1,5 +1,5 @@
 #include <iostream>
-#include "upper-special/index.hpp"
+#include "special/upper_special.hpp"
 
 int main() {
     bool ok = true;
