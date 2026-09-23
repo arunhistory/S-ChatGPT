@@ -1,0 +1,44 @@
+name: Build setting 6 WASM once
+on:
+  push:
+    branches:
+      - build/setting6-wasm-once
+    paths:
+      - .github/workflows/build-setting6-once.yml
+permissions:
+  contents: write
+concurrency:
+  group: setting6-wasm-one-shot
+  cancel-in-progress: true
+jobs:
+  compile:
+    if: github.ref == 'refs/heads/build/setting6-wasm-once'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Check compiler
+        run: |
+          clang++ --version
+          command -v wasm-ld
+          node --version
+      - name: Compile actual setting 6 v2 runtime
+        run: bash tools/build-wasm-v2.sh
+      - name: Test produced WASM
+        run: node tools/verify-setting6-wasm.mjs
+      - name: Record the binary in build branch
+        run: |
+          git config user.name "setting6-wasm-builder"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f src/slot-v2/wasm/slot-v2.wasm
+          git diff --cached --quiet && { echo "WASM unchanged"; exit 0; }
+          git commit -m "build: store tested setting-six v2 WASM [skip ci]"
+          git push origin HEAD:build/setting6-wasm-once
+      - name: Upload verified binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: setting6-wasm
+          path: src/slot-v2/wasm/slot-v2.wasm
+          retention-days: 2
