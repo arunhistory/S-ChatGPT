@@ -276,6 +276,21 @@ uint32_t slot_v2_at_window() {
 }
 
 __attribute__((visibility("default")))
+uint32_t slot_v2_lower_fall_push() {
+    return slotv2::runtime::pushLowerFallChallenge(g_runtime);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_lower_fall_challenge() {
+    return slotv2::runtime::lowerFallChallengePacked(g_runtime);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_lower_fall_push_outcome() {
+    return slotv2::runtime::lowerFallPushOutcome(g_runtime);
+}
+
+__attribute__((visibility("default")))
 uint32_t slot_v2_normal_at_trigger() {
     return slotv2::runtime::normalATTriggerPacked(g_runtime);
 }
