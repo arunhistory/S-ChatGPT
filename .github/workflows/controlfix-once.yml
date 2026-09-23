@@ -18,11 +18,12 @@ jobs:
       - name: Native regressions
         run: |
           cmake -S . -B build-native -DCMAKE_BUILD_TYPE=Release
-          cmake --build build-native --target slot_v2_stop_test slot_v2_runtime_debug_flags_test slot_v2_runtime_normal_hit_test slot_v2_setting6_rates_test --parallel 2
+          cmake --build build-native --target slot_v2_stop_test slot_v2_runtime_normal_hit_test slot_v2_setting6_rates_test slot_v2_core --parallel 2
           ./build-native/slot_v2_stop_test
-          ./build-native/slot_v2_runtime_debug_flags_test
           ./build-native/slot_v2_runtime_normal_hit_test
           ./build-native/slot_v2_setting6_rates_test
+          c++ -std=c++20 -O2 -Isrc/slot-v2/cpp src/slot-v2/cpp/tests/integration/runtime_debug_flags_test.cpp build-native/libslot_v2_core.a -o /tmp/runtime_debug_flags_test
+          /tmp/runtime_debug_flags_test
       - name: Compile latest WASM
         run: bash tools/build-wasm-v2.sh
       - name: Verify latest WASM
