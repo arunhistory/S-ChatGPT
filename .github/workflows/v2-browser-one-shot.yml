@@ -26,6 +26,9 @@ jobs:
           node --check web/setting6-v2.js
           node --check web/v2.js
           node tools/verify-setting6-wasm.mjs
+          node - <<'NODE'
+          const fs=require('fs');const b=fs.readFileSync('web/slot-v2.wasm');WebAssembly.instantiate(b,{}).then(({instance})=>{const e=instance.exports;e.slot_v2_reset(0x229988,0);console.log('pre',e.slot_v2_setting(),e.slot_v2_phase(),e.slot_v2_preflight());console.log('arm',e.slot_v2_debug_arm(11,2),e.slot_v2_debug_arm(3,2));const x=e.slot_v2_lever();console.log('postlever',x,e.slot_v2_phase(),e.slot_v2_last_role(),e.slot_v2_last_special(),e.slot_v2_machine_area());});
+          NODE
           node tools/verify-setting6-v2-ui.mjs
       - name: Save compiled files on build-only branch (does not retrigger)
         run: |
