@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "normal/normal_progress_view.hpp"
 
 namespace slotv2::normal_progress_view {
 

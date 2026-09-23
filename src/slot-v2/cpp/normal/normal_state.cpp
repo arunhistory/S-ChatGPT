@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "normal/normal_state.hpp"
 
 namespace slotv2::normal_state {
 

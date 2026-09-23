@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
-#include "../shared/rng.hpp"
-#include "../setting-profile/index.hpp"
+#include "shared/rng.hpp"
+#include "core/setting_profile.hpp"
 
 namespace slotv2::normal_raw_lottery {
 

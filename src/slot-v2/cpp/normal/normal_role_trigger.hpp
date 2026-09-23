@@ -1,12 +1,12 @@
 #pragma once
 #include <stdint.h>
-#include "../shared/rng.hpp"
-#include "../shared/types.hpp"
-#include "../machine-state/index.hpp"
-#include "../pending-event/index.hpp"
-#include "../normal-mode/index.hpp"
-#include "../normal-at-trigger/index.hpp"
-#include "../normal-hit-entry/index.hpp"
+#include "shared/rng.hpp"
+#include "shared/types.hpp"
+#include "core/machine_state.hpp"
+#include "core/pending_event.hpp"
+#include "normal/normal_mode.hpp"
+#include "normal/normal_at_trigger.hpp"
+#include "normal/normal_hit_entry.hpp"
 
 namespace slotv2::normal_role_trigger {
 

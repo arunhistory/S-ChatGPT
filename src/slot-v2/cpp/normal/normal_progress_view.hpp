@@ -1,6 +1,6 @@
 #pragma once
 #include <stdint.h>
-#include "../normal-progress/index.hpp"
+#include "normal/normal_progress.hpp"
 
 namespace slotv2::normal_progress_view {
 

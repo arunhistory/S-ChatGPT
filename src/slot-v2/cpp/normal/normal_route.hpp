@@ -1,8 +1,8 @@
 #pragma once
 #include <stdint.h>
-#include "../shared/rng.hpp"
-#include "../normal-mode/index.hpp"
-#include "../special-ceiling/index.hpp"
+#include "shared/rng.hpp"
+#include "normal/normal_mode.hpp"
+#include "special/special_ceiling.hpp"
 
 namespace slotv2::normal_route {
 

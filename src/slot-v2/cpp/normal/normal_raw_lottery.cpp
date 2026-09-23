@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "normal/normal_raw_lottery.hpp"
 
 namespace slotv2::normal_raw_lottery {
 
