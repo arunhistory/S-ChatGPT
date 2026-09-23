@@ -1,0 +1,39 @@
+name: One-shot bell-line C++ WASM build
+on:
+  push:
+    branches: [build/bell-lines-20260924-once]
+    paths: [.github/workflows/bell-lines-once.yml]
+permissions:
+  contents: write
+jobs:
+  build:
+    if: github.ref == 'refs/heads/build/bell-lines-20260924-once'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lld
+      - name: Native reel and runtime regressions
+        run: |
+          cmake -S . -B build-native -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-native --target slot_v2_stop_test slot_v2_runtime_normal_hit_test slot_v2_setting6_rates_test slot_v2_core --parallel 2
+          ./build-native/slot_v2_stop_test
+          ./build-native/slot_v2_runtime_normal_hit_test
+          ./build-native/slot_v2_setting6_rates_test
+          c++ -std=c++20 -O2 -Isrc/slot-v2/cpp src/slot-v2/cpp/tests/integration/runtime_debug_flags_test.cpp build-native/libslot_v2_core.a -o /tmp/runtime_debug_flags_test
+          /tmp/runtime_debug_flags_test
+      - name: Compile and verify WASM
+        run: |
+          bash tools/build-wasm-v2.sh
+          node tools/verify-setting6-wasm.mjs
+          cp src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
+          node tools/verify-main-v2-ui.mjs
+      - name: Commit exact tested WASM
+        run: |
+          git config user.name "setting6-wasm-builder"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
+          git commit -m "build: tested 3-9-15 bell line WASM [skip ci]"
+          git push origin HEAD:build/bell-lines-20260924-once
