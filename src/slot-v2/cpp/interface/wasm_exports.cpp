@@ -19,6 +19,33 @@ void slot_v2_reset(uint32_t seed_lo, uint32_t seed_hi) {
 }
 
 __attribute__((visibility("default")))
+uint32_t slot_v2_reset_setting(
+    uint32_t seed_lo,
+    uint32_t seed_hi,
+    uint32_t setting
+) {
+    if (setting > 0xffu) {
+        return static_cast<uint32_t>(
+            slotv2::runtime::SettingResetStatus::InvalidSetting
+        );
+    }
+
+    const uint64_t seed = (static_cast<uint64_t>(seed_hi) << 32) | seed_lo;
+    return static_cast<uint32_t>(
+        slotv2::runtime::resetWithSetting(
+            g_runtime,
+            seed,
+            static_cast<uint8_t>(setting)
+        )
+    );
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_setting() {
+    return slotv2::runtime::currentSetting(g_runtime);
+}
+
+__attribute__((visibility("default")))
 uint32_t slot_v2_lever() {
     return slotv2::runtime::lever(g_runtime);
 }
