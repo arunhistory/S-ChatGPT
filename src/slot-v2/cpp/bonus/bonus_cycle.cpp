@@ -23,6 +23,7 @@ Result applyNetGain(
     }
 
     if (out.kind == bonus_state::Kind::Regular
+        && !state.suppress_regular_upgrade
         && bonus_upgrade::toEpisode(rng)) {
         out.outcome = Outcome::EpisodeUpgradePending;
         return out;

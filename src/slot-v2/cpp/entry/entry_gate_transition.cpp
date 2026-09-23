@@ -42,6 +42,7 @@ Result apply(
             queued.bonus_kind,
             return_area
         );
+        machine.bonus.suppress_regular_upgrade = queued.chain_multi_bonus;
         entry_gate::clear(machine.entry_gate);
         return {
             Outcome::BonusStarted,

@@ -19,7 +19,8 @@ bool apply(
     if (machine.area != machine_state::Area::AT || !machine.at.active) {
         return false;
     }
-    if (machine.special_zone.active || machine.upper_special.active) {
+    if (machine.special_zone.active || machine.chain_zone.active
+        || machine.upper_special.active) {
         return false;
     }
 

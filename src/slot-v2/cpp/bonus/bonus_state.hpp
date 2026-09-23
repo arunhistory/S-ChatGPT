@@ -15,6 +15,7 @@ struct State {
     bool active{false};
     Kind kind{Kind::Regular};
     int medals_left{0};
+    bool suppress_regular_upgrade{false};
 };
 
 void start(State& state, Kind kind);

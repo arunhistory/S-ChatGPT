@@ -5,6 +5,7 @@ namespace slotv2::bonus_state {
 void start(State& state, Kind kind) {
     state.active = true;
     state.kind = kind;
+    state.suppress_regular_upgrade = false;
     state.medals_left = kind == Kind::Episode
         ? kEpisodeTargetMedals
         : kRegularTargetMedals;
