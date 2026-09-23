@@ -1,0 +1,55 @@
+name: Compile setting6 latest 95-4-1 WASM once
+on:
+  push:
+    branches:
+      - build/setting6-95cz-20260923-once
+    paths:
+      - .github/workflows/setting6-95-4-1-compile-once.yml
+permissions:
+  contents: write
+concurrency:
+  group: setting6-95-4-1-compile-once
+  cancel-in-progress: true
+jobs:
+  build:
+    if: github.ref == 'refs/heads/build/setting6-95cz-20260923-once'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install WebAssembly linker
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lld
+          clang++ --version
+          command -v wasm-ld
+      - name: Build native C++ engine and regression tests
+        run: |
+          cmake -S . -B build-check -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-check --target slot_v2_core slot_v2_runtime_normal_hit_test slot_v2_runtime_entry_gate_test slot_v2_setting6_rates_test slot_v2_runtime_chain_zone_test --parallel 2
+          for test in slot_v2_runtime_normal_hit_test slot_v2_runtime_entry_gate_test slot_v2_setting6_rates_test slot_v2_runtime_chain_zone_test; do
+            "./build-check/$test"
+          done
+          c++ -std=c++20 -O2 -Isrc/slot-v2/cpp src/slot-v2/cpp/tests/integration/runtime_normal_latent_test.cpp build-check/libslot_v2_core.a -o /tmp/setting6-latent-test
+          /tmp/setting6-latent-test
+          c++ -std=c++20 -O2 -Isrc/slot-v2/cpp src/slot-v2/cpp/tests/integration/runtime_debug_flags_test.cpp build-check/libslot_v2_core.a -o /tmp/setting6-debug-test
+          /tmp/setting6-debug-test
+      - name: Compile the latest current v2 C++ to WebAssembly
+        run: bash tools/build-wasm-v2.sh
+      - name: Verify produced WebAssembly
+        run: node tools/verify-setting6-wasm.mjs
+      - name: Store compiled WASM on build branch only
+        run: |
+          git config user.name "setting6-wasm-builder"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f src/slot-v2/wasm/slot-v2.wasm
+          if ! git diff --cached --quiet; then
+            git commit -m "build(v2): compiled latest setting6 WASM [skip ci]"
+            git push origin HEAD:build/setting6-95cz-20260923-once
+          fi
+      - name: Upload compiled WASM backup
+        uses: actions/upload-artifact@v4
+        with:
+          name: setting6-latest-95cz-wasm
+          path: src/slot-v2/wasm/slot-v2.wasm
+          retention-days: 2
