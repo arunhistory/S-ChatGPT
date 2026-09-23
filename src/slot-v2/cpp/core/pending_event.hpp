@@ -31,7 +31,8 @@ enum Bits : uint32_t {
     UpperComebackHit    = 1u << 18,
 
     SpecialZoneAddGames = 1u << 19,
-    SpecialZoneBonus    = 1u << 20
+    SpecialZoneBonus    = 1u << 20,
+    ATChainZone         = 1u << 21
 };
 
 struct State {

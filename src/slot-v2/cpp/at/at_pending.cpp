@@ -32,6 +32,9 @@ void publish(
         case at_resolution::Event::UpperSpecial:
             pending_event::add(pending, pending_event::ATUpperSpecial);
             break;
+        case at_resolution::Event::ChainZone:
+            pending_event::add(pending, pending_event::ATChainZone);
+            break;
         case at_resolution::Event::None:
         default:
             break;

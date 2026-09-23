@@ -17,7 +17,8 @@ enum class Event : uint8_t {
     AddGames = 3,
     Special = 4,
     Episode = 5,
-    UpperSpecial = 6
+    UpperSpecial = 6,
+    ChainZone = 7
 };
 
 struct Result {
