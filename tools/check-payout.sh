@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+echo "WARNING: this compiles the OLD legacy slot_engine.cpp; it does NOT validate v2 setting 6 or 114%." >&2
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CXX="${CXX:-c++}"
 GAMES="${1:-5000000}"
