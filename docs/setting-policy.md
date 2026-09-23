@@ -72,7 +72,8 @@ not guarantees of actual aggregate odds.
 
 ## Chain special zone implemented in v2
 
-The chain zone uses repeated 5G sets. Each ordinary bell/replay role is
+The chain zone uses repeated full 5G sets; an early signal is latched
+until the end of the current set. Each ordinary bell/replay role is
 accepted with probability 8/9, giving approximately 1/10 combined
 continuation per special-zone game at existing base role frequencies.
 Each pair of successful set continuations earns one bonus. When the

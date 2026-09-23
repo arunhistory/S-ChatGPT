@@ -24,23 +24,33 @@ Step playOne(State& state, Rng& rng, RoleFlag role) {
     if (!state.active || state.games_left == 0u) return {};
     Step result{};
     result.played = true;
-    if (eligible(role)
+
+    // A continuation hit is latched; the current five-game set always
+    // finishes before the next five-game set starts.
+    if (!state.signalled_this_set
+        && eligible(role)
         && continuationFromRoll(
             role, static_cast<uint8_t>(rng.uniformBelow(9u))
         )) {
+        state.signalled_this_set = true;
+        result.signal_found = true;
+    }
+
+    --state.games_left;
+    if (state.games_left > 0u) return result;
+
+    if (state.signalled_this_set) {
         ++state.continuations;
         state.games_left = kGamesPerSet;
+        state.signalled_this_set = false;
         result.continued = true;
         return result;
     }
 
-    --state.games_left;
-    if (state.games_left == 0u) {
-        state.active = false;
-        state.bonus_remaining = state.continuations / 2u;
-        result.ended = true;
-        result.earned_bonuses = state.bonus_remaining;
-    }
+    state.active = false;
+    state.bonus_remaining = state.continuations / 2u;
+    result.ended = true;
+    result.earned_bonuses = state.bonus_remaining;
     return result;
 }
 

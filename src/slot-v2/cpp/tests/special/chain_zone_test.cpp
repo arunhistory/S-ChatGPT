@@ -30,6 +30,30 @@ int main() {
             s,rng,slotv2::RoleFlag::OneMedal
         );
     ok=ok && last.ended && !s.active && last.earned_bonuses==0u;
+    // Successful signal on G1 is latched until the end of the full set.
+    bool saw_latched=false;
+    for (uint64_t seed=1u;seed<100u && !saw_latched;++seed) {
+        slotv2::chain_zone::State latched{};
+        slotv2::chain_zone::start(latched);
+        slotv2::Rng probe(seed);
+        const auto first=slotv2::chain_zone::playOne(
+            latched,probe,slotv2::RoleFlag::Bell9
+        );
+        if (!first.signal_found) continue;
+        saw_latched=true;
+        ok=ok && !first.continued && latched.games_left==4u
+            && latched.continuations==0u;
+        for (int i=0;i<4;++i) {
+            const auto step=slotv2::chain_zone::playOne(
+                latched,probe,slotv2::RoleFlag::OneMedal
+            );
+            if (i==3) ok=ok && step.continued
+                && latched.games_left==5u
+                && latched.continuations==1u;
+        }
+    }
+    ok=ok && saw_latched;
+
     s.bonus_remaining=4u;
     uint32_t released=0u, episodes=0u;
     for (int i=0;i<4;++i) {
