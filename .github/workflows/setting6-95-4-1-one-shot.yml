@@ -1,0 +1,29 @@
+name: Native C++ setting 6 95-4-1 route one-shot test
+on:
+  push:
+    branches: [checks/setting6-95cz-4omen-1event-once]
+    paths: [.github/workflows/setting6-95-4-1-one-shot.yml]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build native v2 engine
+        run: cmake -S . -B build-check -DCMAKE_BUILD_TYPE=Release
+      - name: Build standard setting 6 regressions
+        run: |
+          cmake --build build-check --target slot_v2_core slot_v2_runtime_normal_hit_test slot_v2_runtime_entry_gate_test slot_v2_setting6_rates_test slot_v2_runtime_chain_zone_test --parallel 2
+      - name: Run standard regressions
+        run: |
+          for t in slot_v2_runtime_normal_hit_test slot_v2_runtime_entry_gate_test slot_v2_setting6_rates_test slot_v2_runtime_chain_zone_test; do
+            "./build-check/$t"
+          done
+      - name: Run updated 95-4-1 latency and existing flag tests
+        run: |
+          c++ -std=c++20 -O2 -Isrc/slot-v2/cpp src/slot-v2/cpp/tests/integration/runtime_normal_latent_test.cpp build-check/libslot_v2_core.a -o /tmp/setting6-latency
+          /tmp/setting6-latency
+          c++ -std=c++20 -O2 -Isrc/slot-v2/cpp src/slot-v2/cpp/tests/integration/runtime_debug_flags_test.cpp build-check/libslot_v2_core.a -o /tmp/setting6-debug
+          /tmp/setting6-debug
