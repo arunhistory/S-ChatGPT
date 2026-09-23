@@ -15,6 +15,8 @@ import {
   EntryTarget,
   EntryGateKind,
   LeverResult,
+  LowerFallPhase,
+  LowerFallPushOutcome,
   MachineArea,
   PendingEvent,
   ReelId,
@@ -78,6 +80,9 @@ export interface SlotWasmV2 {
   slot_v2_revival_finalize(): number;
   slot_v2_entry_gate(): number;
   slot_v2_at_window(): number;
+  slot_v2_lower_fall_push(): number;
+  slot_v2_lower_fall_challenge(): number;
+  slot_v2_lower_fall_push_outcome(): number;
   slot_v2_at_cycle(): number;
   slot_v2_at_resolution(): number;
   slot_v2_normal_mode(): number;
@@ -557,6 +562,36 @@ export function readATWindow(wasm: SlotWasmV2): ATWindowSnapshot {
     status: (packed & 0xff) as ATWindowStatus,
     stockCount: packed >>> 8,
   };
+}
+
+export interface LowerFallChallengeSnapshot {
+  phase: LowerFallPhase;
+  waitGamesLeft: number;
+  savedGames: number;
+  buttonReady: boolean;
+  lastPushOutcome: LowerFallPushOutcome;
+}
+
+export function readLowerFallChallenge(
+  wasm: SlotWasmV2,
+): LowerFallChallengeSnapshot {
+  const packed = wasm.slot_v2_lower_fall_challenge() >>> 0;
+  const phase = (packed & 0xff) as LowerFallPhase;
+
+  return {
+    phase,
+    waitGamesLeft: (packed >>> 8) & 0xff,
+    savedGames: (packed >>> 16) & 0xffff,
+    buttonReady: phase === LowerFallPhase.ButtonReady,
+    lastPushOutcome:
+      wasm.slot_v2_lower_fall_push_outcome() as LowerFallPushOutcome,
+  };
+}
+
+export function pushLowerFallChallenge(
+  wasm: SlotWasmV2,
+): LowerFallPushOutcome {
+  return wasm.slot_v2_lower_fall_push() as LowerFallPushOutcome;
 }
 
 
