@@ -108,6 +108,7 @@ add_library(slot_v2_core
   src/slot-v2/cpp/at/at_pending.cpp
   src/slot-v2/cpp/at/at_add_games.cpp
   src/slot-v2/cpp/at/at_internal_transition.cpp
+  src/slot-v2/cpp/at/lower_fall_challenge.cpp
   src/slot-v2/cpp/at/at_window_transition.cpp
   src/slot-v2/cpp/at/at_event.cpp
   src/slot-v2/cpp/special/special_zone.cpp
@@ -205,6 +206,12 @@ target_link_libraries(slot_v2_at_cycle_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_at_transition_test src/slot-v2/cpp/tests/at/at_transition_test.cpp)
 target_link_libraries(slot_v2_at_transition_test PRIVATE slot_v2_core)
+
+add_executable(slot_v2_lower_fall_challenge_test src/slot-v2/cpp/tests/at/lower_fall_challenge_test.cpp)
+target_link_libraries(slot_v2_lower_fall_challenge_test PRIVATE slot_v2_core)
+
+add_executable(slot_v2_runtime_lower_fall_challenge_test src/slot-v2/cpp/tests/integration/runtime_lower_fall_challenge_test.cpp)
+target_link_libraries(slot_v2_runtime_lower_fall_challenge_test PRIVATE slot_v2_core)
 
 add_executable(slot_v2_at_stock_restart_test src/slot-v2/cpp/tests/at/at_stock_restart_test.cpp)
 target_link_libraries(slot_v2_at_stock_restart_test PRIVATE slot_v2_core)
