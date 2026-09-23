@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "core/machine_state.hpp"
 
 namespace slotv2::machine_state {
 

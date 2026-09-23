@@ -1,9 +1,9 @@
-#include "index.hpp"
-#include "../lever/index.hpp"
+#include "core/runtime.hpp"
+#include "core/lever.hpp"
 #include "../freeze/index.hpp"
 #include "../special-result/index.hpp"
 #include "../stop-controller/index.hpp"
-#include "../game-finalize/index.hpp"
+#include "core/game_finalize.hpp"
 #include "../stock-lottery/index.hpp"
 #include "../at-pending/index.hpp"
 #include "../at-internal-transition/index.hpp"
@@ -32,7 +32,7 @@
 #include "../at-cold/index.hpp"
 #include "../normal-flow/index.hpp"
 #include "../normal-flow-transition/index.hpp"
-#include "../entry-gate-transition/index.hpp"
+#include "entry/entry_gate_transition.hpp"
 #include "../revival-cycle/index.hpp"
 
 namespace slotv2::runtime {

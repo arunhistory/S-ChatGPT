@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "core/progress_event.hpp"
 
 namespace slotv2::progress_event {
 

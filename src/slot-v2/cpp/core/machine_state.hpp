@@ -11,7 +11,7 @@
 #include "../cz-state/index.hpp"
 #include "../special-zone/index.hpp"
 #include "../upper-special/index.hpp"
-#include "../entry-gate/index.hpp"
+#include "entry/entry_gate.hpp"
 #include "../upper-comeback/index.hpp"
 #include "../revival-state/index.hpp"
 

@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "core/pending_event.hpp"
 
 namespace slotv2::pending_event {
 
