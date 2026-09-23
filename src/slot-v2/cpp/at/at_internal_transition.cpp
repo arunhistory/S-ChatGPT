@@ -31,6 +31,26 @@ Result apply(
         return out;
     }
 
+    if (machine.at.tier == at_state::Tier::Lower) {
+        // A lower Fall must have been armed on the Fall game's lever-on.
+        // If that invariant is broken, preserve ATFall pending and do not
+        // invent a fallback termination rule.
+        if (!lower_fall_challenge::beginWaiting(
+                machine.lower_fall_challenge
+            )) {
+            return out;
+        }
+
+        (void)pending_event::consume(
+            pending,
+            pending_event::ATFall
+        );
+        out.applied = true;
+        out.fall_applied = true;
+        out.lower_fall_challenge_started = true;
+        return out;
+    }
+
     (void)pending_event::consume(pending, pending_event::ATFall);
     out.applied = true;
     out.fall_applied = true;
@@ -38,21 +58,6 @@ Result apply(
     if (machine.at.tier == at_state::Tier::Middle) {
         at_state::setTier(machine.at, at_state::Tier::Lower);
         out.after = at_state::Tier::Lower;
-        return out;
-    }
-
-    if (machine.at.tier == at_state::Tier::Lower) {
-        if (lower_fall_challenge::beginWaiting(
-                machine.lower_fall_challenge
-            )) {
-            out.lower_fall_challenge_started = true;
-            return out;
-        }
-
-        // A lower Fall must have been armed on the Fall game's lever-on.
-        // Do not guess a fallback termination rule if that invariant is broken.
-        out.applied = false;
-        out.fall_applied = false;
         return out;
     }
 
