@@ -4,7 +4,7 @@
   let e = null, memory = null, engineReady = false, auto = false, timer = null;
   let totalSpins = 0, startedArea = 0, currentRole = 0, lastWin = 0, credits = 1000;
   const stopped = [true,true,true], centers = [0,0,0], history = [], diff = [0];
-  let prev = { area:0, gate:0, latent:0 };
+  let prev = { area:0, gate:0, latent:0 }, startedSnapshot = null;
   const ROLE = ["なし","ハズレ","1枚役","9枚ベル","15枚ベル","リプレイ",
      "弱チェリー","強チェリー","スイカ","弱チャンス目","強チャンス目",
      "ペンギンチャンス","AT開始7","BONUS開始7"];
@@ -204,7 +204,7 @@
     say(ROLE[currentRole]||"GAME","リールの結果を確認",""); 
   }
   function finish(){
-    const previous=prev;
+    const previous=startedSnapshot||prev;
     settle(startedArea);
     totalSpins++;
     stopped.fill(true);
@@ -243,8 +243,9 @@
     const result=u32(e.slot_v2_lever()),status=(result>>>24)&255;
     if(status!==0){say("内部処理待ち","PUSHや状態確定が必要（状態コード "+status+"）");auto=false;setAutoLabel();refresh();return;}
     startedArea=old.area;
+    startedSnapshot=old;
     currentRole=result&255;
-    totalSpins=totalSpins;credits-=3;
+    credits-=3;
     e.slot_v2_test_bet(3);
     $("roleResult").textContent=ROLE[currentRole]||"?";
     $("payoutResult").textContent="判定中";
@@ -288,6 +289,7 @@
     e.slot_v2_reset((Date.now()>>>0),((Date.now()/4294967296)>>>0));
     totalSpins=0;credits=1000;lastWin=0;currentRole=0;
     stopped.fill(true);centers.fill(0);history.length=0;diff.splice(0,diff.length,0);
+    startedSnapshot=null;
     $("history").replaceChildren();
     for(let i=0;i<3;i++){$("reel"+(i+1)).classList.remove("spinning");reelRender(i,0)}
     $("roleResult").textContent="---";$("payoutResult").textContent="0枚";

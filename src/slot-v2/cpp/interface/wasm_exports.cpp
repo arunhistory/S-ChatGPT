@@ -449,11 +449,6 @@ uint32_t slot_v2_freeze_active() {
     return slotv2::runtime::freezeActive(g_runtime);
 }
 
-
-
-
-
-
 __attribute__((visibility("default")))
 uint32_t slot_v2_debug_name_ptr(uint32_t index) {
     if (index >= slotv2::debug::kCatalogueCount) return 0u;
@@ -461,7 +456,6 @@ uint32_t slot_v2_debug_name_ptr(uint32_t index) {
         reinterpret_cast<uintptr_t>(slotv2::debug::kCatalogue[index].name)
     );
 }
-
 
 // Browser test adapter: explicit accounting, not silent/automatic C++ spins.
 // The frontend must call these once per completed spin.
@@ -486,6 +480,7 @@ uint32_t slot_v2_test_bonus_gain(uint32_t net_medals) {
         slotv2::runtime::applyBonusNetGain(g_runtime, static_cast<int>(net_medals)).outcome
     );
 }
+
 
 
 }
