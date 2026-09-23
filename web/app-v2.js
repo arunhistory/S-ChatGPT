@@ -4,6 +4,8 @@
   let e = null, memory = null, engineReady = false, auto = false, timer = null;
   let totalSpins = 0, startedArea = 0, currentRole = 0, lastWin = 0, credits = 1000;
   const stopped = [true,true,true], centers = [0,0,0], history = [], diff = [0];
+  const reelSpinTimers = [null,null,null];
+  const reelVisualPositions = [0,7,14];
   let prev = { area:0, gate:0, latent:0 }, startedSnapshot = null;
   const ROLE = ["なし","ハズレ","1枚役","9枚ベル","15枚ベル","リプレイ",
      "弱チェリー","強チェリー","スイカ","弱チャンス目","強チャンス目",
@@ -90,6 +92,29 @@
       reel.append(span);
     }
   }
+  function stopVisualSpin(i) {
+    if(reelSpinTimers[i]!==null){
+      clearInterval(reelSpinTimers[i]);
+      reelSpinTimers[i]=null;
+    }
+    $("reel"+(i+1)).classList.remove("spinning");
+  }
+  function startVisualSpin(i) {
+    stopVisualSpin(i);
+    let pos=Number.isInteger(centers[i])?centers[i]:reelVisualPositions[i];
+    reelVisualPositions[i]=pos;
+    const reel=$("reel"+(i+1));
+    reel.classList.add("spinning");
+    reelSpinTimers[i]=setInterval(()=>{
+      // Visual belt only. Stop result itself always comes from C++.
+      reelVisualPositions[i]=(reelVisualPositions[i]+1)%21;
+      reelRender(i,reelVisualPositions[i]);
+    },54);
+  }
+  function stopAllVisualSpins() {
+    for(let i=0;i<3;i++) stopVisualSpin(i);
+  }
+
   function drawGraph() {
     const canvas=$("diffGraph");if(!canvas)return;
     const box=canvas.getBoundingClientRect(),w=Math.max(140,box.width),h=Math.max(60,box.height);
@@ -234,7 +259,9 @@
     }
     stopped[reel]=true;
     centers[reel]=value&255;
-    $("reel"+(reel+1)).classList.remove("spinning");reelRender(reel,centers[reel]);
+    stopVisualSpin(reel);
+    reelVisualPositions[reel]=centers[reel];
+    reelRender(reel,centers[reel]);
     refresh();
     if(stopped.every(Boolean))finish();
     else scheduleAuto();
@@ -262,7 +289,7 @@
       updateEvent(old,snapshot());refresh();scheduleAuto();return;
     }
     stopped.fill(false);
-    for(let i=0;i<3;i++)$("reel"+(i+1)).classList.add("spinning");
+    for(let i=0;i<3;i++) startVisualSpin(i);
     say("回転中","STOPボタンでリールを止めよう");
     refresh();
     scheduleAuto();
@@ -289,12 +316,13 @@
   function reset(){
     if(timer!==null){clearTimeout(timer);timer=null;}
     auto=false;setAutoLabel();
+    stopAllVisualSpins();
     e.slot_v2_reset((Date.now()>>>0),((Date.now()/4294967296)>>>0));
     totalSpins=0;credits=1000;lastWin=0;currentRole=0;
     stopped.fill(true);centers.fill(0);history.length=0;diff.splice(0,diff.length,0);
     startedSnapshot=null;
     $("history").replaceChildren();
-    for(let i=0;i<3;i++){$("reel"+(i+1)).classList.remove("spinning");reelRender(i,0)}
+    for(let i=0;i<3;i++){reelVisualPositions[i]=0;reelRender(i,0)}
     $("roleResult").textContent="---";$("payoutResult").textContent="0枚";
     say("READY","最新設定6・V2 C++ WASM");
     refresh();log("設定6リセット");
