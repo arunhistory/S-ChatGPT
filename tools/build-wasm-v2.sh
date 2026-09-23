@@ -66,6 +66,10 @@ mkdir -p "$WASM_DIR"
   -Wl,--export=slot_v2_debug_value \
   -Wl,--export=slot_v2_debug_name \
   -Wl,--export=slot_v2_debug_arm \
+  -Wl,--export=slot_v2_bet \
+  -Wl,--export=slot_v2_payout \
+  -Wl,--export=slot_v2_bonus_net_gain \
+  -Wl,--export=slot_v2_total_diff \
   -Wl,--export=slot_v2_last_role \
   -Wl,--export=slot_v2_freeze_active \
   -Wl,--export=slot_v2_stop \

@@ -377,6 +377,25 @@ uint32_t slot_v2_last_role() {
     return slotv2::runtime::lastRole(g_runtime);
 }
 
+// Accounting belongs to the native engine. The browser sends the bet and
+// the measured, accepted acquisition; it never modifies the game lottery.
+__attribute__((visibility("default")))
+void slot_v2_bet(uint32_t medals) {
+    if (medals <= 15u) (void)slotv2::runtime::applyBet(g_runtime, static_cast<int>(medals));
+}
+__attribute__((visibility("default")))
+void slot_v2_payout(uint32_t medals) {
+    if (medals <= 1000u) (void)slotv2::runtime::applyPayout(g_runtime, static_cast<int>(medals));
+}
+__attribute__((visibility("default")))
+void slot_v2_bonus_net_gain(int32_t net) {
+    if (net >= -100 && net <= 1000) (void)slotv2::runtime::applyBonusNetGain(g_runtime, net);
+}
+__attribute__((visibility("default")))
+int64_t slot_v2_total_diff() {
+    return g_runtime.accounting.total_diff;
+}
+
 __attribute__((visibility("default")))
 uint32_t slot_v2_normal_latent() {
     return slotv2::runtime::normalLatentPacked(g_runtime);
