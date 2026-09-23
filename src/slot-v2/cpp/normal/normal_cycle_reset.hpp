@@ -1,8 +1,8 @@
 #pragma once
-#include "../shared/rng.hpp"
-#include "../machine-state/index.hpp"
-#include "../normal-mode/index.hpp"
-#include "../normal-route/index.hpp"
+#include "shared/rng.hpp"
+#include "core/machine_state.hpp"
+#include "normal/normal_mode.hpp"
+#include "normal/normal_route.hpp"
 
 namespace slotv2::normal_cycle_reset {
 

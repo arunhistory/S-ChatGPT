@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
-#include "../shared/rng.hpp"
-#include "../normal-mode/index.hpp"
+#include "shared/rng.hpp"
+#include "normal/normal_mode.hpp"
 
 namespace slotv2::normal_ceiling {
 

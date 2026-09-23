@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "normal/normal_cycle_reset.hpp"
 
 namespace slotv2::normal_cycle_reset {
 

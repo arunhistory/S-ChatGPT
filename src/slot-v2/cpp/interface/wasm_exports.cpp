@@ -1,10 +1,10 @@
 #include <stdint.h>
-#include "../runtime/index.hpp"
-#include "../reel-validator/index.hpp"
-#include "../reel-read/index.hpp"
-#include "../preflight/index.hpp"
-#include "../ceiling-catalog/index.hpp"
-#include "../normal-progress-view/index.hpp"
+#include "core/runtime.hpp"
+#include "reel/reel_validator.hpp"
+#include "reel/reel_read.hpp"
+#include "core/preflight.hpp"
+#include "normal/ceiling_catalog.hpp"
+#include "normal/normal_progress_view.hpp"
 
 namespace {
 slotv2::runtime::State g_runtime{};

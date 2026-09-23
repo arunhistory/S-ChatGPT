@@ -1,11 +1,11 @@
 #pragma once
 #include <stdint.h>
-#include "../machine-state/index.hpp"
-#include "../pending-event/index.hpp"
-#include "../normal-mode/index.hpp"
-#include "../normal-ceiling/index.hpp"
-#include "../normal-at-trigger/index.hpp"
-#include "../normal-hit-entry/index.hpp"
+#include "core/machine_state.hpp"
+#include "core/pending_event.hpp"
+#include "normal/normal_mode.hpp"
+#include "normal/normal_ceiling.hpp"
+#include "normal/normal_at_trigger.hpp"
+#include "normal/normal_hit_entry.hpp"
 
 namespace slotv2::normal_ceiling_transition {
 

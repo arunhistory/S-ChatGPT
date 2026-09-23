@@ -1,5 +1,5 @@
-#include "index.hpp"
-#include "../progress-event/index.hpp"
+#include "normal/normal_ceiling_transition.hpp"
+#include "core/progress_event.hpp"
 
 namespace slotv2::normal_ceiling_transition {
 

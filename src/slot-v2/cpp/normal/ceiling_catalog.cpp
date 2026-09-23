@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "normal/ceiling_catalog.hpp"
 
 namespace slotv2::ceiling_catalog {
 
