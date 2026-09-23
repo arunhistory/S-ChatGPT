@@ -28,11 +28,11 @@ int main() {
         ok = ok && r.applied && r.regular_bonus_started;
         ok = ok && machine.area == slotv2::machine_state::Area::AT;
         ok = ok && machine.at.active;
+        ok = ok && machine.at_omen.active;
+        ok = ok && !machine.at_omen.episode;
+        ok = ok && machine.at_omen.games_left == 1u;
+        ok = ok && !machine.entry_gate.active;
         ok = ok && !machine.bonus.active;
-        ok = ok && machine.entry_gate.active;
-        ok = ok && machine.entry_gate.kind == slotv2::entry_gate::Kind::Bonus;
-        ok = ok && machine.entry_gate.bonus_kind == slotv2::bonus_state::Kind::Regular;
-        ok = ok && machine.entry_gate.bonus_return_to_at;
         ok = ok && !slotv2::pending_event::has(
             pending,
             slotv2::pending_event::ATHit
@@ -62,10 +62,15 @@ int main() {
 
         ok = ok && r.applied && r.episode_bonus_started;
         ok = ok && machine.area == slotv2::machine_state::Area::AT;
-        ok = ok && machine.entry_gate.active;
-        ok = ok && machine.entry_gate.bonus_kind == slotv2::bonus_state::Kind::Episode;
-        ok = ok && machine.entry_gate.bonus_return_to_at;
+        ok = ok && machine.at_omen.active;
+        ok = ok && machine.at_omen.episode;
+        ok = ok && machine.at_omen.games_left == 1u;
+        ok = ok && !machine.entry_gate.active;
         ok = ok && !machine.bonus.active;
+        ok = ok && !slotv2::pending_event::has(
+            pending,
+            slotv2::pending_event::ATEpisode
+        );
     }
 
     {
