@@ -1,7 +1,7 @@
-#include "index.hpp"
-#include "../stop-first/index.hpp"
-#include "../stop-second/index.hpp"
-#include "../stop-third/index.hpp"
+#include "reel/stop/stop_controller.hpp"
+#include "reel/stop/stop_first.hpp"
+#include "reel/stop/stop_second.hpp"
+#include "reel/stop/stop_third.hpp"
 
 namespace slotv2::stop_controller {
 

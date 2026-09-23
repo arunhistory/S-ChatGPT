@@ -1,7 +1,7 @@
-#include "index.hpp"
-#include "../stop-first/index.hpp"
-#include "../role-policy/index.hpp"
-#include "../assist-integrity/index.hpp"
+#include "reel/stop/stop_third.hpp"
+#include "reel/stop/stop_first.hpp"
+#include "reel/stop/role_policy.hpp"
+#include "reel/stop/assist_integrity.hpp"
 
 namespace slotv2::stop_third {
 

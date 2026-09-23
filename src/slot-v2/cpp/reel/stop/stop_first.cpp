@@ -1,9 +1,9 @@
-#include "index.hpp"
-#include "../stop-candidate/index.hpp"
-#include "../reel-strip/index.hpp"
-#include "../stop-rules/router.hpp"
-#include "../stop-rules/fallback.hpp"
-#include "../role-policy/index.hpp"
+#include "reel/stop/stop_first.hpp"
+#include "reel/stop/stop_candidate.hpp"
+#include "reel/reel_strip.hpp"
+#include "reel/stop/rules/rule_router.hpp"
+#include "reel/stop/rules/fallback_rule.hpp"
+#include "reel/stop/role_policy.hpp"
 
 namespace slotv2::stop_first {
 

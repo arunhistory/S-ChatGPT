@@ -1,6 +1,6 @@
-#include "index.hpp"
-#include "../revival-lottery/index.hpp"
-#include "../stock/index.hpp"
+#include "revival/revival_cycle.hpp"
+#include "revival/revival_lottery.hpp"
+#include "stock/stock_state.hpp"
 
 namespace slotv2::revival_cycle {
 
