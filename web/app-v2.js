@@ -17,7 +17,7 @@
     "9":"内部Pendingフラグ","10":"通常モード","11":"潜伏経路"};
   const TRANSLATE = {
     "RoleFlag::None":"なし","RoleFlag::Miss":"ハズレ","RoleFlag::OneMedal":"1枚役",
-    "RoleFlag::Bell9":"9枚ベル","RoleFlag::Bell15":"15枚ベル","RoleFlag::ThreeMedal":"3枚役",
+    "RoleFlag::Bell9":"9枚ベル（上・中・下段）","RoleFlag::Bell15":"15枚ベル（右上がり）","RoleFlag::ThreeMedal":"3枚役（右下がり）",
     "RoleFlag::Replay":"リプレイ","RoleFlag::WeakCherry":"弱チェリー",
     "RoleFlag::StrongCherry":"強チェリー","RoleFlag::Watermelon":"スイカ",
     "RoleFlag::WeakChance":"弱チャンス目","RoleFlag::StrongChance":"強チャンス目",

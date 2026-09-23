@@ -27,16 +27,16 @@ inline bool rolePatterns(
     const Pattern*& patterns,
     uint8_t& count
 ) {
-    static constexpr Pattern kBell9[] = {{{0,0,0}}};
-    static constexpr Pattern kBell15[] = {{{1,0,-1}}}; // ↗
-    static constexpr Pattern kBell3[] = {
-        {{-1,0,1}},   // ↘
+    static constexpr Pattern kBell9[] = {
         {{-1,-1,-1}}, // top
+        {{0,0,0}},    // middle
         {{1,1,1}}     // bottom
     };
+    static constexpr Pattern kBell15[] = {{{1,0,-1}}}; // ↗
+    static constexpr Pattern kBell3[] = {{{-1,0,1}}};  // ↘
     switch (role) {
         case RoleFlag::Bell9:
-            patterns=kBell9; count=1u; return true;
+            patterns=kBell9; count=3u; return true;
         case RoleFlag::Bell15:
             patterns=kBell15; count=1u; return true;
         case RoleFlag::ThreeMedal:

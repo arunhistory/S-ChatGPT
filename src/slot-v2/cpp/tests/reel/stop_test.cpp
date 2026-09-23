@@ -69,11 +69,15 @@ int main() {
     ok = ok && ((validator & required) == required);
 
     // Bell payout geometry:
-    // 9枚 = middle, 15枚 = ↗ (left lower -> right upper),
-    // 3枚 = ↘ / top / bottom. A 1枚役 must not steal these payout lines.
-    {
+    // horizontal top/middle/bottom = 9, ↗ = 15, ↘ = 3.
+    for (const auto positions : {
+        std::array<uint8_t,3>{4u,1u,2u},  // top
+        std::array<uint8_t,3>{3u,0u,1u},  // middle
+        std::array<uint8_t,3>{2u,20u,0u}  // bottom
+    }) {
         const auto bell9 = slotv2::acquisition::judge(
-            slotv2::RoleFlag::Bell9, 3u, 0u, 1u,
+            slotv2::RoleFlag::Bell9,
+            positions[0], positions[1], positions[2],
             false, false, false
         );
         ok = ok && bell9.status == slotv2::acquisition::Status::Acquired;
@@ -87,14 +91,9 @@ int main() {
         ok = ok && bell15.status == slotv2::acquisition::Status::Acquired;
         ok = ok && bell15.medals == 15;
     }
-    for (const auto positions : {
-        std::array<uint8_t,3>{4u,0u,0u},  // ↘
-        std::array<uint8_t,3>{4u,1u,2u},  // top
-        std::array<uint8_t,3>{2u,20u,0u}  // bottom
-    }) {
+    {
         const auto bell3 = slotv2::acquisition::judge(
-            slotv2::RoleFlag::ThreeMedal,
-            positions[0], positions[1], positions[2],
+            slotv2::RoleFlag::ThreeMedal, 4u, 0u, 0u,
             false, false, false
         );
         ok = ok && bell3.status == slotv2::acquisition::Status::Acquired;
