@@ -44,42 +44,65 @@ bool runOne(uint64_t seed, bool want_success) {
     // The Fall game itself finishes normally.
     stopAll(state);
 
-    // First wait game. Resolving ATFall changes Armed -> Waiting before this spin.
-    const uint32_t wait1 = slotv2::runtime::lever(state);
-    if (((wait1 >> 24) & 0xffu)
-        != static_cast<uint32_t>(slotv2::CommandStatus::Ok)) {
-        return false;
-    }
-    if (!state.lower_fall_wait_game.active
-        || state.lower_fall_wait_game.games_before != 2u) {
-        return false;
-    }
-    if (state.at_cycle.active) return false;
-    if (state.machine.at.games_left != 49) return false;
+    // Variable wait: every game is a dedicated 1/2 judge-bell draw.
+    // AT internal lottery and remaining-game decrement stay frozen.
+    bool judge_started = false;
+    bool saw_non_trigger = false;
 
-    stopAll(state);
-    if (state.machine.lower_fall_challenge.wait_games_left != 1u) {
-        return false;
+    for (int game = 0; game < 64 && !judge_started; ++game) {
+        const uint32_t wait = slotv2::runtime::lever(state);
+
+        if (((wait >> 24) & 0xffu)
+            != static_cast<uint32_t>(slotv2::CommandStatus::Ok)) {
+            return false;
+        }
+
+        if (!state.lower_fall_wait_game.active) return false;
+        if (state.at_cycle.active) return false;
+        if (state.machine.at.games_left != 49) return false;
+        if (state.session.lever.main_lottery_ran) return false;
+        if (state.session.lever.special != slotv2::SpecialHit::None) {
+            return false;
+        }
+
+        if (state.lower_fall_wait_game.judge_bell) {
+            if (state.session.lever.role != slotv2::RoleFlag::Bell9) {
+                return false;
+            }
+            if (!state.session.bell_navigation.active) return false;
+            if (state.session.bell_navigation.order.reel[0]
+                != slotv2::ReelId::Left) {
+                return false;
+            }
+        } else {
+            saw_non_trigger = true;
+            if (state.session.lever.role != slotv2::RoleFlag::None) {
+                return false;
+            }
+            if (state.session.bell_navigation.active) return false;
+        }
+
+        const bool this_is_judge =
+            state.lower_fall_wait_game.judge_bell;
+
+        stopAll(state);
+
+        if (this_is_judge) {
+            judge_started = true;
+            if (!slotv2::lower_fall_challenge::buttonReady(
+                    state.machine.lower_fall_challenge
+                )) {
+                return false;
+            }
+        } else {
+            if (state.machine.lower_fall_challenge.phase
+                != slotv2::lower_fall_challenge::Phase::Waiting) {
+                return false;
+            }
+        }
     }
 
-    // Second wait game.
-    const uint32_t wait2 = slotv2::runtime::lever(state);
-    if (((wait2 >> 24) & 0xffu)
-        != static_cast<uint32_t>(slotv2::CommandStatus::Ok)) {
-        return false;
-    }
-    if (!state.lower_fall_wait_game.active
-        || state.lower_fall_wait_game.games_before != 1u) {
-        return false;
-    }
-
-    stopAll(state);
-
-    if (!slotv2::lower_fall_challenge::buttonReady(
-            state.machine.lower_fall_challenge
-        )) {
-        return false;
-    }
+    if (!judge_started) return false;
 
     // Lever is locked until the one-shot button is pressed.
     const uint32_t blocked = slotv2::runtime::lever(state);
@@ -128,6 +151,8 @@ bool runOne(uint64_t seed, bool want_success) {
         != static_cast<uint32_t>(slotv2::CommandStatus::Ok)) {
         return false;
     }
+
+    (void)saw_non_trigger;
 
     return state.machine.area == slotv2::machine_state::Area::Revival
         && state.machine.revival.active
