@@ -13,7 +13,6 @@ void arm(
 ) {
     state.phase = Phase::Armed;
     state.success_fixed = rng.uniformBelow(2u) == 0u;
-    state.wait_games_left = kWaitGames;
     state.saved_games = saved_games > 0 ? saved_games : 0;
 }
 
@@ -31,15 +30,14 @@ bool buttonReady(const State& state) {
     return state.phase == Phase::ButtonReady;
 }
 
-WaitGame beginWaitGame(const State& state) {
-    if (state.phase != Phase::Waiting
-        || state.wait_games_left == 0u) {
+WaitGame beginWaitGame(Rng& rng, const State& state) {
+    if (state.phase != Phase::Waiting) {
         return {};
     }
 
     return {
         true,
-        state.wait_games_left
+        rng.uniformBelow(2u) == 0u
     };
 }
 
@@ -48,18 +46,16 @@ bool finalizeWaitGame(
     const WaitGame& game
 ) {
     if (!game.active
-        || state.phase != Phase::Waiting
-        || state.wait_games_left == 0u) {
+        || state.phase != Phase::Waiting) {
         return false;
     }
 
-    --state.wait_games_left;
-    if (state.wait_games_left == 0u) {
-        state.phase = Phase::ButtonReady;
-        return true;
+    if (!game.judge_bell) {
+        return false;
     }
 
-    return false;
+    state.phase = Phase::ButtonReady;
+    return true;
 }
 
 PushOutcome push(
