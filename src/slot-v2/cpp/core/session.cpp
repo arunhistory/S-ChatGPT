@@ -80,7 +80,9 @@ void acceptStop(State& state, ReelId reel, const stop_shared::Result& result) {
     }
 
     const auto i = static_cast<uint8_t>(reel);
-    if (state.bell_navigation.active && state.navigation_correct) {
+    if (state.bell_navigation.active
+        && state.navigation_correct
+        && state.stop_count < state.bell_navigation.required_stops) {
         state.navigation_correct = navigation::nextIs(
             state.bell_navigation.order,
             state.stop_sequence,
