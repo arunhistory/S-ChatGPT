@@ -88,6 +88,22 @@ void handleSection(
 } // namespace
 
 void reset(State& state, uint64_t seed) {
+    (void)resetWithSetting(
+        state,
+        seed,
+        setting_profile::kDefaultSetting
+    );
+}
+
+SettingResetStatus resetWithSetting(
+    State& state,
+    uint64_t seed,
+    uint8_t setting
+) {
+    if (!setting_profile::validSetting(setting)) {
+        return SettingResetStatus::InvalidSetting;
+    }
+
     state.rng.reset(seed);
     session::reset(state.session);
     state.acquisition = {};
@@ -111,7 +127,7 @@ void reset(State& state, uint64_t seed) {
     state.ceiling_freeze_pending = false;
     state.normal_role_draw = normal_role_trigger::DrawResult::None;
     state.normal_role_apply = {};
-    state.setting = 6u;
+    state.setting = setting;
     state.normal_flow_result = {};
     state.normal_flow_transition = {};
     state.cz_cycle = {};
@@ -136,6 +152,12 @@ void reset(State& state, uint64_t seed) {
     state.entry_gate_transition = {};
     state.revival_game = {};
     state.revival_finalize = {};
+
+    return SettingResetStatus::Applied;
+}
+
+uint32_t currentSetting(const State& state) {
+    return static_cast<uint32_t>(state.setting);
 }
 
 uint32_t lever(State& state) {
