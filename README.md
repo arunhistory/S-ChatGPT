@@ -1,5 +1,7 @@
 # S-ChatGPT
 
+> **Current development (2026-09-23): setting 6 only.** See [the approved setting-6 checkpoint](docs/setting6-checkpoint.md) for current normal/AT odds and implementation status. Historical calibrated results and odds elsewhere in this README are not current setting-6 measurements.
+
 個人用パチスロ試作。計算・抽選・状態遷移は C++、ブラウザ側は WebAssembly 経由で利用する。
 
 ## 現在の実装
