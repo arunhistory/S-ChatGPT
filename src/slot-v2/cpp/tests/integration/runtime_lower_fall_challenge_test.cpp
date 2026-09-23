@@ -70,6 +70,9 @@ bool runOne(uint64_t seed, bool want_success) {
                 return false;
             }
             if (!state.session.bell_navigation.active) return false;
+            if (state.session.bell_navigation.required_stops != 1u) {
+                return false;
+            }
             if (state.session.bell_navigation.order.reel[0]
                 != slotv2::ReelId::Left) {
                 return false;
