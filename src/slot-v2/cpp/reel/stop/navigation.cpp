@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "reel/stop/navigation.hpp"
 
 namespace slotv2::navigation {
 

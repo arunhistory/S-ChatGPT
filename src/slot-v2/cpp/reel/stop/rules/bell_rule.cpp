@@ -1,5 +1,5 @@
-#include "bell.hpp"
-#include "../assist-target/index.hpp"
+#include "reel/stop/rules/bell_rule.hpp"
+#include "reel/stop/assist_target.hpp"
 
 namespace slotv2::stop_rules::bell {
 

@@ -1,8 +1,8 @@
 #pragma once
 #include <stdint.h>
-#include "../shared/rng.hpp"
-#include "../shared/types.hpp"
-#include "../navigation/index.hpp"
+#include "shared/rng.hpp"
+#include "shared/types.hpp"
+#include "reel/stop/navigation.hpp"
 
 namespace slotv2::bell_navigation {
 

@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "reel/stop/role_policy.hpp"
 
 namespace slotv2::role_policy {
 

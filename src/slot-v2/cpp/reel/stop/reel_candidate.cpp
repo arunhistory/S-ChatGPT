@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "reel/stop/reel_candidate.hpp"
 
 namespace slotv2::reel_candidate {
 

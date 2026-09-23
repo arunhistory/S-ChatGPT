@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "reel/stop/bell_navigation.hpp"
 
 namespace slotv2::bell_navigation {
 

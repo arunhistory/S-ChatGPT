@@ -1,5 +1,5 @@
 #pragma once
-#include "../reel-strip/index.hpp"
+#include "reel/reel_strip.hpp"
 
 namespace slotv2::reel_candidate {
 

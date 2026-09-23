@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "reel/stop/assist_target.hpp"
 
 namespace slotv2::assist_target {
 
