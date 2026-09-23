@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "bonus/bonus_state.hpp"
 
 namespace slotv2::bonus_state {
 

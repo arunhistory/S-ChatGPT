@@ -1,5 +1,5 @@
-#include "index.hpp"
-#include "../bonus-upgrade/index.hpp"
+#include "bonus/bonus_cycle.hpp"
+#include "bonus/bonus_upgrade.hpp"
 
 namespace slotv2::bonus_cycle {
 

@@ -1,6 +1,6 @@
 #pragma once
-#include "../normal-mode/index.hpp"
-#include "../bonus-state/index.hpp"
+#include "normal/normal_mode.hpp"
+#include "bonus/bonus_state.hpp"
 
 namespace slotv2::bonus_entry_policy {
 

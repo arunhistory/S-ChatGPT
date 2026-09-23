@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "bonus/bonus_upgrade.hpp"
 
 namespace slotv2::bonus_upgrade {
 

@@ -1,7 +1,7 @@
 #pragma once
-#include "../machine-state/index.hpp"
-#include "../pending-event/index.hpp"
-#include "../bonus-cycle/index.hpp"
+#include "core/machine_state.hpp"
+#include "core/pending_event.hpp"
+#include "bonus/bonus_cycle.hpp"
 
 namespace slotv2::bonus_transition {
 

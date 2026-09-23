@@ -1,7 +1,7 @@
 #pragma once
-#include "../machine-state/index.hpp"
-#include "../pending-event/index.hpp"
-#include "../upper-comeback-cycle/index.hpp"
+#include "core/machine_state.hpp"
+#include "core/pending_event.hpp"
+#include "at/upper_comeback_cycle.hpp"
 
 namespace slotv2::upper_comeback_transition {
 

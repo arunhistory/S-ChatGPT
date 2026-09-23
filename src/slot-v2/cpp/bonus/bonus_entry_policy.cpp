@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "bonus/bonus_entry_policy.hpp"
 
 namespace slotv2::bonus_entry_policy {
 
