@@ -1,11 +1,13 @@
 import {
   completeSpecial,
   lever,
+  pushLowerFallChallenge,
   SlotWasmV2,
   stop,
 } from "../bridge/index.js";
 import {
   LeverResult,
+  LowerFallPushOutcome,
   ReelId,
   ReelPosition,
   SessionPhase,
@@ -28,6 +30,11 @@ export interface StopCommandResult {
 
 export interface SpecialCompleteResult {
   phase: SessionPhase;
+  snapshot: SlotV2Snapshot;
+}
+
+export interface LowerFallPushResult {
+  outcome: LowerFallPushOutcome;
   snapshot: SlotV2Snapshot;
 }
 
@@ -66,6 +73,15 @@ export class SlotV2Controller {
 
     return {
       phase,
+      snapshot: readSlotV2Snapshot(this.wasm),
+    };
+  }
+
+  pushLowerFall(): LowerFallPushResult {
+    const outcome = pushLowerFallChallenge(this.wasm);
+
+    return {
+      outcome,
       snapshot: readSlotV2Snapshot(this.wasm),
     };
   }
