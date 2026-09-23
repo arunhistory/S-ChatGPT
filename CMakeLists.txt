@@ -293,6 +293,9 @@ target_link_libraries(slot_v2_at_single_transition_test PRIVATE slot_v2_core)
 add_executable(slot_v2_at_omen_test src/slot-v2/cpp/tests/at/at_omen_test.cpp)
 target_link_libraries(slot_v2_at_omen_test PRIVATE slot_v2_core)
 
+add_executable(slot_v2_runtime_at_omen_test src/slot-v2/cpp/tests/integration/runtime_at_omen_test.cpp)
+target_link_libraries(slot_v2_runtime_at_omen_test PRIVATE slot_v2_core)
+
 
 add_executable(slot_v2_normal_at_trigger_test src/slot-v2/cpp/tests/normal/normal_at_trigger_test.cpp)
 target_link_libraries(slot_v2_normal_at_trigger_test PRIVATE slot_v2_core)
