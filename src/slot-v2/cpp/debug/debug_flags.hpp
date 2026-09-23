@@ -116,7 +116,7 @@ inline constexpr Descriptor kCatalogue[] = {
     SLOT_DEBUG_FLAG(Mode, normal_mode::Mode::SuperHeaven),
     SLOT_DEBUG_FLAG(Mode, normal_mode::Mode::Special),
 
-    SLOT_DEBUG_FLAG(Presentation, normal_latent::Route::Direct),
+    SLOT_DEBUG_FLAG(Presentation, normal_latent::Route::NormalEvent),
     SLOT_DEBUG_FLAG(Presentation, normal_latent::Route::Omen),
     SLOT_DEBUG_FLAG(Presentation, normal_latent::Route::OmenCZ)
 };

@@ -531,6 +531,7 @@ uint32_t lever(State& state) {
                 == normal_role_trigger::DrawResult::None
             && state.normal_flow_result.reward
                 == normal_flow::Reward::None
+            && !state.latent_omen_game
             && (forced.channel == debug::Channel::NormalCeiling
                 || (!state.latent_omen_game && normal_route::reached(
                     state.normal_route,
@@ -1068,7 +1069,8 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
             if (state.latent_omen_game) {
                 state.last_latent_completion =
                     normal_latent::completeOmenGame(
-                        state.latent, state.machine.entry_gate
+                        state.latent, state.machine.entry_gate,
+                        state.session.lever.role
                     );
                 if (state.last_latent_completion
                     == normal_latent::Completion::CZStarted) {
@@ -1090,7 +1092,8 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
                     : normal_latent::kRandomRoute;
                 state.last_latent_capture = normal_latent::capture(
                     state.rng, state.latent, state.machine.entry_gate,
-                    !state.cz_cycle.active,
+                    !state.cz_cycle.active
+                        && state.cz_reward.outcome == cz_reward::Outcome::None,
                     requested_route
                 );
                 if (state.last_latent_capture.captured) {
