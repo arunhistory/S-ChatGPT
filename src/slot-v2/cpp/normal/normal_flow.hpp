@@ -1,9 +1,9 @@
 #pragma once
 #include <stdint.h>
-#include "../shared/rng.hpp"
-#include "../shared/types.hpp"
-#include "../normal-high/index.hpp"
-#include "../normal-raw-lottery/index.hpp"
+#include "shared/rng.hpp"
+#include "shared/types.hpp"
+#include "normal/normal_high.hpp"
+#include "normal/normal_raw_lottery.hpp"
 
 namespace slotv2::normal_flow {
 

@@ -1,7 +1,7 @@
 #pragma once
-#include "../machine-state/index.hpp"
-#include "../normal-mode/index.hpp"
-#include "../bonus-entry-policy/index.hpp"
+#include "core/machine_state.hpp"
+#include "normal/normal_mode.hpp"
+#include "bonus/bonus_entry_policy.hpp"
 
 namespace slotv2::normal_hit_entry {
 

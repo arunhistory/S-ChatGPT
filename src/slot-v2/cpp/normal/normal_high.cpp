@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "normal/normal_high.hpp"
 
 namespace slotv2::normal_high {
 

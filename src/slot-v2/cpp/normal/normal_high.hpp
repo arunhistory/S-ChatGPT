@@ -1,8 +1,8 @@
 #pragma once
 #include <stdint.h>
-#include "../shared/rng.hpp"
-#include "../shared/types.hpp"
-#include "../normal-shortening/index.hpp"
+#include "shared/rng.hpp"
+#include "shared/types.hpp"
+#include "normal/normal_shortening.hpp"
 
 namespace slotv2::normal_high {
 
