@@ -7,6 +7,7 @@
 #include "normal/normal_high.hpp"
 #include "at/at_state.hpp"
 #include "at/at_omen.hpp"
+#include "at/lower_fall_challenge.hpp"
 #include "bonus/bonus_state.hpp"
 #include "cz/cz_state.hpp"
 #include "special/special_zone.hpp"
@@ -34,6 +35,7 @@ struct State {
     normal_progress::State normal_progress{};
     at_state::State at{};
     at_omen::State at_omen{};
+    lower_fall_challenge::State lower_fall_challenge{};
     bonus_state::State bonus{};
     Area bonus_return_area{Area::Normal};
     bool bonus_return_valid{false};
