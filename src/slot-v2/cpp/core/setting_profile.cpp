@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "core/setting_profile.hpp"
 
 namespace slotv2::setting_profile {
 

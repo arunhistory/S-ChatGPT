@@ -1,5 +1,5 @@
 #include "core/preflight.hpp"
-#include "../reel-validator/index.hpp"
+#include "reel/reel_validator.hpp"
 
 namespace slotv2::preflight {
 

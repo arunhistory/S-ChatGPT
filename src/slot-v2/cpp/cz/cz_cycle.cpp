@@ -1,5 +1,5 @@
-#include "index.hpp"
-#include "../cz-lottery/index.hpp"
+#include "cz/cz_cycle.hpp"
+#include "cz/cz_lottery.hpp"
 
 namespace slotv2::cz_cycle {
 

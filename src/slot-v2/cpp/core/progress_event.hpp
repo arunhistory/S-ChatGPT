@@ -1,5 +1,5 @@
 #pragma once
-#include "../normal-progress/index.hpp"
+#include "normal/normal_progress.hpp"
 #include "core/pending_event.hpp"
 
 namespace slotv2::progress_event {

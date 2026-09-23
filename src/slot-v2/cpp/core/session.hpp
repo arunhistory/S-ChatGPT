@@ -1,10 +1,10 @@
 #pragma once
 #include <stdint.h>
-#include "../shared/types.hpp"
-#include "../stop-shared/index.hpp"
-#include "../freeze/index.hpp"
-#include "../special-result/index.hpp"
-#include "../bell-navigation/index.hpp"
+#include "shared/types.hpp"
+#include "reel/stop/stop_types.hpp"
+#include "special/freeze_control.hpp"
+#include "special/special_result.hpp"
+#include "reel/stop/bell_navigation.hpp"
 
 namespace slotv2::session {
 
