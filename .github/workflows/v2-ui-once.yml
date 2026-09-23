@@ -1,0 +1,56 @@
+name: One-shot native V2 playable UI compilation
+on:
+  push:
+    branches: [checks/setting6-v2-ui-build-once]
+    paths: [.github/workflows/v2-ui-once.yml]
+permissions:
+  contents: write
+jobs:
+  build:
+    if: github.ref == 'refs/heads/checks/setting6-v2-ui-build-once'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install WASM linker
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lld
+      - name: Verify JavaScript syntax
+        run: |
+          node --check web/v2.js
+          node --check web/setting6-v2.js
+          node --check tools/verify-setting6-v2-ui.mjs
+      - name: Compile native C++ and regression tests
+        run: |
+          cmake -S . -B build-native -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-native --target slot_v2_core slot_v2_setting6_rates_test slot_v2_runtime_normal_hit_test slot_v2_runtime_entry_gate_test --parallel 2
+          ./build-native/slot_v2_setting6_rates_test
+          ./build-native/slot_v2_runtime_normal_hit_test
+          ./build-native/slot_v2_runtime_entry_gate_test
+          c++ -std=c++20 -O2 -Isrc/slot-v2/cpp src/slot-v2/cpp/tests/integration/runtime_normal_latent_test.cpp build-native/libslot_v2_core.a -o /tmp/latency
+          /tmp/latency
+          c++ -std=c++20 -O2 -Isrc/slot-v2/cpp src/slot-v2/cpp/tests/integration/runtime_debug_flags_test.cpp build-native/libslot_v2_core.a -o /tmp/debug
+          /tmp/debug
+      - name: Rebuild latest C++ WASM
+        run: bash tools/build-wasm-v2.sh
+      - name: Deploy browser WASM alongside page
+        run: cp src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
+      - name: Validate v2 WASM and browser loading contract
+        run: |
+          node tools/verify-setting6-wasm.mjs
+          node tools/verify-setting6-v2-ui.mjs
+      - name: Commit binaries on isolated test branch only
+        run: |
+          git config user.name "setting6-wasm-builder"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
+          if ! git diff --cached --quiet; then
+            git commit -m "build(v2): compiled page and latest setting6 WASM [skip ci]"
+            git push origin HEAD:checks/setting6-v2-ui-build-once
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v2-playable-wasm
+          path: web/slot-v2.wasm
+          retention-days: 2
