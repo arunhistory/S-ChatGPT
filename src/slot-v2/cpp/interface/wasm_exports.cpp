@@ -397,6 +397,11 @@ int64_t slot_v2_total_diff() {
 }
 
 __attribute__((visibility("default")))
+uint32_t slot_v2_at_table() {
+    return static_cast<uint32_t>(g_runtime.machine.at.table);
+}
+
+__attribute__((visibility("default")))
 uint32_t slot_v2_normal_latent() {
     return slotv2::runtime::normalLatentPacked(g_runtime);
 }

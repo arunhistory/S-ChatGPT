@@ -74,6 +74,7 @@ mkdir -p "$WASM_DIR"
   -Wl,--export=slot_v2_payout \
   -Wl,--export=slot_v2_bonus_net_gain \
   -Wl,--export=slot_v2_total_diff \
+  -Wl,--export=slot_v2_at_table \
   -Wl,--export=slot_v2_last_role \
   -Wl,--export=slot_v2_freeze_active \
   -Wl,--export=slot_v2_stop \
