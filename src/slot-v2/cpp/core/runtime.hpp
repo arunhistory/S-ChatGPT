@@ -36,6 +36,7 @@
 #include "at/upper_comeback_cycle.hpp"
 #include "at/upper_comeback_transition.hpp"
 #include "at/at_single_transition.hpp"
+#include "at/at_omen.hpp"
 #include "normal/normal_at_trigger.hpp"
 #include "special/special_zone_pending.hpp"
 #include "special/special_zone_transition.hpp"
@@ -82,6 +83,8 @@ struct State {
     bonus_transition::Result bonus_transition{};
     upper_comeback_cycle::Result upper_comeback_cycle{};
     at_single_transition::Result at_single_transition{};
+    at_omen::Game at_omen_game{};
+    at_omen::FinalizeOutcome at_omen_finalize{at_omen::FinalizeOutcome::None};
     normal_at_trigger::Result normal_at_trigger{};
     special_zone::HitResult special_zone_result{special_zone::HitResult::None};
     special_zone_transition::Result special_zone_transition{};
