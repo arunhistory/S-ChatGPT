@@ -450,31 +450,9 @@ uint32_t slot_v2_freeze_active() {
 }
 
 
-// Display-only packed latency: stage in bits 0..7, games left in 8..15,
-// selected omen length in 16..23 and presentation route in 24..31.
-__attribute__((visibility("default")))
-uint32_t slot_v2_normal_latent() {
-    return slotv2::runtime::normalLatentPacked(g_runtime);
-}
 
-// Typed complete C++ debug catalogue, usable by the separate v2 test UI.
-// Invalid IDs and incompatible machine states are rejected by C++.
-__attribute__((visibility("default")))
-uint32_t slot_v2_debug_count() {
-    return slotv2::debug::kCatalogueCount;
-}
 
-__attribute__((visibility("default")))
-uint32_t slot_v2_debug_channel(uint32_t index) {
-    if (index >= slotv2::debug::kCatalogueCount) return 0xffffffffu;
-    return static_cast<uint32_t>(slotv2::debug::kCatalogue[index].channel);
-}
 
-__attribute__((visibility("default")))
-uint32_t slot_v2_debug_value(uint32_t index) {
-    if (index >= slotv2::debug::kCatalogueCount) return 0xffffffffu;
-    return slotv2::debug::kCatalogue[index].value;
-}
 
 __attribute__((visibility("default")))
 uint32_t slot_v2_debug_name_ptr(uint32_t index) {
@@ -484,17 +462,6 @@ uint32_t slot_v2_debug_name_ptr(uint32_t index) {
     );
 }
 
-__attribute__((visibility("default")))
-uint32_t slot_v2_debug_arm(uint32_t channel, uint32_t value) {
-    if (channel > static_cast<uint32_t>(slotv2::debug::Channel::Presentation)) {
-        return 0u;
-    }
-    return slotv2::runtime::armDebugFlag(
-        g_runtime,
-        static_cast<slotv2::debug::Channel>(channel),
-        value
-    ) ? 1u : 0u;
-}
 
 // Browser test adapter: explicit accounting, not silent/automatic C++ spins.
 // The frontend must call these once per completed spin.
@@ -520,9 +487,5 @@ uint32_t slot_v2_test_bonus_gain(uint32_t net_medals) {
     );
 }
 
-__attribute__((visibility("default")))
-uint32_t slot_v2_at_table() {
-    return static_cast<uint32_t>(g_runtime.machine.at.table);
-}
 
 }

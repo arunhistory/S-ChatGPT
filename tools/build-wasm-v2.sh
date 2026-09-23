@@ -74,7 +74,6 @@ mkdir -p "$WASM_DIR"
   -Wl,--export=slot_v2_payout \
   -Wl,--export=slot_v2_bonus_net_gain \
   -Wl,--export=slot_v2_total_diff \
-  -Wl,--export=slot_v2_at_table \
   -Wl,--export=slot_v2_last_role \
   -Wl,--export=slot_v2_freeze_active \
   -Wl,--export=slot_v2_stop \
@@ -91,12 +90,7 @@ mkdir -p "$WASM_DIR"
   -Wl,--export=slot_v2_phase \
   -Wl,--export=slot_v2_visible_symbol \
   -Wl,--export=slot_v2_symbol_at \
-  -Wl,--export=slot_v2_normal_latent \
-  -Wl,--export=slot_v2_debug_count \
-  -Wl,--export=slot_v2_debug_channel \
-  -Wl,--export=slot_v2_debug_value \
   -Wl,--export=slot_v2_debug_name_ptr \
-  -Wl,--export=slot_v2_debug_arm \
   -Wl,--initial-memory=131072 -Wl,--max-memory=16777216 \
   -o "$WASM_DIR/slot-v2.wasm" \
   "$SRC/shared/memory.cpp" \
