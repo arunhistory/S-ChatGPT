@@ -6,11 +6,28 @@
 #include "normal/ceiling_catalog.hpp"
 #include "normal/normal_progress_view.hpp"
 
+// Use lazy placement construction to avoid relying on wasm-ld calling
+// C++ global constructors. A trivial initialized buffer must persist between
+// every exported command (lever, stop, status).
+void* operator new(__SIZE_TYPE__, void* address) noexcept { return address; }
 namespace {
-slotv2::runtime::State g_runtime{};
+alignas(slotv2::runtime::State)
+unsigned char g_runtime_buffer[sizeof(slotv2::runtime::State)]{};
+bool g_runtime_ready = false;
+slotv2::runtime::State& runtimeStorage() {
+    if (!g_runtime_ready) {
+        new (static_cast<void*>(g_runtime_buffer)) slotv2::runtime::State{};
+        g_runtime_ready = true;
+    }
+    return *reinterpret_cast<slotv2::runtime::State*>(g_runtime_buffer);
 }
+}
+#define g_runtime (runtimeStorage())
 
 extern "C" {
+// WASM start section guarantees static C++ constructors execute exactly once.
+void slot_v2_wasm_start() {}
+
 
 __attribute__((visibility("default")))
 void slot_v2_reset(uint32_t seed_lo, uint32_t seed_hi) {
@@ -480,6 +497,8 @@ uint32_t slot_v2_test_bonus_gain(uint32_t net_medals) {
         slotv2::runtime::applyBonusNetGain(g_runtime, static_cast<int>(net_medals)).outcome
     );
 }
+
+
 
 
 

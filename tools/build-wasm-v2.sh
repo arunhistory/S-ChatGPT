@@ -9,7 +9,7 @@ mkdir -p "$WASM_DIR"
 
 "$CLANGXX" --target=wasm32-unknown-unknown -std=c++20 -O3 -I"$SRC" \
   -nostdlib -ffreestanding -fno-exceptions -fno-rtti \
-  -Wl,--no-entry -Wl,--export-memory \
+  -Wl,--entry=slot_v2_wasm_start -Wl,--export-memory \
   -Wl,--export=slot_v2_reset \
   -Wl,--export=slot_v2_reset_setting \
   -Wl,--export=slot_v2_setting \
