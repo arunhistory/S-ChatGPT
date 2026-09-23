@@ -1,7 +1,7 @@
 #include <iostream>
-#include "setting-profile/index.hpp"
-#include "normal-high/index.hpp"
-#include "normal-flow/index.hpp"
+#include "core/setting_profile.hpp"
+#include "normal/normal_high.hpp"
+#include "normal/normal_flow.hpp"
 
 int main() {
     bool ok = true;

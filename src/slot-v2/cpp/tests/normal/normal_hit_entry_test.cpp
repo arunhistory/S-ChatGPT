@@ -1,5 +1,5 @@
 #include <iostream>
-#include "normal-hit-entry/index.hpp"
+#include "normal/normal_hit_entry.hpp"
 
 int main() {
     bool ok = true;

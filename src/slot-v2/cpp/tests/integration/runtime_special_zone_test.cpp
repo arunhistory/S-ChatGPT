@@ -1,5 +1,5 @@
 #include <iostream>
-#include "runtime/index.hpp"
+#include "core/runtime.hpp"
 
 namespace {
 

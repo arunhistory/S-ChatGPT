@@ -1,6 +1,6 @@
 #include <iostream>
-#include "ceiling-catalog/index.hpp"
-#include "normal-progress-view/index.hpp"
+#include "normal/ceiling_catalog.hpp"
+#include "normal/normal_progress_view.hpp"
 
 int main() {
     bool ok = true;

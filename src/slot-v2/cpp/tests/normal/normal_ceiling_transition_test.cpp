@@ -1,5 +1,5 @@
 #include <iostream>
-#include "normal-ceiling-transition/index.hpp"
+#include "normal/normal_ceiling_transition.hpp"
 
 int main() {
     bool ok = true;

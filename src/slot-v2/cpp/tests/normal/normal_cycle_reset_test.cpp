@@ -1,5 +1,5 @@
 #include <iostream>
-#include "normal-cycle-reset/index.hpp"
+#include "normal/normal_cycle_reset.hpp"
 
 int main() {
     bool ok = true;

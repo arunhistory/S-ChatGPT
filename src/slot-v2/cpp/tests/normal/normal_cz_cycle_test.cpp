@@ -1,7 +1,7 @@
 #include <iostream>
-#include "normal-state/index.hpp"
-#include "cz-cycle/index.hpp"
-#include "cz-lottery/index.hpp"
+#include "normal/normal_state.hpp"
+#include "cz/cz_cycle.hpp"
+#include "cz/cz_lottery.hpp"
 
 int main() {
     bool ok = true;

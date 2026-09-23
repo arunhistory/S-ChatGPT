@@ -1,5 +1,5 @@
 #include <iostream>
-#include "normal-at-trigger/index.hpp"
+#include "normal/normal_at_trigger.hpp"
 
 int main() {
     bool ok = true;

@@ -1,7 +1,7 @@
 #include <iostream>
-#include "at-state/index.hpp"
-#include "bonus-state/index.hpp"
-#include "cz-state/index.hpp"
+#include "at/at_state.hpp"
+#include "bonus/bonus_state.hpp"
+#include "cz/cz_state.hpp"
 
 int main() {
     bool ok = true;

@@ -1,5 +1,5 @@
 #include <iostream>
-#include "normal-role-trigger/index.hpp"
+#include "normal/normal_role_trigger.hpp"
 
 int main() {
     bool ok = true;
