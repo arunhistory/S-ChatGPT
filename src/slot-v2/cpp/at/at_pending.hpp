@@ -1,6 +1,6 @@
 #pragma once
-#include "../at-resolution/index.hpp"
-#include "../pending-event/index.hpp"
+#include "at/at_resolution.hpp"
+#include "core/pending_event.hpp"
 
 namespace slotv2::at_pending {
 

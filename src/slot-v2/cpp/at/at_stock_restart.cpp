@@ -1,6 +1,6 @@
-#include "index.hpp"
-#include "../at-table-transition/index.hpp"
-#include "../at-cold/index.hpp"
+#include "at/at_stock_restart.hpp"
+#include "at/at_table_transition.hpp"
+#include "at/at_cold.hpp"
 
 namespace slotv2::at_stock_restart {
 

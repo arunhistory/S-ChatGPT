@@ -1,8 +1,8 @@
 #pragma once
 #include <stdint.h>
-#include "../at-state/index.hpp"
-#include "../entry-gate/index.hpp"
-#include "../bonus-state/index.hpp"
+#include "at/at_state.hpp"
+#include "entry/entry_gate.hpp"
+#include "bonus/bonus_state.hpp"
 
 namespace slotv2::at_omen {
 

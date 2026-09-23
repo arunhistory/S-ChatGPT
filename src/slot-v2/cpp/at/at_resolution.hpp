@@ -1,6 +1,6 @@
 #pragma once
 #include <stdint.h>
-#include "../at-event/index.hpp"
+#include "at/at_event.hpp"
 
 namespace slotv2::at_resolution {
 

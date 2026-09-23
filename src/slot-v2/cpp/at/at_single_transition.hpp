@@ -1,7 +1,7 @@
 #pragma once
-#include "../machine-state/index.hpp"
-#include "../pending-event/index.hpp"
-#include "../at-resolution/index.hpp"
+#include "core/machine_state.hpp"
+#include "core/pending_event.hpp"
+#include "at/at_resolution.hpp"
 
 namespace slotv2::at_single_transition {
 
