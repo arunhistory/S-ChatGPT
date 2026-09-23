@@ -16,4 +16,14 @@ bool completesReservedLine(
     uint8_t candidate
 );
 
+// True if the third stop would visually complete BELL-BELL-BELL on any
+// visible cross-reel line: top, middle, bottom, ↘ or ↗.
+// Internal lottery still decides the role; non-bell roles must avoid a
+// misleading bell line instead of changing a 1-medal/miss into bell.
+bool completesVisibleBellLine(
+    const stop_shared::Context& ctx,
+    const reel_strip::StripView& strip,
+    uint8_t candidate
+);
+
 } // namespace slotv2::stop_rules

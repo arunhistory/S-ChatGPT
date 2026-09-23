@@ -1,6 +1,7 @@
 #include <iostream>
 #include "core/runtime.hpp"
 #include "debug/debug_flags.hpp"
+#include "reel/reel_read.hpp"
 using namespace slotv2;
 namespace {
 bool spin(runtime::State& s) {
@@ -74,6 +75,13 @@ int main() {
         ok &= s.machine.area==machine_state::Area::AT;
         ok &= s.machine.at.active;
         ok &= s.machine.at.tier==at_state::Tier::Upper;
+        ok &= s.special_committed;
+        for (uint32_t reel=0; reel<3u; ++reel) {
+            ok &= reel_read::at(
+                static_cast<ReelId>(reel),
+                s.session.position[reel]
+            ) == Symbol::Blue7;
+        }
         ok &= runtime::armDebugFlag(s,debug::Channel::ATEvent,
             static_cast<uint32_t>(at_event::AddGames));
         const auto result=runtime::lever(s);

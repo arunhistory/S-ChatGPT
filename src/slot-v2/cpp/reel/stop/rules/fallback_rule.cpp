@@ -10,6 +10,11 @@ bool accepts(
     if (!leftCherrySafe(ctx, strip, candidate)) return false;
 
     // A missed/substitute role must stop on a zero-payout non-result.
+    // Also suppress visually complete bell lines on non-bell internal flags.
+    if (ctx.role != RoleFlag::Bell9 && ctx.role != RoleFlag::Bell15
+        && completesVisibleBellLine(ctx, strip, candidate)) {
+        return false;
+    }
     return !completesReservedLine(ctx, strip, candidate);
 }
 

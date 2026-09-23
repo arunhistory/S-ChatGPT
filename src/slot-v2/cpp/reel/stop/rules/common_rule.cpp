@@ -110,4 +110,40 @@ bool completesReservedLine(
         || red777 || blue777 || red77bar;
 }
 
+bool completesVisibleBellLine(
+    const stop_shared::Context& ctx,
+    const reel_strip::StripView& strip,
+    uint8_t candidate
+) {
+    uint8_t center[3]{0u,0u,0u};
+    bool ready[3]{false,false,false};
+
+    for (uint8_t i = 0; i < 3u; ++i) {
+        if (!ctx.stopped[i]) continue;
+        center[i] = ctx.stopped_position[i];
+        ready[i] = true;
+    }
+    const uint8_t current = static_cast<uint8_t>(ctx.reel);
+    center[current] = candidate;
+    ready[current] = true;
+    if (!ready[0] || !ready[1] || !ready[2]) return false;
+
+    auto at = [&](uint8_t reel, int row) {
+        const auto view = reel_strip::get(static_cast<ReelId>(reel));
+        if (!view.data || view.size == 0u) return Symbol::Unknown;
+        int p = static_cast<int>(center[reel]) + row;
+        while (p < 0) p += view.size;
+        p %= view.size;
+        return view.data[p];
+    };
+    auto bellLine = [&](int left_row, int middle_row, int right_row) {
+        return at(0u,left_row) == Symbol::Bell
+            && at(1u,middle_row) == Symbol::Bell
+            && at(2u,right_row) == Symbol::Bell;
+    };
+
+    return bellLine(-1,-1,-1) || bellLine(0,0,0) || bellLine(1,1,1)
+        || bellLine(-1,0,1) || bellLine(1,0,-1);
+}
+
 } // namespace slotv2::stop_rules

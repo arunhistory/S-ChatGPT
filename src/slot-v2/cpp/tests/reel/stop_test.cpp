@@ -4,6 +4,8 @@
 #include "reel/reel_validator.hpp"
 #include "reel/stop/stop_controller.hpp"
 #include "reel/reel_acquisition.hpp"
+#include "reel/stop/rules/common_rule.hpp"
+#include "reel/stop/rules/one_medal_rule.hpp"
 
 namespace {
 
@@ -64,6 +66,23 @@ int main() {
         slotv2::reel_validator::LeftBarLandmarkPair;
 
     ok = ok && ((validator & required) == required);
+
+    // A non-bell internal flag must never visually complete a three-bell
+    // line. Positions 4 / 0 / 0 form BELL(upper) -> BELL(center) ->
+    // BELL(lower), i.e. a visible ↘ line with the current strips.
+    {
+        slotv2::stop_shared::Context ctx{};
+        ctx.role = slotv2::RoleFlag::OneMedal;
+        ctx.reel = slotv2::ReelId::Right;
+        ctx.stop_order = 2;
+        ctx.stopped[0] = true;
+        ctx.stopped[1] = true;
+        ctx.stopped_position[0] = 4u;
+        ctx.stopped_position[1] = 0u;
+        const auto right = slotv2::reel_strip::get(slotv2::ReelId::Right);
+        ok = ok && slotv2::stop_rules::completesVisibleBellLine(ctx,right,0u);
+        ok = ok && !slotv2::stop_rules::one_medal::accepts(ctx,right,0u);
+    }
 
     // Approved chance substitutes are zero-payout chance results, never a one-medal role.
     {

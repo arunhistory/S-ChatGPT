@@ -2,7 +2,7 @@
   "use strict";
   const $ = id => document.getElementById(id);
   let e = null, memory = null, engineReady = false, auto = false, timer = null;
-  let totalSpins = 0, startedArea = 0, currentRole = 0, lastWin = 0, credits = 1000;
+  let totalSpins = 0, startedArea = 0, currentRole = 0, currentSpecial = 0, lastWin = 0, credits = 1000;
   const stopped = [true,true,true], centers = [0,0,0], history = [], diff = [0];
   const reelSpinTimers = [null,null,null];
   const reelVisualPositions = [0,7,14];
@@ -167,7 +167,9 @@
     $("debugState").textContent=JSON.stringify({
       build:"C++ 95/4/1 WASM V2",setting:e.slot_v2_setting(),
       area:areaName[s.area],phase:s.phase,spins:totalSpins,credit:credits,
-      role:ROLE[currentRole],normalActual:e.slot_v2_normal_actual_games(),
+      role:currentSpecial===3?"フリーズ":(ROLE[currentRole]||"?"),
+      freezeActive:Boolean(e.slot_v2_freeze_active()),
+      normalActual:e.slot_v2_normal_actual_games(),
       stage:stage===1?"潜伏":stage===2?"CZ経由":"なし",
       latentRoute:["通常イベント","通常予兆","予兆→CZ"][route],
       latentGamesLeft:left,latentTotal:total,
@@ -237,7 +239,12 @@
     totalSpins++;
     stopped.fill(true);
     const s=snapshot();
-    updateEvent(previous,s);
+    if(currentSpecial===3) {
+      say("FREEZE","🟦7・🟦7・🟦7 → 上位AT","premium");
+      log("FREEZE：🟦777 / 上位AT");
+    } else {
+      updateEvent(previous,s);
+    }
     if(totalSpins%5===0||s.area!==previous.area||s.latent!==previous.latent)log("成立役："+(ROLE[currentRole]||"?")+" / "+lastWin+"枚");
     refresh();
     scheduleAuto();
@@ -275,10 +282,15 @@
     startedArea=old.area;
     startedSnapshot=old;
     currentRole=result&255;
+    currentSpecial=(result>>>8)&255;
     credits-=3;
     e.slot_v2_test_bet(3);
-    $("roleResult").textContent=ROLE[currentRole]||"?";
+    $("roleResult").textContent=currentSpecial===3?"フリーズ":(ROLE[currentRole]||"?");
     $("payoutResult").textContent="判定中";
+    if(currentSpecial===3) {
+      say("FREEZE","🟦7を狙え","premium");
+      log("FREEZE発動");
+    }
     if(e.slot_v2_phase()===2){
       say("特殊抽選","直撃結果を内部確定中","premium");
       e.slot_v2_complete_special();
@@ -318,7 +330,7 @@
     auto=false;setAutoLabel();
     stopAllVisualSpins();
     e.slot_v2_reset((Date.now()>>>0),((Date.now()/4294967296)>>>0));
-    totalSpins=0;credits=1000;lastWin=0;currentRole=0;
+    totalSpins=0;credits=1000;lastWin=0;currentRole=0;currentSpecial=0;
     stopped.fill(true);centers.fill(0);history.length=0;diff.splice(0,diff.length,0);
     startedSnapshot=null;
     $("history").replaceChildren();

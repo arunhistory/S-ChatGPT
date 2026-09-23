@@ -170,3 +170,42 @@ details#v2Debug #debugState {
   overflow-wrap: anywhere;
   background: #060b15;
 }
+
+/* Left-bottom history behaves like the debug gear: tiny while closed. */
+.history-panel.compact-drawer:not([open]) {
+  width: 42px !important;
+  height: 42px !important;
+  max-width: 42px !important;
+  max-height: 42px !important;
+  min-width: 42px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.history-panel.compact-drawer:not([open]) > summary {
+  width: 42px !important;
+  height: 42px !important;
+  box-sizing: border-box;
+  padding: 0 !important;
+  display: grid !important;
+  place-items: center;
+  font-size: 0 !important;
+  border: 1px solid #596a88;
+  border-radius: 50%;
+  background: #101827;
+  color: #fff;
+  box-shadow: 0 4px 14px #000b;
+  touch-action: manipulation;
+}
+.history-panel.compact-drawer:not([open]) > summary::before {
+  content: "☰";
+  font-size: 18px;
+  line-height: 1;
+}
+.history-panel.compact-drawer[open] {
+  width: min(300px, calc(100vw - 12px)) !important;
+  max-height: min(44dvh, 420px) !important;
+  padding: 5px !important;
+}
