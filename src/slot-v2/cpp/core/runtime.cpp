@@ -31,6 +31,7 @@
 #include "normal/normal_role_trigger.hpp"
 #include "at/at_cold.hpp"
 #include "at/at_omen.hpp"
+#include "at/lower_fall_challenge.hpp"
 #include "normal/normal_flow.hpp"
 #include "normal/normal_flow_transition.hpp"
 #include "entry/entry_gate_transition.hpp"
@@ -127,6 +128,9 @@ void reset(State& state, uint64_t seed) {
     state.at_single_transition = {};
     state.at_omen_game = {};
     state.at_omen_finalize = at_omen::FinalizeOutcome::None;
+    state.lower_fall_wait_game = {};
+    state.lower_fall_push_outcome =
+        lower_fall_challenge::PushOutcome::NotReady;
     state.normal_at_trigger = {};
     state.normal_hit_entry = {};
     state.entry_gate_transition = {};
@@ -143,33 +147,56 @@ uint32_t lever(State& state) {
         && state.machine.at.active
         && state.machine.at_omen.active;
 
-    if (!entry_wait_before_transition && !at_omen_before_transition) {
+    if (lower_fall_challenge::buttonReady(
+            state.machine.lower_fall_challenge
+        )) {
+        const auto current = state.session.lever;
+        return static_cast<uint32_t>(current.role)
+            | (static_cast<uint32_t>(current.special) << 8)
+            | (current.main_lottery_ran ? (1u << 16) : 0u)
+            | (static_cast<uint32_t>(CommandStatus::RejectedPhase) << 24);
+    }
+
+    const bool lower_fall_wait_before_transition =
+        state.machine.lower_fall_challenge.phase
+            == lower_fall_challenge::Phase::Waiting;
+
+    if (!entry_wait_before_transition
+        && !at_omen_before_transition
+        && !lower_fall_wait_before_transition) {
         state.at_internal_transition = at_internal_transition::apply(
             state.rng,
             state.machine,
             state.pending
         );
 
-        // Existing stock restart owns stock consumption and table redraw.
-        state.at_stock_restart = at_stock_restart::apply(
-            state.rng,
-            state.machine,
-            state.pending
-        );
+        if (!lower_fall_challenge::blocksATFlow(
+                state.machine.lower_fall_challenge
+            )) {
+            // Existing stock restart owns stock consumption and table redraw.
+            state.at_stock_restart = at_stock_restart::apply(
+                state.rng,
+                state.machine,
+                state.pending
+            );
 
-        // Only after stock restart has declined do we move to comeback/revival.
-        state.at_window_transition = at_window_transition::apply(
-            state.rng,
-            state.machine,
-            state.pending
-        );
+            // Only after stock restart has declined do we move to comeback/revival.
+            state.at_window_transition = at_window_transition::apply(
+                state.rng,
+                state.machine,
+                state.pending
+            );
 
-        // Internal pending trigger is resolved before lever gating so the next
-        // lever enters the upper-special loop rather than stalling the machine.
-        (void)upper_special_transition::apply(
-            state.machine,
-            state.pending
-        );
+            // Internal pending trigger is resolved before lever gating so the next
+            // lever enters the upper-special loop rather than stalling the machine.
+            (void)upper_special_transition::apply(
+                state.machine,
+                state.pending
+            );
+        } else {
+            state.at_stock_restart = {};
+            state.at_window_transition = {};
+        }
     } else {
         state.at_internal_transition = {};
         state.at_stock_restart = {};
@@ -189,6 +216,9 @@ uint32_t lever(State& state) {
         && state.machine.at.active
         && state.machine.at.games_left <= 0
         && !state.machine.at_omen.active
+        && !lower_fall_challenge::blocksATFlow(
+            state.machine.lower_fall_challenge
+        )
         && pending_event::has(state.pending, pending_event::ATWindowEmpty);
 
     const bool bonus_transition_pending =
@@ -249,6 +279,7 @@ uint32_t lever(State& state) {
     state.at_single_transition = {};
     state.at_omen_game = {};
     state.at_omen_finalize = at_omen::FinalizeOutcome::None;
+    state.lower_fall_wait_game = {};
     state.normal_at_trigger = {};
     state.normal_ceiling_reward = normal_ceiling::Reward::None;
     state.normal_ceiling_transition = {};
@@ -302,6 +333,12 @@ uint32_t lever(State& state) {
         state.machine.area == machine_state::Area::AT
         && state.machine.at.active
         && state.machine.at_omen.active;
+
+    const bool lower_fall_wait_game_active =
+        state.machine.area == machine_state::Area::AT
+        && state.machine.at.active
+        && state.machine.lower_fall_challenge.phase
+            == lower_fall_challenge::Phase::Waiting;
 
     // During BONUS/AT start wait, the hit is already internally fixed.
     // Normal/special lotteries pause; each wait game only draws the 1/2
@@ -448,12 +485,22 @@ uint32_t lever(State& state) {
         }
     }
 
+    if (lower_fall_wait_game_active
+        && !result.entry_wait
+        && result.special == SpecialHit::None) {
+        state.lower_fall_wait_game =
+            lower_fall_challenge::beginWaitGame(
+                state.machine.lower_fall_challenge
+            );
+    }
+
     state.at_cycle =
         (!result.entry_wait
             && result.special == SpecialHit::None
             && !special_zone_game
             && !upper_special_game
-            && !at_omen_game_active)
+            && !at_omen_game_active
+            && !lower_fall_wait_game_active)
         ? at_cycle::beginGame(state.rng, state.machine)
         : at_cycle::Result{};
 
@@ -461,12 +508,28 @@ uint32_t lever(State& state) {
         ? at_resolution::classify(state.at_cycle.raw)
         : at_resolution::Result{};
 
+    const bool lower_fall_armed_this_game =
+        state.at_cycle.active
+        && state.machine.at.tier == at_state::Tier::Lower
+        && state.at_resolution.status == at_resolution::Status::Single
+        && state.at_resolution.event == at_resolution::Event::Fall;
+
+    if (lower_fall_armed_this_game) {
+        lower_fall_challenge::arm(
+            state.rng,
+            state.machine.lower_fall_challenge,
+            state.at_cycle.games_left_before
+        );
+    }
+
     at_pending::publish(
         state.at_resolution,
         state.pending
     );
 
-    if (state.at_cycle.active && state.at_cycle.window_empty_after_game) {
+    if (state.at_cycle.active
+        && state.at_cycle.window_empty_after_game
+        && !lower_fall_armed_this_game) {
         pending_event::add(
             state.pending,
             pending_event::ATWindowEmpty
@@ -481,7 +544,12 @@ uint32_t lever(State& state) {
         state.at_hit_stock_gained = true;
     }
 
-    state.at_window = at_window::inspect(state.machine);
+    state.at_window =
+        lower_fall_challenge::blocksATFlow(
+            state.machine.lower_fall_challenge
+        )
+        ? at_window::Result{}
+        : at_window::inspect(state.machine);
 
     if (state.at_window.status == at_window::Status::EmptyStockAvailable) {
         pending_event::add(
@@ -612,6 +680,13 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
             session::hadRoleMiss(state.session),
             session::hadAssistGap(state.session)
         );
+
+        if (state.lower_fall_wait_game.active) {
+            (void)lower_fall_challenge::finalizeWaitGame(
+                state.machine.lower_fall_challenge,
+                state.lower_fall_wait_game
+            );
+        }
 
         if (state.session.lever.entry_wait) {
             state.entry_gate_transition =
@@ -802,6 +877,44 @@ uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
     return static_cast<uint32_t>(result.final_position)
         | (static_cast<uint32_t>(result.slip) << 8)
         | (static_cast<uint32_t>(result.status) << 16);
+}
+
+uint32_t pushLowerFallChallenge(State& state) {
+    state.lower_fall_push_outcome =
+        lower_fall_challenge::push(
+            state.machine.lower_fall_challenge,
+            state.machine.at
+        );
+
+    if (state.lower_fall_push_outcome
+        == lower_fall_challenge::PushOutcome::Continued) {
+        (void)pending_event::consume(
+            state.pending,
+            pending_event::ATWindowEmpty
+        );
+        (void)pending_event::consume(
+            state.pending,
+            pending_event::ATStockAvailable
+        );
+        state.at_window = at_window::inspect(state.machine);
+    } else if (state.lower_fall_push_outcome
+        == lower_fall_challenge::PushOutcome::Failed) {
+        pending_event::add(
+            state.pending,
+            pending_event::ATWindowEmpty
+        );
+        if (state.machine.stock.count > 0u) {
+            pending_event::add(
+                state.pending,
+                pending_event::ATStockAvailable
+            );
+        }
+        state.at_window = at_window::inspect(state.machine);
+    }
+
+    return static_cast<uint32_t>(
+        state.lower_fall_push_outcome
+    );
 }
 
 bool recordCZResult(State& state, bool hit) {
@@ -1306,6 +1419,21 @@ uint32_t revivalFinalizePacked(const State& state) {
     return static_cast<uint32_t>(r.outcome)
         | (static_cast<uint32_t>(r.tier) << 8)
         | (r.stock_added ? (1u << 16) : 0u);
+}
+
+uint32_t lowerFallChallengePacked(const State& state) {
+    const auto& challenge = state.machine.lower_fall_challenge;
+    // 0..7 phase / 8..15 waiting games left / 16..31 saved AT games.
+    // The fixed success/failure result is intentionally not exposed before PUSH.
+    return static_cast<uint32_t>(challenge.phase)
+        | (static_cast<uint32_t>(challenge.wait_games_left) << 8)
+        | ((static_cast<uint32_t>(challenge.saved_games) & 0xffffu) << 16);
+}
+
+uint32_t lowerFallPushOutcome(const State& state) {
+    return static_cast<uint32_t>(
+        state.lower_fall_push_outcome
+    );
 }
 
 uint32_t entryGatePacked(const State& state) {
