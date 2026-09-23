@@ -59,6 +59,13 @@ mkdir -p "$WASM_DIR"
   -Wl,--export=slot_v2_at_games_left \
   -Wl,--export=slot_v2_at_tier \
   -Wl,--export=slot_v2_at_active \
+  -Wl,--export=slot_v2_normal_latent \
+  -Wl,--export=slot_v2_latent_completion \
+  -Wl,--export=slot_v2_debug_count \
+  -Wl,--export=slot_v2_debug_channel \
+  -Wl,--export=slot_v2_debug_value \
+  -Wl,--export=slot_v2_debug_name \
+  -Wl,--export=slot_v2_debug_arm \
   -Wl,--export=slot_v2_last_role \
   -Wl,--export=slot_v2_freeze_active \
   -Wl,--export=slot_v2_stop \
