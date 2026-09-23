@@ -46,9 +46,11 @@ is defined for a non-cold AT game.
 **Implementation status:** the setting-6 raw normal thresholds and
 upper pure net rate are wired in the v2 source. The shared AT event plan
 is calculated and unit-tested but deliberately **not connected to the
-live v2 AT lottery** until the complete five-game chain zone and
-its immediate stocked-bonus release are implemented. Do not call the
-current live AT odds 1/80 and 1/50 yet.
+live v2 AT lottery** yet. The separate five-game chain-zone state
+machine has also been implemented and independently tested, including
+up to four earned hits. The external 1/10 role-signal source and the
+immediate multi-bonus release into the live bonus pipeline still need
+to be connected. Do not call the current live AT odds 1/80 and 1/50 yet.
 
 ### Unchanged mechanics
 
