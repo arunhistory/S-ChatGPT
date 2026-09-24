@@ -3,6 +3,7 @@
 #include "reel/reel_strip.hpp"
 #include "reel/stop/rules/rule_router.hpp"
 #include "reel/stop/rules/fallback_rule.hpp"
+#include "reel/stop/rules/common_rule.hpp"
 #include "reel/stop/role_policy.hpp"
 
 namespace slotv2::stop_first {
@@ -18,6 +19,7 @@ stop_shared::Result resolve(const stop_shared::Context& ctx) {
     // まず成立役そのものを0〜4コマで引き込めるか判定。
     for (uint8_t i = 0; i < candidates.count; ++i) {
         const uint8_t candidate = candidates.position[i];
+        if (!stop_rules::effectiveLineWatermelonSafe(ctx, strip, candidate)) continue;
         if (stop_rules::accepts(ctx, strip, candidate)) {
             return {stop_shared::ResolveStatus::Ok, candidate, i};
         }
@@ -28,6 +30,7 @@ stop_shared::Result resolve(const stop_shared::Context& ctx) {
     const auto policy = role_policy::stopPolicy(ctx.role);
     for (uint8_t i = 0; i < candidates.count; ++i) {
         const uint8_t candidate = candidates.position[i];
+        if (!stop_rules::effectiveLineWatermelonSafe(ctx, strip, candidate)) continue;
         if (!stop_rules::fallback::accepts(ctx, strip, candidate)) continue;
 
         if (policy == role_policy::StopPolicy::SubstituteCapable) {
