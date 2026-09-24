@@ -28,9 +28,7 @@ inline bool rolePatterns(
     uint8_t& count
 ) {
     static constexpr Pattern kBell9[] = {
-        {{-1,-1,-1}}, // top
-        {{0,0,0}},    // middle
-        {{1,1,1}}     // bottom
+        {{0,0,0}}     // middle: the machine's effective 9-medal line
     };
     static constexpr Pattern kBell15[] = {{{1,0,-1}}}; // ↗
     static constexpr Pattern kBell3[] = {{{-1,0,1}}};  // ↘
