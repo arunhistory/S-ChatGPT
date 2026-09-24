@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#090b12" />
+  <title>S-ChatGPT SLOT｜STOPCTRL P10</title>
+  <link rel="stylesheet" href="styles.css?v=20260921-textreel1" />
+  <link rel="stylesheet" href="v2-ui.css?v=20260924-presentations2" />
+</head>
+<body>
+  <main class="machine">
+    <div class="machine-cinematic" id="machineCinematic" aria-hidden="true">
+      <span id="cinematicEyebrow"></span>
+      <strong id="cinematicTitle"></strong>
+      <small id="cinematicSub"></small>
+    </div>
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">SETTING 6 · STOPCTRL P10</div>
+        <h1>S-ChatGPT SLOT</h1>
+      </div>
+      <div class="status-lamp" id="statusLamp"><span></span><b id="statusText">BOOT</b></div>
+    </header>
+
+    <section class="lcd">
+      <section class="diff-panel" aria-label="差枚グラフ">
+        <div class="diff-head">
+          <div>
+            <span class="label">差枚</span>
+            <strong id="diffCurrent">±0</strong>
+          </div>
+          <div class="diff-mini">
+            <span id="diffRange">MAX +0 / MIN 0</span>
+            <span id="diffGames">0G</span>
+          </div>
+        </div>
+        <canvas id="diffGraph" aria-label="ゲーム進行に対する差枚推移"></canvas>
+      </section>
+
+      <details class="machine-info">
+        <summary>DETAIL</summary>
+        <div class="machine-info-body">
+          <div class="headline">
+            <div>
+              <span class="label">MODE</span>
+              <strong id="mode">---</strong>
+            </div>
+            <div>
+              <span class="label">AT</span>
+              <strong id="tier">---</strong>
+            </div>
+            <div>
+              <span class="label">TABLE</span>
+              <strong id="table">---</strong>
+            </div>
+          </div>
+
+          <div class="main-counter">
+            <div class="counter-block">
+              <span>GAME</span>
+              <b id="gameCount">0</b>
+            </div>
+            <div class="counter-block hot">
+              <span>AT LEFT</span>
+              <b id="atLeft">0G</b>
+            </div>
+            <div class="counter-block">
+              <span>STOCK</span>
+              <b id="stocks">0</b>
+            </div>
+          </div>
+
+          <section class="dashboard">
+            <div class="card">
+              <span class="label">NORMAL PATTERN</span>
+              <b id="normalPattern">-</b>
+              <small id="ceiling">Ceiling: -</small>
+            </div>
+            <div class="card">
+              <span class="label">AT PATTERN</span>
+              <b id="atPattern">-</b>
+              <small id="netRate">純増: -</small>
+            </div>
+            <div class="card">
+              <span class="label">TOTAL DIFF</span>
+              <b id="totalDiff">0</b>
+              <small>差枚</small>
+            </div>
+          </section>
+        </div>
+      </details>
+
+      <div class="stage-screen" id="stageScreen" data-scene="normal" aria-label="演出画面">
+        <div class="stage-bg"></div>
+        <div class="stage-light"></div>
+        <div class="stage-particles" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+        <div class="character-layer">
+          <div class="character-sprite" id="characterSprite" aria-hidden="true">
+            <div class="character-asset"></div>
+            <span class="character-shadow"></span>
+          </div>
+        </div>
+        <div class="effect-layer" id="effectLayer"></div>
+        <div class="cutin-layer" id="cutinLayer">
+          <div class="cutin-panel">
+            <span id="cutinEyebrow"></span>
+            <strong id="cutinTitle"></strong>
+            <small id="cutinSub"></small>
+          </div>
+        </div>
+        <div class="omen-text" id="omenText" aria-hidden="true"></div>
+        <div class="stage-caption" id="stageCaption">通常ステージ</div>
+      </div>
+
+      <div class="event-banner" id="eventBanner">
+        <span class="event-kicker">LAST EVENT</span>
+        <strong id="eventTitle">READY</strong>
+        <small id="eventNote">レバーを叩け</small>
+      </div>
+    </section>
+
+    <section class="reel-window" aria-label="slot reels">
+      <div class="reel" id="reel1">
+        <span data-kind="seven">7</span><span data-kind="bell">🔔<small>BELL</small></span><span data-kind="alt-seven">7<small>BLUE</small></span>
+      </div>
+      <div class="reel" id="reel2">
+        <span data-kind="cherry">🍒<small>CHERRY</small></span><span data-kind="penguin">🐧<small>PENGUIN</small></span><span data-kind="replay">↻<small>REPLAY</small></span>
+      </div>
+      <div class="reel" id="reel3">
+        <span data-kind="bar">BAR</span><span data-kind="watermelon">🍉<small>WATERMELON</small></span><span data-kind="seven">7</span>
+      </div>
+      <div class="payline"></div>
+    </section>
+
+    <div class="reel-result">
+      <span>成立役</span><b id="roleResult">---</b>
+      <span>払出</span><b id="payoutResult">0枚</b>
+      <b id="naviState" class="navi-state">NAVI ---</b>
+    </div>
+
+    <section class="controls">
+      <button id="lever" class="lever">LEVER<br><small>1 GAME</small></button>
+      <div class="stops">
+        <button class="stop" data-stop="0"><span class="nav-order">–</span><small>LEFT STOP</small></button>
+        <button class="stop" data-stop="1"><span class="nav-order">–</span><small>CENTER STOP</small></button>
+        <button class="stop" data-stop="2"><span class="nav-order">–</span><small>RIGHT STOP</small></button>
+      </div>
+      <div class="utility">
+        <button id="autoToggle" aria-pressed="false">AUTO OFF</button>
+        <button id="lowerFallPush" hidden>一撃 PUSH</button>
+        <button id="reset">RESET</button>
+      </div>
+    </section>
+
+    <details class="history-panel compact-drawer">
+      <summary>EVENT HISTORY</summary>
+      <ol id="history"></ol>
+    </details>
+
+    <details class="v2-debug" id="v2Debug" aria-label="右下デバッグフラグ">
+      <summary><span>DEBUG FLAGS</span><strong id="debugCount">71</strong></summary>
+      <div class="debug-tools v2-debug-tools">
+        <label for="flagPicker">成立させる内部フラグ</label>
+        <select id="flagPicker"><option value="">最新WASM読込中...</option></select>
+        <button type="button" id="applyFlag">指定フラグを設定</button>
+        <small id="flagStatus" role="status" aria-live="polite">フラグを選択して「指定フラグを設定」を押してください。</small>
+        <label for="routePicker">潜伏演出ルート</label>
+        <select id="routePicker">
+          <option value="">C++通常抽選：95% CZ / 4%通常 / 1%イベント</option>
+          <option value="2">95%ルート：予兆→CZ</option>
+          <option value="1">4%ルート：通常予兆</option>
+          <option value="0">1%ルート：潜伏→通常イベント</option>
+        </select>
+        <button type="button" id="applyRoute">次回の通常当選へ適用</button>
+      </div>
+      <pre id="debugState">最新WASM準備中</pre>
+    </details>
+  </main>
+
+  <script defer src="app-v2-p10.js?v=20260924-p10"></script>
+</body>
+</html>
