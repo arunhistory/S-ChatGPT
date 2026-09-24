@@ -209,3 +209,13 @@ details#v2Debug #debugState {
   max-height: min(44dvh, 420px) !important;
   padding: 5px !important;
 }
+
+/* V2 restored presentation wiring. */
+.stage-screen[data-scene="challenge"] .stage-bg{
+  background:radial-gradient(circle at 50% 30%,#d66cff55,transparent 32%),
+             linear-gradient(180deg,#35143f,#17101f 66%,#08070d);
+}
+.event-banner.premium{border-color:#76efff;box-shadow:0 0 18px #5be7ff55,inset 0 0 20px #163b4c55}
+.event-banner.hot{border-color:#ffbf4f;box-shadow:0 0 14px #ffb43f44}
+.stop.nav-active .nav-order{color:#ffd95e;text-shadow:0 0 12px #ffbd32}
+.stop.nav-first{border-color:#ffda58;box-shadow:0 0 14px #ffd95e88,inset 0 0 15px #ffd95e22}
