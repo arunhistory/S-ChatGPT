@@ -1,0 +1,20 @@
+name: One-shot browser presentation verification
+on:
+  push:
+    branches: [checks/presentation-browser-20260924-once]
+    paths: [.github/workflows/presentation-browser-once.yml]
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save playwright@1.55.0
+      - run: npx playwright install --with-deps chromium
+      - name: Browser presentation verification
+        run: |
+          python3 -m http.server 8000 --directory web >/tmp/slot-http.log 2>&1 &
+          node tools/verify-v2-presentations-browser.mjs
