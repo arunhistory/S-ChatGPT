@@ -56,6 +56,11 @@ uint32_t slot_v2_stop(uint32_t reel, uint32_t pressed_position) {
 }
 
 __attribute__((visibility("default")))
+uint32_t slot_v2_preview_stop(uint32_t reel, uint32_t pressed_position) {
+    return slotv2::runtime::previewStop(g_runtime, reel, pressed_position);
+}
+
+__attribute__((visibility("default")))
 uint32_t slot_v2_phase() {
     return slotv2::runtime::phase(g_runtime);
 }
