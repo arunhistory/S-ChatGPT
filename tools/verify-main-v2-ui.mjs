@@ -55,3 +55,17 @@ assert(waiting>=10&&waiting<=25,"omen lasts 10 to 25 spins, got "+waiting);
 assert.equal(e.slot_v2_machine_area(),1,"scripted CZ begins after concealment");
 console.log("MAIN V2 PLAYABLE PASS bytes="+binary.length+
    " flags="+e.slot_v2_debug_count()+" omen="+waiting+" CZ=1");
+
+assert.match(js,/PREMIUM FREEZE/);
+assert.match(js,/startReverseVisualSpin/);
+assert.match(js,/右リールの 🟥7 \/ BAR で行き先決定/);
+assert.match(js,/EPISODE BONUS/);
+assert.match(js,/上位特化ZONE/);
+assert.match(js,/CHAIN ZONE/);
+assert.match(js,/64G 引き戻し/);
+assert.match(js,/復活チャレンジ/);
+assert.match(js,/高確率 移行/);
+assert.match(js,/G数短縮/);
+assert.match(js,/STOCK獲得/);
+assert.match(js,/有利区間 CROSS/);
+assert.match(js,/playPresentationEvents/);

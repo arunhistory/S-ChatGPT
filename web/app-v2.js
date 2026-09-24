@@ -186,15 +186,13 @@
       refresh();scheduleAuto();
     },2250);
   }
-  function runEntryGateCinematic(gate){
+  function runEntryGateCinematic(){
     presentationLock=true;
-    const kind=(gate>>>8)&255;
-    const at=kind===2;
     showMachineCinematic("HIT","当たり","行き先はまだ分からない","judge");
     say("当たり","図柄告知待機","hot");
     later(()=>{
-      showMachineCinematic("TARGET","🟥7を狙え",at?"🟥7 🟥7 🟥7":"🟥7 🟥7 BAR","judge target");
-      say("🟥7を狙え",at?"AT開始図柄":"BONUS開始図柄","hot");
+      showMachineCinematic("TARGET","🟥7を狙え","右リールの 🟥7 / BAR で行き先決定","judge target");
+      say("🟥7を狙え","右リールでAT / BONUSをジャッジ","hot");
       presentationLock=false;refresh();scheduleAuto();
     },650);
   }
@@ -300,7 +298,11 @@
        revival:e.slot_v2_revival_state(),revivalFinalize:e.slot_v2_revival_finalize(),
        bonusTransition:e.slot_v2_bonus_transition(),entryTransition:e.slot_v2_entry_gate_transition(),
        atResolution:e.slot_v2_at_resolution(),atCycle:e.slot_v2_at_cycle(),
-       atCold:e.slot_v2_at_cold()};
+       atCold:e.slot_v2_at_cold(),czFinalize:e.slot_v2_cz_finalize(),
+       bonusCycle:e.slot_v2_bonus_cycle(),normalCeiling:e.slot_v2_normal_ceiling_transition(),
+       latentCompletion:e.slot_v2_latent_completion(),normalATTrigger:e.slot_v2_normal_at_trigger(),
+       atSingleTransition:e.slot_v2_at_single_transition(),atWindow:e.slot_v2_at_window(),
+       lowerFall:e.slot_v2_lower_fall_challenge(),lowerFallOutcome:e.slot_v2_lower_fall_push_outcome()};
   }
   function refresh(note) {
     if(!e)return;
@@ -413,63 +415,154 @@
     if(diff.length>1000)diff.shift();
     $("payoutResult").textContent=payout+"枚";
   }
-  function updateEvent(old,s){
-    const latentStage=s.latent&255;
-    const oldLatentStage=old.latent&255;
-    const role=ROLE_KEY[currentRole]||"miss";
-
-    const section=s.sectionTransition;
-    if(section&1){
-      if(section&(1<<1)){stageCue("tier_up","result");showEventCinematic("SECTION","AT 昇格","有利区間報酬","gold judge-result");say("AT昇格","有利区間ルーレット","hot");log("有利区間：TIER UP");return}
-      if(section&(1<<2)){showEventCinematic("SECTION","特化ZONE","有利区間報酬","gold");say("特化ZONE","有利区間ルーレット","hot");log("有利区間：特化ZONE");return}
-      if(section&(1<<3)){showEventCinematic("SECTION","上位特化ZONE","有利区間報酬","freeze");say("上位特化ZONE","有利区間ルーレット","premium");log("有利区間：上位特化");return}
-    }
-    if((s.sectionReward&1)&&!(old.sectionReward&1)){showEventCinematic("SECTION","+2400 CROSS","有利区間切替","gold");say("有利区間 CROSS","次区間報酬を抽選","hot");log("有利区間 CROSS");return}
-
-    if((s.upperSpecial&1)&&!(old.upperSpecial&1)){showEventCinematic("PREMIUM","上位特化ZONE","継続抽選開始","freeze");say("上位特化ZONE","上位AT専用特化","premium");log("上位特化ZONE");return}
-    if((s.specialZone&1)&&!(old.specialZone&1)){showEventCinematic("SPECIAL","特化ZONE","上乗せゾーン","gold");say("特化ZONE","上乗せ抽選開始","hot");log("特化ZONE");return}
-    if((s.chainZone&1)&&!(old.chainZone&1)){showEventCinematic("CHAIN","CHAIN ZONE","連続BONUS抽選","judge");say("CHAIN ZONE","5Gセット開始","hot");log("CHAIN ZONE");return}
-
-    if((s.upperComeback&4)&&!(old.upperComeback&4)){showEventCinematic("COMEBACK","上位引き戻し","64Gジャッジ成功","gold judge-result");say("上位引き戻し","上位ATへ復帰","hot");log("上位引き戻し");return}
-    if((s.revivalFinalize&255)===1&&(old.revivalFinalize&255)!==1){showEventCinematic("REVIVAL","復活！","ATへ復帰","gold judge-result");say("復活！","終了ATを復活","hot");log("復活成功");return}
-    if((s.revivalFinalize&255)===2&&(old.revivalFinalize&255)!==2){showEventCinematic("END","復活失敗","通常時へ","red");say("復活失敗","通常時へ移行","");log("復活失敗");return}
-
-    if(s.stock>old.stock){showEventCinematic("STOCK","STOCK +"+(s.stock-old.stock),"残り "+s.stock,"gold");say("STOCK獲得","ストック "+s.stock,"hot");log("STOCK +"+(s.stock-old.stock));return}
-    if((s.stockRestart&1)&&!(old.stockRestart&1)){const g=(s.stockRestart>>>8)&65535;showEventCinematic("STOCK","AT RESTART",g+"G","gold");say("ストック発動",g+"Gで再開","hot");log("STOCK RESTART "+g+"G");return}
-
-    if(s.area===3&&old.area!==3){const tier=["下位AT","中位AT","上位AT"][s.tier]||"AT";stageCue("at","result");showEventCinematic("START",tier,"ASSIST TIME","gold judge-result");say(tier+"突入","AT開始","hot");log(tier+"突入");return}
-    if(s.area===2&&old.area!==2){const ep=((s.bonus>>>8)&255)===1;showEventCinematic(ep?"EPISODE":"BONUS",ep?"EPISODE BONUS":"BONUS START",ep?"80枚":"50枚",ep?"gold judge-result":"red judge-result");say(ep?"EPISODE BONUS":"BONUS突入","C++ボーナス処理へ移行",ep?"premium":"hot");log(ep?"EPISODE BONUS":"BONUS突入");return}
-    if(s.area===4&&old.area!==4){showEventCinematic("REVIVAL","復活チャレンジ","5G以内に復活を狙え","judge");say("復活チャレンジ","5G以内に復活を狙え","hot");log("復活チャレンジ");return}
-    if(s.area===1&&old.area!==1){showEventCinematic("CHANCE","CHANCE ZONE","10G勝負","judge");say("CZ突入","内部の当選権利はそのまま維持","hot");log("CZ突入");return}
-
-    const high=s.normalFlow,oldHigh=old.normalFlow;
-    if((high&2)&&!(oldHigh&2)){showEventCinematic("STATE","高確率 移行","抽選状態アップ","red");say("高確率 移行","高確状態へ","hot");log("高確率 移行");return}
-    if((high&4)&&!(oldHigh&4)){say("高確率 終了","通常状態へ","");log("高確率 終了");return}
-    const shorten=(high>>>8)&65535;if(shorten>0&&shorten!==((oldHigh>>>8)&65535)){say("G数短縮",shorten+"G短縮","hot");log("G数短縮 "+shorten+"G");return}
-
-    if(s.atCold&&!old.atCold){say("冷遇","AT内部の成長領域を抑制","");log("冷遇状態");return}
-    if((s.atOmen&1)&&!(old.atOmen&1)){stage().classList.add("omen-purple");effect().className="effect-layer purple";$("omenText").textContent="ざわ…";$("omenText").classList.add("show");say("AT予兆","当たりの気配","hot");log("AT予兆");return}
-
-    const atEvent=(s.atResolution>>>8)&255;
-    if(atEvent>0){
-      const names=["","当たり","転落","G数上乗せ","特化ZONE","エピソード","上位特化ZONE","CHAIN ZONE"];
-      const name=names[atEvent]||"ATイベント";
-      if(atEvent===3){showEventCinematic("ADD","G数上乗せ","AT継続","gold");stage().classList.add("omen-gold","screen-shock");effect().className="effect-layer gold flash"}
-      else if(atEvent===4){showEventCinematic("SPECIAL","特化ZONE","AT内部当選","gold")}
-      else if(atEvent===5){showEventCinematic("EPISODE","EPISODE BONUS","AT内部当選","gold judge-result")}
-      else if(atEvent===6){showEventCinematic("PREMIUM","上位特化ZONE","AT内部当選","freeze")}
-      else if(atEvent===7){showEventCinematic("CHAIN","CHAIN ZONE","AT内部当選","judge")}
-      else if(atEvent===1){stage().classList.add("omen-purple");effect().className="effect-layer purple";$("omenText").textContent="ざわ…";$("omenText").classList.add("show")}
-      say(name,"AT内部抽選結果",atEvent===2?"":"hot");log(name);return;
-    }
-
-    const newGate=Boolean(s.gate&1),oldGate=Boolean(old.gate&1);
-    if(newGate&&!oldGate){say("当たり","内部当選を保持中","hot");log("通常当選");return}
-    if(latentStage===1&&oldLatentStage!==1){stage().classList.add("omen-purple");effect().className="effect-layer purple";$("omenText").textContent="ざわ…";$("omenText").classList.add("show");say("予兆開始","何かが起こるかも…","");log("予兆開始");return}
-
-    stageCue(role,"result");
-    say(ROLE[currentRole]||"GAME","リールの結果を確認","");
+  function playPresentationEvents(events){
+    if(!events.length)return false;
+    presentationLock=true;
+    let index=0;
+    const next=()=>{
+      if(index>=events.length){
+        hideMachineCinematic();
+        presentationLock=false;
+        refresh();
+        scheduleAuto();
+        return;
+      }
+      const ev=events[index++];
+      if(ev.role)stageCue(ev.role,"result");
+      if(ev.stageClass)stage().classList.add(...ev.stageClass.split(" "));
+      if(ev.fx)effect().className="effect-layer "+ev.fx;
+      if(ev.omen){
+        $("omenText").textContent=ev.omen;
+        $("omenText").className="omen-text show";
+      }
+      if(ev.eye||ev.title)showMachineCinematic(ev.eye||"",ev.title||"",ev.sub||"",ev.cls||"");
+      say(ev.banner||ev.title||"EVENT",ev.note||ev.sub||"",ev.bannerCls||"");
+      if(ev.log)log(ev.log);
+      later(next,ev.duration||820);
+    };
+    next();
+    return true;
   }
+
+  function collectPresentationEvents(old,s){
+    const q=[];
+    const add=(ev)=>q.push(ev);
+    const latentStage=s.latent&255,oldLatentStage=old.latent&255;
+
+    // Section cut and section reward can coexist; both must be shown.
+    if(s.sectionReward&1)add({eye:"SECTION",title:"+2400 CROSS",sub:"有利区間切替",cls:"gold",banner:"有利区間 CROSS",note:"次区間報酬を抽選",bannerCls:"hot",log:"有利区間 CROSS"});
+    if(s.sectionTransition&1){
+      if(s.sectionTransition&(1<<1))add({role:"tier_up",eye:"SECTION",title:"AT 昇格",sub:"有利区間報酬",cls:"gold judge-result",banner:"AT昇格",note:"有利区間ルーレット",bannerCls:"hot",log:"有利区間：TIER UP"});
+      if(s.sectionTransition&(1<<2))add({eye:"SECTION",title:"特化ZONE",sub:"有利区間報酬",cls:"gold",banner:"特化ZONE",note:"有利区間ルーレット",bannerCls:"hot",log:"有利区間：特化ZONE"});
+      if(s.sectionTransition&(1<<3))add({eye:"SECTION",title:"上位特化ZONE",sub:"有利区間報酬",cls:"freeze",banner:"上位特化ZONE",note:"有利区間ルーレット",bannerCls:"premium",log:"有利区間：上位特化"});
+    }
+
+    // AT internal event itself.
+    const atEvent=(s.atResolution>>>8)&255;
+    if(atEvent===1)add({stageClass:"omen-purple",fx:"purple",omen:"ざわ…",banner:"AT予兆",note:"当たりの気配",bannerCls:"hot",log:"AT予兆"});
+    if(atEvent===2)add({eye:"AT",title:"転落",sub:"継続ジャッジへ",cls:"red",banner:"転落",note:"AT内部抽選結果",log:"AT転落"});
+    if(atEvent===3)add({eye:"ADD",title:"G数上乗せ",sub:"AT継続",cls:"gold",stageClass:"omen-gold screen-shock",fx:"gold flash",banner:"G数上乗せ",note:"AT内部抽選結果",bannerCls:"hot",log:"G数上乗せ"});
+    if(atEvent===4)add({eye:"SPECIAL",title:"特化ZONE",sub:"AT内部当選",cls:"gold",banner:"特化ZONE",note:"AT内部抽選結果",bannerCls:"hot",log:"特化ZONE当選"});
+    if(atEvent===5)add({eye:"EPISODE",title:"EPISODE BONUS",sub:"AT内部当選",cls:"gold judge-result",banner:"エピソード",note:"AT内部抽選結果",bannerCls:"hot",log:"EPISODE当選"});
+    if(atEvent===6)add({eye:"PREMIUM",title:"上位特化ZONE",sub:"AT内部当選",cls:"freeze",banner:"上位特化ZONE",note:"AT内部抽選結果",bannerCls:"premium",log:"上位特化当選"});
+    if(atEvent===7)add({eye:"CHAIN",title:"CHAIN ZONE",sub:"AT内部当選",cls:"judge",banner:"CHAIN ZONE",note:"AT内部抽選結果",bannerCls:"hot",log:"CHAIN ZONE当選"});
+
+    // State starts resulting from the AT event.
+    if((s.specialZone&1)&&!(old.specialZone&1))add({eye:"SPECIAL",title:"特化ZONE START",sub:"上乗せ抽選開始",cls:"gold",banner:"特化ZONE",note:"上乗せ抽選開始",bannerCls:"hot",log:"特化ZONE開始"});
+    if((s.upperSpecial&1)&&!(old.upperSpecial&1))add({eye:"PREMIUM",title:"上位特化ZONE START",sub:"継続抽選開始",cls:"freeze",banner:"上位特化ZONE",note:"上位AT専用特化",bannerCls:"premium",log:"上位特化ZONE開始"});
+    if((s.chainZone&1)&&!(old.chainZone&1))add({eye:"CHAIN",title:"CHAIN ZONE START",sub:"5Gセット開始",cls:"judge",banner:"CHAIN ZONE",note:"連続BONUS抽選",bannerCls:"hot",log:"CHAIN ZONE開始"});
+
+    const szOutcome=s.specialZoneTransition&255;
+    const szAdded=(s.specialZoneTransition>>>8)&65535;
+    if(szOutcome===1)add({eye:"ADD",title:"+"+szAdded+"G",sub:"特化ZONE上乗せ",cls:"gold judge-result",banner:"G数上乗せ",note:"+"+szAdded+"G",bannerCls:"hot",log:"特化 +"+szAdded+"G"});
+    if(szOutcome===2)add({eye:"HIT",title:"BONUS 予兆",sub:"特化ZONEから当選",cls:"judge",banner:"BONUS予兆",note:"開始図柄待ち",bannerCls:"hot",log:"特化→BONUS予兆"});
+
+    if(s.upperSpecial&2){
+      const added=(s.upperSpecial>>>8)&65535;
+      if(s.upperSpecial&4)add({eye:"PREMIUM",title:"+"+added+"G",sub:"上位特化 継続",cls:"freeze",banner:"上位特化 継続",note:"+"+added+"G",bannerCls:"premium",log:"上位特化 +"+added+"G"});
+      if(s.upperSpecial&8)add({eye:"END",title:"上位特化 END",sub:"ATへ復帰",cls:"gold",banner:"上位特化終了",note:"ATへ復帰",log:"上位特化終了"});
+    }
+
+    if(s.chainZone&2){
+      const earned=(s.chainZone>>>16)&65535;
+      if(s.chainZone&4)add({eye:"SIGNAL",title:"継続シグナル",sub:"CHAIN ZONE",cls:"judge",banner:"CHAIN SIGNAL",note:"継続抽選ヒット",bannerCls:"hot",log:"CHAIN SIGNAL"});
+      if(s.chainZone&8)add({eye:"CONTINUE",title:"CHAIN 継続",sub:earned?("BONUS +"+earned):"次セットへ",cls:"gold",banner:"CHAIN継続",note:earned?("BONUS "+earned+"個"):"次セットへ",bannerCls:"hot",log:"CHAIN継続"});
+      if(s.chainZone&16)add({eye:"END",title:"CHAIN END",sub:earned?("BONUS "+earned+"個獲得"):"ATへ復帰",cls:"red",banner:"CHAIN終了",note:earned?("BONUS "+earned+"個"):"ATへ復帰",log:"CHAIN終了"});
+    }
+
+    // Stock / restart.
+    if(s.stock>old.stock)add({eye:"STOCK",title:"STOCK +"+(s.stock-old.stock),sub:"残り "+s.stock,cls:"gold",banner:"STOCK獲得",note:"ストック "+s.stock,bannerCls:"hot",log:"STOCK +"+(s.stock-old.stock)});
+    if(s.stockRestart&1){
+      const g=(s.stockRestart>>>8)&65535;
+      add({eye:"STOCK",title:"AT RESTART",sub:g+"G",cls:"gold",banner:"ストック発動",note:g+"Gで再開",bannerCls:"hot",log:"STOCK RESTART "+g+"G"});
+    }
+
+    // Entry-symbol result is the point where the hidden destination becomes public.
+    const entryOutcome=s.entryTransition&255;
+    const entryStock=s.entryTransition>>>8;
+    if(entryOutcome===1)add({role:"hit",eye:"START",title:"BONUS START",sub:"🟥7 🟥7 BAR",cls:"red judge-result",banner:"BONUS突入",note:"開始図柄成立",bannerCls:"hot",log:"BONUS START"});
+    if(entryOutcome===2)add({role:"at",eye:"START",title:"AT START",sub:entryStock?("🟥777 / STOCK +"+entryStock):"🟥7 🟥7 🟥7",cls:"gold judge-result",banner:"AT突入",note:"開始図柄成立",bannerCls:"hot",log:"AT START"});
+
+    // Direct special entries bypass entry_gate_transition.
+    if(s.area===3&&old.area!==3&&entryOutcome!==2){
+      const tier=["下位AT","中位AT","上位AT"][s.tier]||"AT";
+      add({role:"at",eye:"START",title:tier,sub:"ASSIST TIME",cls:"gold judge-result",banner:tier+"突入",note:"AT開始",bannerCls:"hot",log:tier+"突入"});
+    }
+    if(s.area===2&&old.area!==2&&entryOutcome!==1){
+      const ep=((s.bonus>>>8)&255)===1;
+      add({eye:ep?"EPISODE":"BONUS",title:ep?"EPISODE BONUS":"BONUS START",sub:ep?"80枚":"50枚",cls:ep?"gold judge-result":"red judge-result",banner:ep?"EPISODE BONUS":"BONUS突入",note:"BONUS開始",bannerCls:ep?"premium":"hot",log:ep?"EPISODE BONUS":"BONUS突入"});
+    }
+
+    // BONUS lifecycle.
+    const bonusOutcome=(s.bonusCycle>>>16)&255;
+    if(bonusOutcome===1)add({eye:"BONUS",title:"BONUS COMPLETE",sub:"規定枚数到達",cls:"red",banner:"BONUS終了",note:"復帰判定へ",log:"BONUS COMPLETE"});
+    if(bonusOutcome===2)add({eye:"EPISODE",title:"EPISODE 昇格",sub:"1%昇格成立",cls:"gold judge-result",banner:"EPISODE昇格",note:"Episode BONUSへ",bannerCls:"premium",log:"EPISODE昇格"});
+    const bonusTrans=s.bonusTransition&255;
+    if(bonusTrans===1)add({eye:"EPISODE",title:"EPISODE BONUS",sub:"昇格開始",cls:"gold judge-result",banner:"EPISODE BONUS",note:"80枚",bannerCls:"premium",log:"EPISODE BONUS開始"});
+    if(bonusTrans===2)add({eye:"RETURN",title:"BONUS END",sub:"元の状態へ復帰",cls:"red",banner:"BONUS終了",note:"遊技状態へ復帰",log:"BONUS終了"});
+
+    // CZ lifecycle.
+    const czOut=s.czFinalize&255;
+    if(czOut===1)add({eye:"HIT",title:"CZ 成功",sub:"当たり確定",cls:"gold judge-result",banner:"CZ成功",note:"当たりへ",bannerCls:"hot",log:"CZ成功"});
+    if(czOut===2)add({eye:"END",title:"CZ 失敗",sub:"通常時へ",cls:"red",banner:"CZ失敗",note:"通常時へ移行",log:"CZ失敗"});
+    if(czOut===3)add({eye:"HIT",title:"3スルー救済",sub:"当たり確定",cls:"gold judge-result",banner:"CZ救済",note:"当たりへ",bannerCls:"hot",log:"CZ3スルー救済"});
+    if(s.area===1&&old.area!==1)add({eye:"CHANCE",title:"CHANCE ZONE",sub:"10G勝負",cls:"judge",banner:"CZ突入",note:"10Gチャレンジ",bannerCls:"hot",log:"CZ突入"});
+
+    // Normal high / shortening / latent reveal.
+    const high=s.normalFlow;
+    if(high&2)add({eye:"STATE",title:"高確率 移行",sub:"抽選状態アップ",cls:"red",banner:"高確率 移行",note:"高確状態へ",bannerCls:"hot",log:"高確率 移行"});
+    if(high&4)add({eye:"STATE",title:"高確率 終了",sub:"通常状態へ",cls:"",banner:"高確率 終了",note:"通常状態へ",log:"高確率 終了"});
+    const shorten=(high>>>8)&65535;
+    if(shorten)add({eye:"SHORTEN",title:"G数短縮",sub:shorten+"G",cls:"gold",banner:"G数短縮",note:shorten+"G短縮",bannerCls:"hot",log:"G数短縮 "+shorten+"G"});
+    if(s.atCold&&!old.atCold)add({eye:"STATE",title:"冷遇",sub:"AT内部状態",cls:"red",banner:"冷遇",note:"成長領域を抑制",log:"冷遇状態"});
+    if((s.atOmen&1)&&!(old.atOmen&1)&&atEvent!==1)add({stageClass:"omen-purple",fx:"purple",omen:"ざわ…",eye:"OMEN",title:"AT 予兆",sub:"当たりの気配",cls:"judge",banner:"AT予兆",note:"当たりの気配",bannerCls:"hot",log:"AT予兆"});
+    if(s.latentCompletion===3)add({stageClass:"omen-red screen-shock",fx:"red flash",omen:"好機",eye:"EVENT",title:"当たり",sub:"通常イベントから告知",cls:"red judge-result",banner:"当たり",note:"開始図柄待ち",bannerCls:"hot",log:"通常イベント当たり"});
+    if(s.latentCompletion===1)add({eye:"HIT",title:"当たり",sub:"予兆完了",cls:"judge",banner:"当たり",note:"開始図柄待ち",bannerCls:"hot",log:"予兆→当たり"});
+
+    // Lower-tier predetermined fall challenge.
+    const lowPhase=s.lowerFall&255,oldLow=old.lowerFall&255;
+    if(lowPhase===2&&oldLow!==2)add({eye:"JUDGE",title:"継続チャレンジ",sub:"結果は内部で確定済み",cls:"judge",banner:"継続チャレンジ",note:"判定ベルを待て",bannerCls:"hot",log:"下位AT 継続チャレンジ"});
+    if(lowPhase===3&&oldLow!==3)add({eye:"PUSH",title:"一撃 PUSH",sub:"ボタンを押せ",cls:"judge target",banner:"一撃PUSH",note:"継続ジャッジ",bannerCls:"hot",log:"一撃PUSH待ち"});
+
+    // Upper comeback / general revival / AT end.
+    if((s.upperComeback&1)&&!(old.upperComeback&1))add({eye:"COMEBACK",title:"64G 引き戻し",sub:"上位AT復帰を狙え",cls:"judge",banner:"上位引き戻し",note:"64Gチャレンジ",bannerCls:"hot",log:"上位引き戻し開始"});
+    if((s.upperComeback&4)&&!(old.upperComeback&4))add({eye:"COMEBACK",title:"上位引き戻し",sub:"ジャッジ成功",cls:"gold judge-result",banner:"上位引き戻し",note:"上位AT開始図柄へ",bannerCls:"hot",log:"上位引き戻し成功"});
+    if(s.area===4&&old.area!==4)add({eye:"REVIVAL",title:"復活チャレンジ",sub:"5G以内に復活を狙え",cls:"judge",banner:"復活チャレンジ",note:"5G勝負",bannerCls:"hot",log:"復活チャレンジ"});
+    const rev=s.revivalFinalize&255;
+    if(rev===1)add({eye:"REVIVAL",title:"復活！",sub:"ATへ復帰",cls:"gold judge-result",banner:"復活！",note:"終了ATを復活",bannerCls:"hot",log:"復活成功"});
+    if(rev===2)add({eye:"END",title:"復活失敗",sub:"通常時へ",cls:"red",banner:"復活失敗",note:"通常時へ移行",log:"復活失敗"});
+    if(old.area===3&&s.area!==3&&s.area!==4&&(s.upperComeback&1)===0)add({eye:"END",title:"AT END",sub:"通常時へ",cls:"red",banner:"AT終了",note:"通常時へ移行",log:"AT END"});
+
+    // If no internal event consumed the result presentation, show physical role.
+    if(!q.length)add({role:ROLE_KEY[currentRole]||"miss",banner:ROLE[currentRole]||"GAME",note:"リールの結果を確認",duration:500});
+    return q;
+  }
+
+  function updateEvent(old,s){
+    const events=collectPresentationEvents(old,s);
+    return playPresentationEvents(events);
+  }
+
   function finish(){
     const previous=startedSnapshot||prev;
     settle(startedArea);
@@ -477,11 +570,11 @@
     stopped.fill(true);
     const s=snapshot();
     if(currentSpecial===3) {
-      stageCue("freeze","result");
-      showMachineCinematic("PREMIUM","FREEZE 確定","🟦7 🟦7 🟦7","freeze confirmed");
-      later(hideMachineCinematic,1100);
-      say("FREEZE","🟦7・🟦7・🟦7 → 上位AT","premium");
-      log("FREEZE：🟦777 / 上位AT");
+      playPresentationEvents([{
+        role:"freeze",eye:"PREMIUM",title:"FREEZE 確定",sub:"🟦7 🟦7 🟦7",
+        cls:"freeze confirmed",banner:"FREEZE",note:"上位AT＋STOCK",
+        bannerCls:"premium",log:"FREEZE：🟦777 / 上位AT",duration:1100
+      }]);
     } else {
       updateEvent(previous,s);
     }
@@ -544,7 +637,7 @@
 
     const gate=u32(e.slot_v2_entry_gate());
     if((gate&1)&&(gate&2)){
-      runEntryGateCinematic(gate);
+      runEntryGateCinematic();
       return;
     }
 
@@ -559,7 +652,7 @@
   }
   function scheduleAuto(){
     if(timer!==null){clearTimeout(timer);timer=null;}
-    if(!auto||!engineReady)return;
+    if(!auto||!engineReady||presentationLock)return;
     timer=setTimeout(()=>{
       timer=null;
       if(e.slot_v2_phase()===1){
@@ -597,9 +690,13 @@
     $("reset").addEventListener("click",reset);
     $("lowerFallPush").addEventListener("click",()=>{
       const result=e.slot_v2_lower_fall_push();
-      say(result===1?"継続！":result===2?"復活失敗":"PUSH未準備",
-        result===1?"元のゲーム数を保持して続行":result===2?"内部終了処理へ":"");
-      log("一撃PUSH："+result);
+      if(result===1){
+        playPresentationEvents([{eye:"RESULT",title:"継続！",sub:"保持G数でAT継続",cls:"gold judge-result",banner:"継続！",note:"元のゲーム数を保持して続行",bannerCls:"hot",log:"下位AT 継続成功"}]);
+      }else if(result===2){
+        playPresentationEvents([{eye:"RESULT",title:"失敗",sub:"AT終了処理へ",cls:"red judge-result",banner:"継続失敗",note:"AT終了処理へ",log:"下位AT 継続失敗"}]);
+      }else{
+        say("PUSH未準備","判定ベルを待て");
+      }
       refresh();scheduleAuto();
     });
     $("applyFlag").addEventListener("click",()=>{
@@ -621,7 +718,7 @@
     window.addEventListener("resize",drawGraph);
     try{
       // Absolute to this HTML directory, not the legacy slot.wasm.
-      const response=await fetch("slot-v2.wasm?v=20260924-presentations1",{cache:"no-store"});
+      const response=await fetch("slot-v2.wasm?v=20260924-presentations2",{cache:"no-store"});
       if(!response.ok)throw Error("新WASM取得失敗: HTTP "+response.status);
       const binary=await response.arrayBuffer();
       if(!WebAssembly.validate(binary))throw Error("取得したV2 WASMが不正");
@@ -631,7 +728,10 @@
         "slot_v2_debug_count","slot_v2_test_bet","slot_v2_test_payout","slot_v2_test_bonus_gain",
         "slot_v2_normal_flow","slot_v2_at_omen","slot_v2_special_zone_transition",
         "slot_v2_upper_special","slot_v2_chain_zone","slot_v2_at_stock_restart",
-        "slot_v2_entry_gate_transition","slot_v2_at_cold"]){
+        "slot_v2_entry_gate_transition","slot_v2_at_cold",
+        "slot_v2_cz_finalize","slot_v2_bonus_cycle","slot_v2_normal_ceiling_transition",
+        "slot_v2_latent_completion","slot_v2_normal_at_trigger","slot_v2_at_single_transition",
+        "slot_v2_at_window","slot_v2_lower_fall_challenge","slot_v2_lower_fall_push_outcome"]){
         if(typeof e[key]!=="function")throw Error("新C++ API不足: "+key);
       }
       if(e.slot_v2_debug_count()!==71)throw Error("デバッグ定義が71件ではありません");
