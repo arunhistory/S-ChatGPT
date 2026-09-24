@@ -627,6 +627,23 @@
     for(let i=0;i<21;i++){
       value=u32(e.slot_v2_stop(reel,(target+i)%21));
       const status=(value>>>16)&255;
+      const center=value&255;
+
+      // StrongCherry is defined by the visible stop itself:
+      // left = middle-line CHERRY, middle = not middle-line REPLAY.
+      // This browser prototype has no real physical button timing, so do not
+      // settle on RoleMissed for this role; keep probing C++-legal timings.
+      if(currentRole===7){
+        if(reel===0){
+          if(status===0&&u32(e.slot_v2_visible_symbol(0,center,0))===6){accepted=true;break;}
+          continue;
+        }
+        if(reel===1){
+          if(status===0&&u32(e.slot_v2_visible_symbol(1,center,0))!==5){accepted=true;break;}
+          continue;
+        }
+      }
+
       if(status===0||status===5||status===6||status===7){accepted=true;break;}
     }
     if(!accepted){
@@ -756,7 +773,7 @@
     window.addEventListener("resize",drawGraph);
     try{
       // Absolute to this HTML directory, not the legacy slot.wasm.
-      const response=await fetch("slot-v2.wasm?v=20260924-presentations7",{cache:"no-store"});
+      const response=await fetch("slot-v2.wasm?v=20260924-presentations8",{cache:"no-store"});
       if(!response.ok)throw Error("新WASM取得失敗: HTTP "+response.status);
       const binary=await response.arrayBuffer();
       if(!WebAssembly.validate(binary))throw Error("取得したV2 WASMが不正");
