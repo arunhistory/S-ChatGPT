@@ -9,13 +9,14 @@ bool accepts(
 ) {
     if (!leftCherrySafe(ctx, strip, candidate)) return false;
 
-    // Approved substitute: middle line Watermelon / Watermelon / Snow.
+    // Primary strong-chance result: middle line Penguin / Cherry / Penguin.
+    // If the eye-stop misses, the generic substitute fallback handles it.
     switch (ctx.reel) {
         case ReelId::Left:
-        case ReelId::Middle:
-            return centerIs(strip, candidate, Symbol::Watermelon);
         case ReelId::Right:
-            return centerIs(strip, candidate, Symbol::Snow);
+            return centerIs(strip, candidate, Symbol::Penguin);
+        case ReelId::Middle:
+            return centerIs(strip, candidate, Symbol::Cherry);
     }
     return false;
 }
