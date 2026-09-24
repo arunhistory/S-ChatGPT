@@ -1,0 +1,24 @@
+name: One-shot full V2 presentation browser verification
+on:
+  push:
+    branches: [checks/presentation-browser2-20260924-once]
+    paths: [.github/workflows/presentation-browser2-once.yml]
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Static browser/WASM contract
+        run: |
+          node --check web/app-v2.js
+          node tools/verify-main-v2-ui.mjs
+      - run: npm install --no-save playwright@1.55.0
+      - run: npx playwright install --with-deps chromium
+      - name: Real browser presentation verification
+        run: |
+          python3 -m http.server 8000 --directory web >/tmp/slot-http.log 2>&1 &
+          node tools/verify-v2-presentations-browser.mjs
