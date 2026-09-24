@@ -64,6 +64,8 @@ assert.match(js,/entryJudge\?"entry_judge"/);
 assert.match(js,/非表示（停止結果待ち）/);
 assert.match(js,/右リールで決まる…/);
 assert.match(js,/気配がする…/);
+assert.match(js,/strongChancePress=\[17,9,2\]/);
+assert.match(js,/One-medal explicitly anchors the left reel on BAR/);
 assert.match(js,/EPISODE BONUS/);
 assert.match(js,/上位特化ZONE/);
 assert.match(js,/CHAIN ZONE/);
