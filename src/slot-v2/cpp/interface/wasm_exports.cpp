@@ -402,6 +402,39 @@ uint32_t slot_v2_at_table() {
 }
 
 __attribute__((visibility("default")))
+uint32_t slot_v2_normal_flow() {
+    return slotv2::runtime::normalFlowPacked(g_runtime);
+}
+__attribute__((visibility("default")))
+uint32_t slot_v2_at_omen() {
+    return slotv2::runtime::atOmenPacked(g_runtime);
+}
+__attribute__((visibility("default")))
+uint32_t slot_v2_special_zone_transition() {
+    return slotv2::runtime::specialZoneTransitionPacked(g_runtime);
+}
+__attribute__((visibility("default")))
+uint32_t slot_v2_upper_special() {
+    return slotv2::runtime::upperSpecialPacked(g_runtime);
+}
+__attribute__((visibility("default")))
+uint32_t slot_v2_chain_zone() {
+    return slotv2::runtime::chainZonePacked(g_runtime);
+}
+__attribute__((visibility("default")))
+uint32_t slot_v2_at_stock_restart() {
+    return slotv2::runtime::atStockRestartPacked(g_runtime);
+}
+__attribute__((visibility("default")))
+uint32_t slot_v2_entry_gate_transition() {
+    return slotv2::runtime::entryGateTransitionPacked(g_runtime);
+}
+__attribute__((visibility("default")))
+uint32_t slot_v2_at_cold() {
+    return slotv2::runtime::atCold(g_runtime);
+}
+
+__attribute__((visibility("default")))
 uint32_t slot_v2_normal_latent() {
     return slotv2::runtime::normalLatentPacked(g_runtime);
 }

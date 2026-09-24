@@ -12,7 +12,10 @@ for (const key of ["slot_v2_reset","slot_v2_reset_setting","slot_v2_setting",
   "slot_v2_special_zone","slot_v2_bonus_cycle",
   "slot_v2_normal_latent","slot_v2_debug_count","slot_v2_debug_channel",
   "slot_v2_debug_value","slot_v2_debug_name_ptr","slot_v2_debug_arm",
-  "slot_v2_bet","slot_v2_payout","slot_v2_bonus_net_gain","slot_v2_total_diff","slot_v2_at_table"]) {
+  "slot_v2_bet","slot_v2_payout","slot_v2_bonus_net_gain","slot_v2_total_diff","slot_v2_at_table",
+  "slot_v2_normal_flow","slot_v2_at_omen","slot_v2_special_zone_transition",
+  "slot_v2_upper_special","slot_v2_chain_zone","slot_v2_at_stock_restart",
+  "slot_v2_entry_gate_transition","slot_v2_at_cold"]) {
   assert.equal(typeof e[key], "function", `missing WASM export: ${key}`);
 }
 

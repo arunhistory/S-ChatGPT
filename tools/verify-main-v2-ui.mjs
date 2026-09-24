@@ -16,7 +16,10 @@ for(const key of ["slot_v2_reset","slot_v2_lever","slot_v2_stop","slot_v2_phase"
    "slot_v2_machine_area","slot_v2_normal_latent","slot_v2_entry_gate",
    "slot_v2_debug_arm","slot_v2_debug_count","slot_v2_debug_name_ptr",
    "slot_v2_test_bet","slot_v2_test_payout","slot_v2_test_bonus_gain",
-   "slot_v2_at_table"])assert.equal(typeof e[key],"function",key);
+   "slot_v2_at_table",
+  "slot_v2_normal_flow","slot_v2_at_omen","slot_v2_special_zone_transition",
+  "slot_v2_upper_special","slot_v2_chain_zone","slot_v2_at_stock_restart",
+  "slot_v2_entry_gate_transition","slot_v2_at_cold"])assert.equal(typeof e[key],"function",key);
 assert.equal(e.slot_v2_debug_count(),71);
 e.slot_v2_reset(0x12341234,0);
 assert.equal(e.slot_v2_setting(),6);

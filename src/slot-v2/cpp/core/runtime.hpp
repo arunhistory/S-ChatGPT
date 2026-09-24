@@ -197,6 +197,14 @@ uint32_t revivalGamePacked(const State& state);
 uint32_t revivalFinalizePacked(const State& state);
 uint32_t entryGatePacked(const State& state);
 uint32_t normalLatentPacked(const State& state);
+uint32_t normalFlowPacked(const State& state);
+uint32_t atOmenPacked(const State& state);
+uint32_t specialZoneTransitionPacked(const State& state);
+uint32_t upperSpecialPacked(const State& state);
+uint32_t chainZonePacked(const State& state);
+uint32_t atStockRestartPacked(const State& state);
+uint32_t entryGateTransitionPacked(const State& state);
+uint32_t atCold(const State& state);
 
 // Native C++ test hook only. This is intentionally NOT a WASM export yet.
 // One next-spin override can be armed alongside one presentation-route

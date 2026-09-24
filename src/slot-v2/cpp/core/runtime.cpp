@@ -1847,6 +1847,75 @@ bool armDebugFlag(State& state, debug::Channel channel, uint32_t value) {
     return true;
 }
 
+uint32_t normalFlowPacked(const State& state) {
+    // bit0 high-active / bit1 entered / bit2 exited
+    // bits8..23 shorten / bits24..31 reward
+    const auto& high = state.normal_flow_result.high;
+    return (state.machine.normal_high.active ? 1u : 0u)
+        | (high.entered ? (1u << 1) : 0u)
+        | (high.exited ? (1u << 2) : 0u)
+        | ((static_cast<uint32_t>(high.shorten_games) & 0xffffu) << 8)
+        | (static_cast<uint32_t>(state.normal_flow_result.reward) << 24);
+}
+
+uint32_t atOmenPacked(const State& state) {
+    // bit0 state-active / bit1 episode / 8..15 games-left
+    // bit16 current-game / bit17 ended / bit18 AT-window-empty
+    // 24..31 finalize outcome
+    return (state.machine.at_omen.active ? 1u : 0u)
+        | (state.machine.at_omen.episode ? (1u << 1) : 0u)
+        | (static_cast<uint32_t>(state.machine.at_omen.games_left) << 8)
+        | (state.at_omen_game.active ? (1u << 16) : 0u)
+        | (state.at_omen_game.ended ? (1u << 17) : 0u)
+        | (state.at_omen_game.at_window_empty ? (1u << 18) : 0u)
+        | (static_cast<uint32_t>(state.at_omen_finalize) << 24);
+}
+
+uint32_t specialZoneTransitionPacked(const State& state) {
+    return static_cast<uint32_t>(state.special_zone_transition.outcome)
+        | ((static_cast<uint32_t>(state.special_zone_transition.added_games) & 0xffffu) << 8);
+}
+
+uint32_t upperSpecialPacked(const State& state) {
+    const auto& current = state.machine.upper_special;
+    const auto& step = state.upper_special_step;
+    return (current.active ? 1u : 0u)
+        | (step.active_before ? (1u << 1) : 0u)
+        | (step.success ? (1u << 2) : 0u)
+        | (step.ended ? (1u << 3) : 0u)
+        | ((static_cast<uint32_t>(step.added_games) & 0xffffu) << 8)
+        | ((step.round & 0xffu) << 24);
+}
+
+uint32_t chainZonePacked(const State& state) {
+    const auto& current = state.machine.chain_zone;
+    const auto& step = state.chain_zone_step;
+    return (current.active ? 1u : 0u)
+        | (step.played ? (1u << 1) : 0u)
+        | (step.signal_found ? (1u << 2) : 0u)
+        | (step.continued ? (1u << 3) : 0u)
+        | (step.ended ? (1u << 4) : 0u)
+        | (static_cast<uint32_t>(current.games_left) << 8)
+        | ((step.earned_bonuses & 0xffffu) << 16);
+}
+
+uint32_t atStockRestartPacked(const State& state) {
+    const auto& r = state.at_stock_restart;
+    return (r.applied ? 1u : 0u)
+        | ((static_cast<uint32_t>(r.games) & 0xffffu) << 8)
+        | ((static_cast<uint32_t>(r.before_table) & 0x3u) << 24)
+        | ((static_cast<uint32_t>(r.after_table) & 0x3u) << 26);
+}
+
+uint32_t entryGateTransitionPacked(const State& state) {
+    return static_cast<uint32_t>(state.entry_gate_transition.outcome)
+        | ((state.entry_gate_transition.stock_added & 0x00ffffffu) << 8);
+}
+
+uint32_t atCold(const State& state) {
+    return state.machine.at.cold ? 1u : 0u;
+}
+
 uint32_t normalLatentPacked(const State& state) {
     // bits 0..7 stage / 8..15 omen G remaining / 16..23 omen G total /
     // 24..31 chosen route. 0 means no pending presentation.
