@@ -621,33 +621,40 @@
   function stopOne(reel) {
     if(!engineReady||stopped[reel]||e.slot_v2_phase()!==1)return;
     const target=nextPressed(reel);
-    let value=0,accepted=false;
-    // The C++ engine remains the sole source of legal stop positions.
-    // Probe alternate human button timings if a chosen stop is rejected.
-    for(let i=0;i<21;i++){
-      value=u32(e.slot_v2_stop(reel,(target+i)%21));
-      const status=(value>>>16)&255;
-      const center=value&255;
+    let value=0,accepted=false,chosenPress=-1;
 
-      // StrongCherry is defined by the visible stop itself:
-      // left = middle-line CHERRY, middle = not middle-line REPLAY.
-      // This browser prototype has no real physical button timing, so do not
-      // settle on RoleMissed for this role; keep probing C++-legal timings.
-      if(currentRole===7){
-        if(reel===0){
-          if(status===0&&u32(e.slot_v2_visible_symbol(0,center,0))===6){accepted=true;break;}
-          continue;
-        }
-        if(reel===1){
-          if(status===0&&u32(e.slot_v2_visible_symbol(1,center,0))!==5){accepted=true;break;}
-          continue;
-        }
+    // Preview is read-only. Never mutate the C++ session while searching.
+    // Once a legal timing is found, commit exactly one real STOP.
+    for(let i=0;i<21;i++){
+      const press=(target+i)%21;
+      const preview=u32(e.slot_v2_preview_stop(reel,press));
+      const status=(preview>>>16)&255;
+      const center=preview&255;
+
+      // Assist roles must actually acquire their intended visible shape.
+      // 9-medal bell is the middle-line bell result.
+      if([3,4,5,12,13,14].includes(currentRole)){
+        if(status!==0)continue;
+      }else if(currentRole===7){
+        if(status!==0)continue;
+        if(reel===0&&u32(e.slot_v2_visible_symbol(0,center,0))!==6)continue;
+        if(reel===1&&u32(e.slot_v2_visible_symbol(1,center,0))===5)continue;
+      }else if(!(status===0||status===5||status===6)){
+        continue;
       }
 
-      if(status===0||status===5||status===6||status===7){accepted=true;break;}
+      chosenPress=press;
+      accepted=true;
+      break;
     }
     if(!accepted){
       $("flagStatus").textContent="停止候補を確定できませんでした。状態："+e.slot_v2_phase();
+      refresh();auto=false;return;
+    }
+    value=u32(e.slot_v2_stop(reel,chosenPress));
+    const committedStatus=(value>>>16)&255;
+    if(committedStatus===1||committedStatus===2||committedStatus===3||committedStatus===4||committedStatus===7){
+      $("flagStatus").textContent="previewと本停止が不一致です。状態："+committedStatus;
       refresh();auto=false;return;
     }
     stopped[reel]=true;
@@ -773,13 +780,13 @@
     window.addEventListener("resize",drawGraph);
     try{
       // Absolute to this HTML directory, not the legacy slot.wasm.
-      const response=await fetch("slot-v2.wasm?v=20260924-presentations8",{cache:"no-store"});
+      const response=await fetch("slot-v2.wasm?v=20260924-stoppreview9",{cache:"no-store"});
       if(!response.ok)throw Error("新WASM取得失敗: HTTP "+response.status);
       const binary=await response.arrayBuffer();
       if(!WebAssembly.validate(binary))throw Error("取得したV2 WASMが不正");
       const instance=await WebAssembly.instantiate(binary,{});
       e=instance.instance.exports;memory=e.memory;
-      for(const key of ["slot_v2_reset","slot_v2_normal_latent","slot_v2_debug_arm",
+      for(const key of ["slot_v2_reset","slot_v2_preview_stop","slot_v2_normal_latent","slot_v2_debug_arm",
         "slot_v2_debug_count","slot_v2_test_bet","slot_v2_test_payout","slot_v2_test_bonus_gain",
         "slot_v2_normal_flow","slot_v2_at_omen","slot_v2_special_zone_transition",
         "slot_v2_upper_special","slot_v2_chain_zone","slot_v2_at_stock_restart",
