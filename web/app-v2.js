@@ -400,6 +400,18 @@
       if(reel===1)return 8;
       if(reel===2)return kind===2?11:12;
     }
+
+    // The web prototype does not read real button-timing coordinates, so choose
+    // a deterministic simulated press timing that never creates a misleading
+    // left-middle watermelon for unrelated roles.
+    // Strong chance must present the intended 🐧 / 🍒 / 🐧 shape rather than
+    // the old 🍉 / 🍉 / ❄️-looking stop.
+    if(currentRole===10){
+      const strongChancePress=[17,9,2];
+      return strongChancePress[reel]??0;
+    }
+    // One-medal explicitly anchors the left reel on BAR, not WATERMELON.
+    if(currentRole===2&&reel===0)return 0;
     return 0;
   }
   function settle(areaAtStart){
@@ -736,7 +748,7 @@
     window.addEventListener("resize",drawGraph);
     try{
       // Absolute to this HTML directory, not the legacy slot.wasm.
-      const response=await fetch("slot-v2.wasm?v=20260924-presentations5",{cache:"no-store"});
+      const response=await fetch("slot-v2.wasm?v=20260924-presentations6",{cache:"no-store"});
       if(!response.ok)throw Error("新WASM取得失敗: HTTP "+response.status);
       const binary=await response.arrayBuffer();
       if(!WebAssembly.validate(binary))throw Error("取得したV2 WASMが不正");
