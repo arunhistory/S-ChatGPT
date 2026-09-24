@@ -140,10 +140,17 @@
       watermelon:{fx:"green",title:"WATERMELON",sub:"スイカ",eye:"GREEN"},
       miss:{fx:"",title:"",sub:"",eye:""}
     }[role]||{fx:"",title:"",sub:"",eye:""};
+    if(phase==="spin"){
+      if(role==="freeze")$("stageCaption").textContent="……";
+      else if(role==="entry_judge")$("stageCaption").textContent="右リールで決まる…";
+      else if(["strong_cherry","strong_chance","penguin_chance","hit","at","tier_up"].includes(role))
+        $("stageCaption").textContent="気配がする…";
+      return;
+    }
     if(phase==="result"){
       if(cue.cls)stage().classList.add(...cue.cls.split(" "));
       if(cue.fx&&!p.fx)effect().className="effect-layer "+cue.fx;
-      if(role!=="miss"&&role!=="none"){
+      if(role!=="miss"&&role!=="none"&&role!=="entry_judge"){
         $("cutinEyebrow").textContent=cue.eye;$("cutinTitle").textContent=cue.title;$("cutinSub").textContent=cue.sub;
         void cutin().offsetWidth;cutin().classList.add("show");
       }
@@ -729,7 +736,7 @@
     window.addEventListener("resize",drawGraph);
     try{
       // Absolute to this HTML directory, not the legacy slot.wasm.
-      const response=await fetch("slot-v2.wasm?v=20260924-presentations4",{cache:"no-store"});
+      const response=await fetch("slot-v2.wasm?v=20260924-presentations5",{cache:"no-store"});
       if(!response.ok)throw Error("新WASM取得失敗: HTTP "+response.status);
       const binary=await response.arrayBuffer();
       if(!WebAssembly.validate(binary))throw Error("取得したV2 WASMが不正");
