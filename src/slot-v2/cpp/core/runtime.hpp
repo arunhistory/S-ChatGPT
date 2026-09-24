@@ -124,6 +124,7 @@ SettingResetStatus resetWithSetting(
 uint32_t currentSetting(const State& state);
 uint32_t lever(State& state);
 uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position);
+uint32_t previewStop(const State& state, uint32_t reel, uint32_t pressed_position);
 uint32_t pushLowerFallChallenge(State& state);
 
 // C++内部オーケストレーション用。TSからは呼ばせない。
