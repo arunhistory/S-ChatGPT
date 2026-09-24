@@ -1,0 +1,17 @@
+name: One-shot V2 presentation regression
+on:
+  push:
+    branches: [checks/presentation-restore-20260924-once]
+    paths: [.github/workflows/presentation-restore-once.yml]
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: JavaScript syntax
+        run: |
+          node --check web/app-v2.js
+          node --check tools/verify-main-v2-ui.mjs
+      - name: Verify shipped V2 browser contract
+        run: node tools/verify-main-v2-ui.mjs
