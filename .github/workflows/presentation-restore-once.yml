@@ -1,0 +1,82 @@
+name: One-shot restored presentation V2 build
+on:
+  push:
+    branches: [build/presentation-restore-20260924-once]
+    paths: [.github/workflows/presentation-restore-once.yml]
+permissions:
+  contents: write
+jobs:
+  build:
+    if: github.ref == 'refs/heads/build/presentation-restore-20260924-once'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lld
+      - name: Frontend syntax and restored-presentation contract
+        run: |
+          node --check web/app-v2.js
+          node - <<'NODE'
+          const fs=require('fs');
+          const s=fs.readFileSync('web/app-v2.js','utf8');
+          const required=[
+            'runFreezeEntrySequence','startReverseVisualSpin','PREMIUM FREEZE',
+            '🟦7を狙え','FREEZE 確定','stageCue','showMachineCinematic',
+            '高確率 移行','G数短縮','上位特化ZONE','CHAIN ZONE',
+            '復活チャレンジ','有利区間 CROSS','STOCK獲得','runEntryGateCinematic'
+          ];
+          for(const x of required) if(!s.includes(x)) throw new Error('missing presentation: '+x);
+          if(!s.includes('currentSpecial===3')) throw new Error('freeze branch missing');
+          console.log('PRESENTATION SOURCE PASS '+required.length);
+          NODE
+      - name: Native regressions
+        run: |
+          cmake -S . -B build-native -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-native --target slot_v2_stop_test slot_v2_runtime_normal_hit_test slot_v2_setting6_rates_test slot_v2_core --parallel 2
+          ./build-native/slot_v2_stop_test
+          ./build-native/slot_v2_runtime_normal_hit_test
+          ./build-native/slot_v2_setting6_rates_test
+          c++ -std=c++20 -O2 -Isrc/slot-v2/cpp src/slot-v2/cpp/tests/integration/runtime_debug_flags_test.cpp build-native/libslot_v2_core.a -o /tmp/runtime_debug_flags_test
+          /tmp/runtime_debug_flags_test
+      - name: Compile and verify latest WASM
+        run: |
+          bash tools/build-wasm-v2.sh
+          node tools/verify-setting6-wasm.mjs
+          cp src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
+          node tools/verify-main-v2-ui.mjs
+      - name: Freeze WASM stop contract
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),assert=require('assert');
+          (async()=>{
+            const bin=fs.readFileSync('web/slot-v2.wasm');
+            const {instance}=await WebAssembly.instantiate(bin,{});
+            const e=instance.exports;
+            e.slot_v2_reset(0x51515151,0);
+            assert.equal(e.slot_v2_debug_arm(2,3),1);
+            const pull=e.slot_v2_lever();
+            assert.equal((pull>>>8)&255,3);
+            assert.equal(e.slot_v2_phase(),1,'freeze must be a stoppable reel game');
+            assert.equal(e.slot_v2_freeze_active(),1);
+            for(let r=0;r<3;r++){
+              const out=e.slot_v2_stop(r,0);
+              assert.equal((out>>>16)&255,0);
+              const pos=out&255;
+              assert.equal(e.slot_v2_symbol_at(r,pos),2,'BLUE7 center');
+            }
+            assert.equal(e.slot_v2_phase(),3);
+            assert.equal(e.slot_v2_special_committed(),1);
+            assert.equal(e.slot_v2_at_active(),1);
+            assert.equal(e.slot_v2_at_tier(),2);
+            console.log('FREEZE PRESENTATION ENGINE CONTRACT PASS BLUE777 upperAT');
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+      - name: Commit exact tested WASM
+        run: |
+          git config user.name "setting6-wasm-builder"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
+          git commit -m "build: restored presentation V2 WASM [skip ci]"
+          git push origin HEAD:build/presentation-restore-20260924-once
