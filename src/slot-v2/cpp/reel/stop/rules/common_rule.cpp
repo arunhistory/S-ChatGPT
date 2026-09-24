@@ -18,6 +18,15 @@ bool centerIs(const reel_strip::StripView& strip, uint8_t center, Symbol symbol)
     return strip.data && strip.size && strip.data[center % strip.size] == symbol;
 }
 
+bool effectiveLineWatermelonSafe(
+    const stop_shared::Context& ctx,
+    const reel_strip::StripView& strip,
+    uint8_t candidate
+) {
+    if (ctx.role == RoleFlag::Watermelon) return true;
+    return !centerIs(strip, candidate, Symbol::Watermelon);
+}
+
 bool leftCherrySafe(
     const stop_shared::Context& ctx,
     const reel_strip::StripView& strip,
