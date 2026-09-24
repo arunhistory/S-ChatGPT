@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# rebuild trigger: stop-preview9
+# rebuild trigger: stop-preview9-r2
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
