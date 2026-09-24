@@ -25,6 +25,17 @@ e.slot_v2_reset(0x12341234,0);
 assert.equal(e.slot_v2_setting(),6);
 assert.equal(e.slot_v2_debug_arm(11,2),1,"configure CZ presentation");
 assert.equal(e.slot_v2_debug_arm(3,2),1,"configure normal bonus");
+function commitPreviewedStop(reel, statuses=[0,5,6]){
+   let chosen=-1;
+   for(let pos=0;pos<21;pos++){
+       const p=e.slot_v2_preview_stop(reel,pos)>>>0;
+       if(statuses.includes((p>>>16)&255)){chosen=pos;break}
+   }
+   assert.notEqual(chosen,-1,"preview found legal stop for reel "+reel);
+   const r=e.slot_v2_stop(reel,chosen)>>>0;
+   assert(statuses.includes((r>>>16)&255),"committed previewed stop for reel "+reel);
+   return r;
+}
 function spin(){
    const before=e.slot_v2_phase();
    const result=e.slot_v2_lever();
@@ -35,14 +46,7 @@ function spin(){
          " pending="+e.slot_v2_pending_events());
    }
    if(after===2){e.slot_v2_complete_special();return}
-   for(let reel=0;reel<3;reel++){
-       let accepted=false;
-       for(let pos=0;pos<21;pos++){
-           const r=e.slot_v2_stop(reel,pos);
-           if([0,5,6,7].includes((r>>>16)&255)){accepted=true;break}
-       }
-       assert(accepted,"accepted stop for reel "+reel);
-   }
+   for(let reel=0;reel<3;reel++)commitPreviewedStop(reel,[0,5,6]);
    assert.equal(e.slot_v2_phase(),3,"completed after three stops");
 }
 spin();
@@ -55,6 +59,39 @@ assert(waiting>=10&&waiting<=25,"omen lasts 10 to 25 spins, got "+waiting);
 assert.equal(e.slot_v2_machine_area(),1,"scripted CZ begins after concealment");
 console.log("MAIN V2 PLAYABLE PASS bytes="+binary.length+
    " flags="+e.slot_v2_debug_count()+" omen="+waiting+" CZ=1");
+
+// Reel-result invariants: internal flag and visible middle line must agree.
+function forceRole(role, requiredStatuses=[0]){
+   e.slot_v2_reset(0x77aa55cc,0);
+   assert.equal(e.slot_v2_debug_arm(1,role),1,"arm role "+role);
+   const result=e.slot_v2_lever()>>>0;
+   assert.equal(result&255,role,"forced role "+role);
+   for(let reel=0;reel<3;reel++)commitPreviewedStop(reel,requiredStatuses);
+}
+const center=(reel)=>e.slot_v2_visible_symbol(reel,e.slot_v2_stopped_position(reel),0);
+
+// 9枚ベル = 中段有効ライン。左・中に🍉を残さない。
+forceRole(3,[0]);
+assert.equal(center(0),4,"9-medal bell left middle must be BELL");
+assert.equal(center(1),4,"9-medal bell middle middle must be BELL");
+assert([1,4].includes(center(2)),"9-medal bell right middle must be BELL or red-7 assist");
+
+// 強チェリー = 左中段🍒、中段REPLAYなし。
+forceRole(7,[0]);
+assert.equal(center(0),6,"strong cherry must stop CHERRY on left middle");
+assert.notEqual(center(1),5,"strong cherry must not show REPLAY on middle middle");
+
+// 強チャンス目 = 🐧 / 🍒 / 🐧。
+forceRole(10,[0]);
+assert.equal(center(0),8,"strong chance left middle PENGUIN");
+assert.equal(center(1),6,"strong chance middle middle CHERRY");
+assert.equal(center(2),8,"strong chance right middle PENGUIN");
+
+// 1枚役では有効ラインに🍉を出さない。
+forceRole(2,[0]);
+assert.notEqual(center(0),7,"one-medal left middle must not be WATERMELON");
+assert.notEqual(center(1),7,"one-medal middle middle must not be WATERMELON");
+assert.notEqual(center(2),7,"one-medal right middle must not be WATERMELON");
 
 assert.match(js,/PREMIUM FREEZE/);
 assert.match(js,/startReverseVisualSpin/);
