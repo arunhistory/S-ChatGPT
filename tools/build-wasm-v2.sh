@@ -85,6 +85,7 @@ mkdir -p "$WASM_DIR"
   -Wl,--export=slot_v2_last_role \
   -Wl,--export=slot_v2_freeze_active \
   -Wl,--export=slot_v2_stop \
+  -Wl,--export=slot_v2_preview_stop \
   -Wl,--export=slot_v2_stopped_position \
   -Wl,--export=slot_v2_stop_sequence \
   -Wl,--export=slot_v2_acquisition \
