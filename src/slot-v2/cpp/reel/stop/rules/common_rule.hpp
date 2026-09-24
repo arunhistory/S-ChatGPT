@@ -6,6 +6,11 @@ namespace slotv2::stop_rules {
 
 bool visibleHas(const reel_strip::StripView& strip, uint8_t center, Symbol symbol);
 bool centerIs(const reel_strip::StripView& strip, uint8_t center, Symbol symbol);
+bool effectiveLineWatermelonSafe(
+    const stop_shared::Context& ctx,
+    const reel_strip::StripView& strip,
+    uint8_t candidate
+);
 bool leftCherrySafe(const stop_shared::Context& ctx, const reel_strip::StripView& strip, uint8_t candidate);
 
 // True only when this stop would complete a reserved middle-line result.
