@@ -404,6 +404,14 @@
     // The web prototype does not read real button-timing coordinates, so choose
     // a deterministic simulated press timing that never creates a misleading
     // left-middle watermelon for unrelated roles.
+    // Strong cherry is the middle-cherry role by definition in this machine.
+    // This browser prototype has no true reel-timing input, so feed a stable
+    // simulated press timing that yields left-middle 🍒 and keeps REPLAY out
+    // of the middle reel's visible window.
+    if(currentRole===7){
+      const strongCherryPress=[14,8,0];
+      return strongCherryPress[reel]??0;
+    }
     // Strong chance must present the intended 🐧 / 🍒 / 🐧 shape rather than
     // the old 🍉 / 🍉 / ❄️-looking stop.
     if(currentRole===10){
@@ -748,7 +756,7 @@
     window.addEventListener("resize",drawGraph);
     try{
       // Absolute to this HTML directory, not the legacy slot.wasm.
-      const response=await fetch("slot-v2.wasm?v=20260924-presentations6",{cache:"no-store"});
+      const response=await fetch("slot-v2.wasm?v=20260924-presentations7",{cache:"no-store"});
       if(!response.ok)throw Error("新WASM取得失敗: HTTP "+response.status);
       const binary=await response.arrayBuffer();
       if(!WebAssembly.validate(binary))throw Error("取得したV2 WASMが不正");
