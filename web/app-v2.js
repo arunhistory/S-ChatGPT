@@ -497,6 +497,12 @@
       add({eye:"STOCK",title:"AT RESTART",sub:g+"G",cls:"gold",banner:"ストック発動",note:g+"Gで再開",bannerCls:"hot",log:"STOCK RESTART "+g+"G"});
     }
 
+    // A newly queued award is visible only as "hit / start-symbol wait".
+    // Its AT/BONUS destination stays hidden until the actual entry symbols stop.
+    if((s.gate&1)&&!(old.gate&1)&&!(s.gate&2)){
+      add({eye:"HIT",title:"当たり",sub:"開始図柄待ち",cls:"judge",banner:"当たり",note:"次ゲーム以降で開始図柄を狙え",bannerCls:"hot",log:"当たり：開始図柄待ち"});
+    }
+
     // Entry-symbol result is the point where the hidden destination becomes public.
     const entryOutcome=s.entryTransition&255;
     const entryStock=s.entryTransition>>>8;
@@ -718,7 +724,7 @@
     window.addEventListener("resize",drawGraph);
     try{
       // Absolute to this HTML directory, not the legacy slot.wasm.
-      const response=await fetch("slot-v2.wasm?v=20260924-presentations2",{cache:"no-store"});
+      const response=await fetch("slot-v2.wasm?v=20260924-presentations3",{cache:"no-store"});
       if(!response.ok)throw Error("新WASM取得失敗: HTTP "+response.status);
       const binary=await response.arrayBuffer();
       if(!WebAssembly.validate(binary))throw Error("取得したV2 WASMが不正");
