@@ -782,6 +782,56 @@ uint32_t lever(State& state) {
         | (static_cast<uint32_t>(result.command_status) << 24);
 }
 
+uint32_t previewStop(
+    const State& state,
+    uint32_t reel,
+    uint32_t pressed_position
+) {
+    if (reel > 2u) {
+        return (static_cast<uint32_t>(
+            stop_shared::ResolveStatus::InvalidReel
+        ) << 16);
+    }
+
+    const auto reel_id = static_cast<ReelId>(reel);
+
+    if (state.session.stopped[reel]) {
+        return (static_cast<uint32_t>(
+            stop_shared::ResolveStatus::InvalidReel
+        ) << 16)
+            | static_cast<uint32_t>(state.session.position[reel]);
+    }
+
+    if (state.session.phase == session::Phase::SpecialPending) {
+        return (static_cast<uint32_t>(
+            stop_shared::ResolveStatus::SpecialControlPending
+        ) << 16);
+    }
+
+    if (!session::canStop(state.session, reel_id)) {
+        return (static_cast<uint32_t>(
+            stop_shared::ResolveStatus::InvalidReel
+        ) << 16);
+    }
+
+    const auto result = state.session.freeze.active
+        ? freeze::forceStop(
+            reel_id,
+            static_cast<uint8_t>(pressed_position)
+        )
+        : stop_controller::resolve(
+            session::makeStopContext(
+                state.session,
+                reel_id,
+                static_cast<uint8_t>(pressed_position)
+            )
+        );
+
+    return static_cast<uint32_t>(result.final_position)
+        | (static_cast<uint32_t>(result.slip) << 8)
+        | (static_cast<uint32_t>(result.status) << 16);
+}
+
 uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position) {
     if (reel > 2u) {
         return (static_cast<uint32_t>(stop_shared::ResolveStatus::InvalidReel) << 16);
