@@ -12,7 +12,7 @@ assert.equal(Buffer.compare(binary,built),0,"web WASM must match latest compiled
 assert(WebAssembly.validate(binary),"compiled WASM must validate");
 const {instance}=await WebAssembly.instantiate(binary,{});
 const e=instance.exports;
-for(const key of ["slot_v2_reset","slot_v2_lever","slot_v2_stop","slot_v2_phase",
+for(const key of ["slot_v2_reset","slot_v2_lever","slot_v2_stop","slot_v2_preview_stop","slot_v2_phase",
    "slot_v2_machine_area","slot_v2_normal_latent","slot_v2_entry_gate",
    "slot_v2_debug_arm","slot_v2_debug_count","slot_v2_debug_name_ptr",
    "slot_v2_test_bet","slot_v2_test_payout","slot_v2_test_bonus_gain",
@@ -78,4 +78,7 @@ assert.match(js,/高確率 移行/);
 assert.match(js,/G数短縮/);
 assert.match(js,/STOCK獲得/);
 assert.match(js,/有利区間 CROSS/);
+assert.match(js,/slot_v2_preview_stop/);
+assert.match(js,/commit exactly one real STOP/);
+assert.match(js,/\[3,4,5,12,13,14\]\.includes\(currentRole\)/);
 assert.match(js,/playPresentationEvents/);
