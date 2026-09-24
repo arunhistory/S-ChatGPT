@@ -97,6 +97,8 @@
     $("omenText").textContent="";
   }
   function choosePresentation(role,phase){
+    // Entry destination is fixed internally, but presentation stays neutral until the reels reveal it.
+    if(role==="entry_judge")return{cls:"omen-purple",fx:"purple",text:"どっちだ…"};
     if(role==="freeze")return{cls:"omen-premium screen-blackout",fx:"stripe flash rainbow",text:"……"};
     if(role==="at"||role==="tier_up")return{cls:"omen-gold screen-shock",fx:"gold flash",text:"激熱"};
     if(role==="hit")return{cls:"omen-red screen-shock",fx:"red flash slash",text:"好機"};
@@ -120,6 +122,7 @@
     if(p.fx)effect().className="effect-layer "+p.fx;
     if(p.text){$("omenText").textContent=p.text;$("omenText").classList.add("show")}
     const cue={
+      entry_judge:{fx:"purple",title:"",sub:"",eye:""},
       one_medal:{fx:"",title:"1枚役",sub:"静かな払い出し",eye:"NORMAL"},
       bell9:{fx:"yellow",title:"BELL",sub:"9枚",eye:"YELLOW"},
       bell15:{fx:"gold",title:"BIG BELL",sub:"15枚",eye:"GOLD"},
@@ -349,13 +352,13 @@
     $("debugState").textContent=JSON.stringify({
       build:"C++ 95/4/1 WASM V2",setting:e.slot_v2_setting(),
       area:areaName[s.area],phase:s.phase,spins:totalSpins,credit:credits,
-      role:currentSpecial===3?"フリーズ":(ROLE[currentRole]||"?"),
+      role:currentSpecial===3?"フリーズ":(((s.gate&1)&&(s.gate&2)&&s.phase===1)?"開始図柄":(ROLE[currentRole]||"?")),
       freezeActive:Boolean(e.slot_v2_freeze_active()),
       normalActual:e.slot_v2_normal_actual_games(),
       stage:stage===1?"潜伏":stage===2?"CZ経由":"なし",
       latentRoute:["通常イベント","通常予兆","予兆→CZ"][route],
       latentGamesLeft:left,latentTotal:total,
-      gateActive:Boolean(s.gate&1),gateKind:(s.gate>>>8)&255,
+      gateActive:Boolean(s.gate&1),gateKind:(s.gate&2)?"非表示（停止結果待ち）":((s.gate>>>8)&255),
       pending:"0x"+e.slot_v2_pending_events().toString(16),lastPayout:lastWin,
       sectionDiff:curr
     },null,2);
@@ -622,9 +625,12 @@
     startedSnapshot=old;
     currentRole=result&255;
     currentSpecial=(result>>>8)&255;
+    const gate=u32(e.slot_v2_entry_gate());
+    const entryJudge=Boolean((gate&1)&&(gate&2));
     credits-=3;
     e.slot_v2_test_bet(3);
-    $("roleResult").textContent=currentSpecial===3?"フリーズ":(ROLE[currentRole]||"?");
+    // Do not leak the internally fixed AT/BONUS destination before the third reel reveals it.
+    $("roleResult").textContent=currentSpecial===3?"フリーズ":(entryJudge?"開始図柄":(ROLE[currentRole]||"?"));
     $("payoutResult").textContent="判定中";
 
     if(currentSpecial===3){
@@ -639,10 +645,9 @@
 
     stopped.fill(false);
     for(let i=0;i<3;i++) startVisualSpin(i);
-    stageCue(ROLE_KEY[currentRole]||"miss","spin");
+    stageCue(entryJudge?"entry_judge":(ROLE_KEY[currentRole]||"miss"),"spin");
 
-    const gate=u32(e.slot_v2_entry_gate());
-    if((gate&1)&&(gate&2)){
+    if(entryJudge){
       runEntryGateCinematic();
       return;
     }
@@ -724,7 +729,7 @@
     window.addEventListener("resize",drawGraph);
     try{
       // Absolute to this HTML directory, not the legacy slot.wasm.
-      const response=await fetch("slot-v2.wasm?v=20260924-presentations3",{cache:"no-store"});
+      const response=await fetch("slot-v2.wasm?v=20260924-presentations4",{cache:"no-store"});
       if(!response.ok)throw Error("新WASM取得失敗: HTTP "+response.status);
       const binary=await response.arrayBuffer();
       if(!WebAssembly.validate(binary))throw Error("取得したV2 WASMが不正");
