@@ -65,6 +65,8 @@ assert.match(js,/非表示（停止結果待ち）/);
 assert.match(js,/右リールで決まる…/);
 assert.match(js,/気配がする…/);
 assert.match(js,/strongCherryPress=\[14,8,0\]/);
+assert.match(js,/currentRole===7/);
+assert.match(js,/visible_symbol\(0,center,0\)\)===6/);
 assert.match(js,/strongChancePress=\[17,9,2\]/);
 assert.match(js,/One-medal explicitly anchors the left reel on BAR/);
 assert.match(js,/EPISODE BONUS/);
