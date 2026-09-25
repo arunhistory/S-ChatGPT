@@ -30,6 +30,16 @@ int main() {
             state.pending,
             slotv2::pending_event::BonusComplete
         );
+
+        // BONUS completion is a one-game result. On the first returned AT
+        // lever it must be cleared, otherwise UI/end-flow repeats every game.
+        const auto next = slotv2::runtime::lever(state);
+        ok = ok && ((next >> 24) & 0xffu) == 0u;
+        ok = ok && state.machine.area == slotv2::machine_state::Area::AT;
+        ok = ok && state.bonus_cycle.outcome
+            == slotv2::bonus_cycle::Outcome::None;
+        ok = ok && state.bonus_transition.outcome
+            == slotv2::bonus_transition::Outcome::None;
     }
 
     // Regular BONUS may either end normally or roll the specified 1% Episode upgrade.
@@ -52,6 +62,8 @@ int main() {
         ok = ok && a.outcome == slotv2::bonus_cycle::Outcome::None;
         ok = ok && state.machine.bonus.active;
         ok = ok && state.machine.bonus.medals_left == 1;
+        ok = ok && state.bonus_transition.outcome
+            == slotv2::bonus_transition::Outcome::None;
 
         const auto b = slotv2::runtime::applyBonusNetGain(
             state,
