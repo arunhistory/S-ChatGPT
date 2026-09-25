@@ -4,6 +4,12 @@
 
 int main() {
     bool ok = true;
+    auto check = [&](bool cond, const char* label) {
+        if (!cond) {
+            std::cerr << "FAIL: " << label << "\n";
+            ok = false;
+        }
+    };
 
     {
         slotv2::runtime::State state{};
@@ -20,26 +26,43 @@ int main() {
             80
         );
 
-        ok = ok && r.outcome == slotv2::bonus_cycle::Outcome::Completed;
-        ok = ok && state.machine.area == slotv2::machine_state::Area::AT;
-        ok = ok && !state.machine.bonus.active;
-        ok = ok && !state.machine.bonus_return_valid;
-        ok = ok && state.bonus_transition.outcome
-            == slotv2::bonus_transition::Outcome::Returned;
-        ok = ok && !slotv2::pending_event::has(
+        check(r.outcome == slotv2::bonus_cycle::Outcome::Completed,
+            "episode reaches Completed");
+        check(state.machine.area == slotv2::machine_state::Area::AT,
+            "episode returns to AT");
+        check(!state.machine.bonus.active,
+            "episode bonus inactive after completion");
+        check(!state.machine.bonus_return_valid,
+            "bonus return latch cleared");
+        check(state.bonus_transition.outcome
+            == slotv2::bonus_transition::Outcome::Returned,
+            "transition Returned only on completion");
+        check(!slotv2::pending_event::has(
             state.pending,
             slotv2::pending_event::BonusComplete
+        ), "BonusComplete pending consumed");
+
+        // Make the return target a real active AT before starting the next game.
+        // This mirrors the reported AT -> BONUS -> AT path.
+        slotv2::at_state::start(
+            state.machine.at,
+            slotv2::at_state::Tier::Middle
         );
+        state.machine.area = slotv2::machine_state::Area::AT;
 
         // BONUS completion is a one-game result. On the first returned AT
         // lever it must be cleared, otherwise UI/end-flow repeats every game.
         const auto next = slotv2::runtime::lever(state);
-        ok = ok && ((next >> 24) & 0xffu) == 0u;
-        ok = ok && state.machine.area == slotv2::machine_state::Area::AT;
-        ok = ok && state.bonus_cycle.outcome
-            == slotv2::bonus_cycle::Outcome::None;
-        ok = ok && state.bonus_transition.outcome
-            == slotv2::bonus_transition::Outcome::None;
+        check(((next >> 24) & 0xffu) == 0u,
+            "first AT lever accepted after BONUS");
+        check(state.machine.area == slotv2::machine_state::Area::AT,
+            "still in AT after returned lever");
+        check(state.bonus_cycle.outcome
+            == slotv2::bonus_cycle::Outcome::None,
+            "bonus cycle result cleared on next AT lever");
+        check(state.bonus_transition.outcome
+            == slotv2::bonus_transition::Outcome::None,
+            "bonus transition result cleared on next AT lever");
     }
 
     // Regular BONUS may either end normally or roll the specified 1% Episode upgrade.
@@ -59,11 +82,15 @@ int main() {
             49
         );
 
-        ok = ok && a.outcome == slotv2::bonus_cycle::Outcome::None;
-        ok = ok && state.machine.bonus.active;
-        ok = ok && state.machine.bonus.medals_left == 1;
-        ok = ok && state.bonus_transition.outcome
-            == slotv2::bonus_transition::Outcome::None;
+        check(a.outcome == slotv2::bonus_cycle::Outcome::None,
+            "regular 49/50 is not completed");
+        check(state.machine.bonus.active,
+            "regular remains active before target");
+        check(state.machine.bonus.medals_left == 1,
+            "regular has 1 medal left");
+        check(state.bonus_transition.outcome
+            == slotv2::bonus_transition::Outcome::None,
+            "no finalize transition before target");
 
         const auto b = slotv2::runtime::applyBonusNetGain(
             state,
