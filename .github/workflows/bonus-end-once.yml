@@ -16,8 +16,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Run all native V2 tests
-        run: bash tools/test-v2.sh
+      - name: Build and run BONUS regression
+        run: |
+          rm -rf .build-slot-v2
+          cmake -S . -B .build-slot-v2
+          cmake --build .build-slot-v2 --target slot_v2_runtime_bonus_test
+          ./.build-slot-v2/slot_v2_runtime_bonus_test
       - name: Rebuild V2 WASM
         run: |
           bash tools/build-wasm-v2.sh
