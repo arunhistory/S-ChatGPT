@@ -353,6 +353,10 @@ uint32_t lever(State& state) {
     state.special_zone_transition = {};
     state.upper_special_step = {};
     state.entry_gate_transition = {};
+    // One-shot BONUS completion/return results belong only to the previous
+    // completed game. Clear them when the next game actually begins.
+    state.bonus_cycle = {};
+    state.bonus_transition = {};
     state.revival_game = {};
     state.revival_finalize = {};
     state.last_latent_capture = {};
