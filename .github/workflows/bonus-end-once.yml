@@ -1,0 +1,37 @@
+name: Bonus end one-shot verification
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/bonus-end-once.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run all native V2 tests
+        run: bash tools/test-v2.sh
+      - name: Rebuild V2 WASM
+        run: |
+          bash tools/build-wasm-v2.sh
+          cp src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
+      - name: Verify browser V2
+        run: node tools/verify-main-v2-ui.mjs
+      - name: Publish rebuilt WASM
+        run: |
+          if git diff --quiet -- src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm; then
+            echo "WASM unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
+          git commit -m "build(v2): rebuild WASM for bonus end fix"
+          git push
