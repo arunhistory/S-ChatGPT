@@ -155,6 +155,10 @@ SettingResetStatus resetWithSetting(
     state.normal_at_trigger = {};
     state.normal_hit_entry = {};
     state.entry_gate_transition = {};
+    // BONUS cycle/transition are one-game results for presentation and flow.
+    // Never carry the previous BONUS completion into the next AT/normal game.
+    state.bonus_cycle = {};
+    state.bonus_transition = {};
     state.revival_game = {};
     state.revival_finalize = {};
     state.latent = {};
@@ -1414,6 +1418,13 @@ bonus_cycle::Result applyBonusNetGain(State& state, int net_gain) {
         net_gain
     );
 
+    // Most BONUS games only reduce medals_left. End transition must run
+    // exactly once: only on the game that reaches the target.
+    state.bonus_transition = {};
+    if (state.bonus_cycle.outcome == bonus_cycle::Outcome::None) {
+        return state.bonus_cycle;
+    }
+
     switch (state.bonus_cycle.outcome) {
         case bonus_cycle::Outcome::Completed:
             pending_event::add(
@@ -1431,7 +1442,7 @@ bonus_cycle::Result applyBonusNetGain(State& state, int net_gain) {
 
         case bonus_cycle::Outcome::None:
         default:
-            break;
+            return state.bonus_cycle;
     }
 
     state.bonus_transition = bonus_transition::finalize(
