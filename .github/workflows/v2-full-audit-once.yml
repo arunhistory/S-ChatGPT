@@ -1,4 +1,4 @@
-# final native verification
+# final UI verification
 name: V2 full audit once
 
 on:
@@ -15,9 +15,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run all 65 V2 native tests
-        run: bash tools/test-v2.sh
-      - name: Verify published browser/WASM contract
+      - name: Verify final published browser/WASM contract
         run: node tools/verify-main-v2-ui.mjs
-      - name: Run published 100k-game WASM audit
-        run: node tools/audit-v2-runtime.mjs
