@@ -787,7 +787,7 @@
     window.addEventListener("resize",drawGraph);
     try{
       // Absolute to this HTML directory, not the legacy slot.wasm.
-      const response=await fetch("slot-v2.wasm?v=20260924-stoppreview9",{cache:"no-store"});
+      const response=await fetch("slot-v2.wasm?v=20260927-audit1",{cache:"no-store"});
       if(!response.ok)throw Error("新WASM取得失敗: HTTP "+response.status);
       const binary=await response.arrayBuffer();
       if(!WebAssembly.validate(binary))throw Error("取得したV2 WASMが不正");
