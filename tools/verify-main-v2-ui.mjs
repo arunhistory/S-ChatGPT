@@ -118,4 +118,4 @@ assert.match(js,/有利区間 CROSS/);
 assert.match(js,/slot_v2_preview_stop/);
 assert.match(js,/commit exactly one real STOP/);
 assert.match(js,/\[3,4,5,12,13,14\]\.includes\(currentRole\)/);
-assert.match(js,/role===5&&status===1/);\nassert.match(js,/bonus_net_gain\(Math\.max\(0,payout-3\)\)/);\nassert.match(js,/playPresentationEvents/);
+assert.match(js,/role===5&&status===1/);\nassert.match(js,/bonus_net_gain\(Math\.max\(0,payout-3\)\)/);\nassert.match(js,/startedArea=u32\(e\.slot_v2_machine_area\(\)\)/);\nassert.match(js,/playPresentationEvents/);
