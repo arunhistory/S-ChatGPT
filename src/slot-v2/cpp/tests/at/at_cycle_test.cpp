@@ -39,10 +39,11 @@ int main() {
     }
 
     uint32_t seen = 0u;
+    uint32_t restart_count = 0u;
     for (uint64_t i = 0; i < 6000000ULL; ++i) {
         if (machine.at.games_left <= 0) {
             slotv2::at_state::start(machine.at, slotv2::at_state::Tier::Lower);
-            machine.at.table = (i & 1u)
+            machine.at.table = (restart_count++ & 1u)
                 ? slotv2::at_state::Table::Heaven
                 : slotv2::at_state::Table::Specialized;
         }
