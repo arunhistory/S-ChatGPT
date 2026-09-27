@@ -30,10 +30,13 @@ bool run777(uint64_t seed) {
     return state.normal_ceiling_transition.outcome
             == slotv2::normal_ceiling_transition::Outcome::ATWithStockQueued
         && state.normal_route.ceiling_consumed
-        && state.machine.entry_gate.active
-        && state.machine.entry_gate.kind == slotv2::entry_gate::Kind::AT
-        && state.machine.entry_gate.at_tier == slotv2::at_state::Tier::Lower
-        && state.machine.entry_gate.stock_to_add == 1u
+        && state.last_latent_capture.captured
+        && slotv2::normal_latent::active(state.latent)
+        && !state.machine.entry_gate.active
+        && state.latent.awarded_gate.active
+        && state.latent.awarded_gate.kind == slotv2::entry_gate::Kind::AT
+        && state.latent.awarded_gate.at_tier == slotv2::at_state::Tier::Lower
+        && state.latent.awarded_gate.stock_to_add == 1u
         && !state.machine.at.active;
 }
 
