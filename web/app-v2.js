@@ -442,7 +442,7 @@
       payout=Math.max(payout,13); // 3 BET + 10 experimental BONUS net
     }
     if(payout)e.slot_v2_payout(payout);
-    if(areaAtStart===2)e.slot_v2_bonus_net_gain(10);
+    if(areaAtStart===2)e.slot_v2_bonus_net_gain(Math.max(0,payout-3));
     credits+=payout;
     lastWin=payout;
     const current=Number(e.slot_v2_section_diff());diff.push(current);
