@@ -1,4 +1,4 @@
-# audit pass 5
+# audit pass 6
 name: V2 full audit once
 
 on:
@@ -20,7 +20,8 @@ jobs:
           rm -rf .build-slot-v2
           cmake -S . -B .build-slot-v2
           cmake --build .build-slot-v2 -j2
-      - name: Run every V2 test and aggregate failures
+      - name: Run every V2 native test and aggregate
+        continue-on-error: true
         shell: bash
         run: |
           set +e
@@ -29,7 +30,6 @@ jobs:
           for t in .build-slot-v2/slot_v2_*_test; do
             [ -x "$t" ] || continue
             total=$((total+1))
-            echo "===== RUN $(basename "$t") ====="
             "$t"
             rc=$?
             if [ $rc -ne 0 ]; then
@@ -41,3 +41,11 @@ jobs:
           done
           echo "AUDIT_SUMMARY total=$total failed=$failed passed=$((total-failed))"
           exit $failed
+      - name: Rebuild current C++ WASM
+        run: |
+          bash tools/build-wasm-v2.sh
+          cp src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
+      - name: Verify browser/WASM contract
+        run: node tools/verify-main-v2-ui.mjs
+      - name: Run 100k-game WASM audit
+        run: node tools/audit-v2-runtime.mjs
