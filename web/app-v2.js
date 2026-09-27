@@ -591,7 +591,7 @@
     const rev=s.revivalFinalize&255;
     if(rev===1)add({eye:"REVIVAL",title:"復活！",sub:"ATへ復帰",cls:"gold judge-result",banner:"復活！",note:"終了ATを復活",bannerCls:"hot",log:"復活成功"});
     if(rev===2)add({eye:"END",title:"復活失敗",sub:"通常時へ",cls:"red",banner:"復活失敗",note:"通常時へ移行",log:"復活失敗"});
-    if(old.area===3&&s.area!==3&&s.area!==4&&(s.upperComeback&1)===0)add({eye:"END",title:"AT END",sub:"通常時へ",cls:"red",banner:"AT終了",note:"通常時へ移行",log:"AT END"});
+    if(old.area===3&&s.area!==3&&s.area!==4&&!s.at&&(s.upperComeback&1)===0)add({eye:"END",title:"AT END",sub:"通常時へ",cls:"red",banner:"AT終了",note:"通常時へ移行",log:"AT END"});
 
     // If no internal event consumed the result presentation, show physical role.
     if(!q.length)add({role:ROLE_KEY[currentRole]||"miss",banner:ROLE[currentRole]||"GAME",note:"リールの結果を確認",duration:500});
