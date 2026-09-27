@@ -427,6 +427,10 @@
     const status=acquisition&255,role=(acquisition>>>8)&255,award=(acquisition>>>16)&65535;
     let payout=status===1?award:0;
     if(role===2)payout=Math.max(1,payout);
+    // REPLAY has no medal payout in the reel judge, but it grants the next
+    // 3-medal play for free. Credit the current 3-medal BET back here so
+    // accounting/difference coins stay net-zero for a normal REPLAY.
+    if(role===5&&status===1)payout=Math.max(3,payout);
     // Browser settlement adapter. All accounting and BONUS completion are
     // committed through the production C++ runtime APIs.
     if(areaAtStart===3){
