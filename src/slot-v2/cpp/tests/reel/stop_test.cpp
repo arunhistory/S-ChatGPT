@@ -69,10 +69,19 @@ int main() {
     ok = ok && ((validator & required) == required);
 
     // Bell payout geometry:
-    // horizontal top/middle/bottom = 9, ↗ = 15, ↘ = 3.
+    // 9枚ベル is the single effective middle line. Top/bottom must not
+    // accidentally pay as Bell9. ↗ = 15, ↘/top/bottom = 3枚役側.
+    {
+        const auto bell9 = slotv2::acquisition::judge(
+            slotv2::RoleFlag::Bell9,
+            3u, 0u, 1u, // middle
+            false, false, false
+        );
+        ok = ok && bell9.status == slotv2::acquisition::Status::Acquired;
+        ok = ok && bell9.medals == 9;
+    }
     for (const auto positions : {
         std::array<uint8_t,3>{4u,1u,2u},  // top
-        std::array<uint8_t,3>{3u,0u,1u},  // middle
         std::array<uint8_t,3>{2u,20u,0u}  // bottom
     }) {
         const auto bell9 = slotv2::acquisition::judge(
@@ -80,8 +89,8 @@ int main() {
             positions[0], positions[1], positions[2],
             false, false, false
         );
-        ok = ok && bell9.status == slotv2::acquisition::Status::Acquired;
-        ok = ok && bell9.medals == 9;
+        ok = ok && bell9.status != slotv2::acquisition::Status::Acquired;
+        ok = ok && bell9.medals == 0;
     }
     {
         const auto bell15 = slotv2::acquisition::judge(
