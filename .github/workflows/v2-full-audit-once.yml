@@ -1,4 +1,4 @@
-# audit publish
+# final native verification
 name: V2 full audit once
 
 on:
@@ -8,31 +8,16 @@ on:
       - ".github/workflows/v2-full-audit-once.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Rebuild current C++ WASM
-        run: |
-          bash tools/build-wasm-v2.sh
-          cp src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
-      - name: Verify browser/WASM contract
+      - name: Run all 65 V2 native tests
+        run: bash tools/test-v2.sh
+      - name: Verify published browser/WASM contract
         run: node tools/verify-main-v2-ui.mjs
-      - name: Run 100k-game WASM audit
+      - name: Run published 100k-game WASM audit
         run: node tools/audit-v2-runtime.mjs
-      - name: Publish audited WASM
-        run: |
-          if git diff --quiet -- src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm; then
-            echo "WASM already current"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
-          git commit -m "build(v2): publish audited WASM"
-          git push
