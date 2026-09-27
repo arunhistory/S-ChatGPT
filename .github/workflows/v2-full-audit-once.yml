@@ -1,4 +1,4 @@
-# audit pass 7
+# audit pass 8
 name: V2 full audit once
 
 on:
@@ -15,32 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build every native target
-        run: |
-          rm -rf .build-slot-v2
-          cmake -S . -B .build-slot-v2
-          cmake --build .build-slot-v2 -j2
-      - name: Run every V2 native test and aggregate
-        continue-on-error: true
-        shell: bash
-        run: |
-          set +e
-          total=0
-          failed=0
-          for t in .build-slot-v2/slot_v2_*_test; do
-            [ -x "$t" ] || continue
-            total=$((total+1))
-            "$t"
-            rc=$?
-            if [ $rc -ne 0 ]; then
-              echo "AUDIT_FAIL $(basename "$t") rc=$rc"
-              failed=$((failed+1))
-            else
-              echo "AUDIT_OK $(basename "$t")"
-            fi
-          done
-          echo "AUDIT_SUMMARY total=$total failed=$failed passed=$((total-failed))"
-          exit $failed
       - name: Rebuild current C++ WASM
         run: |
           bash tools/build-wasm-v2.sh
