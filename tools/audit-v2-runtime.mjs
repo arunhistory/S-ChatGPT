@@ -95,6 +95,7 @@ function settle(areaAtStart){
   const status=acquisition&255, role=(acquisition>>>8)&255, award=(acquisition>>>16)&65535;
   let payout=status===1?award:0;
   if(role===2)payout=Math.max(1,payout);
+  if(role===5&&status===1)payout=Math.max(3,payout);
   if(areaAtStart===3){
     const tier=u32(e.slot_v2_at_tier());
     const net=[6,6,9][tier]??6;
