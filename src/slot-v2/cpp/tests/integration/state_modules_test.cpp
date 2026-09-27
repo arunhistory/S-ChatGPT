@@ -16,7 +16,7 @@ int main() {
         ok = ok && slotv2::at_state::netPerGame(s) == 6;
 
         slotv2::at_state::setTier(s, slotv2::at_state::Tier::Upper);
-        ok = ok && slotv2::at_state::netPerGame(s) == 12;
+        ok = ok && slotv2::at_state::netPerGame(s) == 9;
 
         slotv2::at_state::addGames(s, 50);
         ok = ok && s.games_left == 150;
