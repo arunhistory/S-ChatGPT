@@ -34,7 +34,14 @@ int main() {
         const uint32_t lever = slotv2::runtime::lever(state);
         ok = ok
             && commandStatus(lever)
-                == slotv2::CommandStatus::RejectedPhase;
+                == slotv2::CommandStatus::Ok;
+        ok = ok
+            && state.machine.area == slotv2::machine_state::Area::Revival;
+        ok = ok && state.machine.revival.active;
+        ok = ok && !slotv2::pending_event::has(
+            state.pending,
+            slotv2::pending_event::ATWindowEmpty
+        );
     }
 
     {
