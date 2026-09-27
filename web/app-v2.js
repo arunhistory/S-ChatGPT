@@ -676,7 +676,10 @@
     const old=snapshot();
     const result=u32(e.slot_v2_lever()),status=(result>>>24)&255;
     if(status!==0){say("内部処理待ち","PUSHや状態確定が必要（状態コード "+status+"）");auto=false;setAutoLabel();refresh();return;}
-    startedArea=old.area;
+    // runtime::lever() may resolve AT-end -> Revival/UpperComeback before
+    // starting this spin. Settlement must use the area the spin actually
+    // started in, not the stale pre-lever area snapshot.
+    startedArea=u32(e.slot_v2_machine_area());
     startedSnapshot=old;
     currentRole=result&255;
     currentSpecial=(result>>>8)&255;
