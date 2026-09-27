@@ -175,6 +175,19 @@ uint32_t lever(State& state) {
     // absolute priority. Freeze every other state transition until it starts.
     state.chain_zone_step = {};
     state.chain_zone_release = {};
+
+    // A section cut can happen during BONUS payout. Special/UpperSpecial
+    // already have deferred AT routes; TierUp needs the same treatment.
+    if (pending_event::has(state.pending, pending_event::SectionTierUp)
+        && state.machine.area == machine_state::Area::AT
+        && state.machine.at.active) {
+        state.last_section_transition =
+            section_transition::applyPendingTierUp(
+                state.machine,
+                state.pending
+            );
+    }
+
     const bool entry_wait_before_transition = state.machine.entry_gate.active;
     const bool at_omen_before_transition =
         state.machine.area == machine_state::Area::AT
