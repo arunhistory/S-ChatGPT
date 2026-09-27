@@ -1,4 +1,4 @@
-# rerun 2
+# audit pass 3
 name: V2 full audit once
 
 on:
@@ -8,31 +8,36 @@ on:
       - ".github/workflows/v2-full-audit-once.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Run all V2 native tests
-        run: bash tools/test-v2.sh
-      - name: Rebuild V2 WASM
+      - name: Build every native target
         run: |
-          bash tools/build-wasm-v2.sh
-          cp src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
-      - name: Verify browser/WASM contract
-        run: node tools/verify-main-v2-ui.mjs
-      - name: Publish rebuilt WASM if changed
+          rm -rf .build-slot-v2
+          cmake -S . -B .build-slot-v2
+          cmake --build .build-slot-v2 -j2
+      - name: Run every V2 test and aggregate failures
+        shell: bash
         run: |
-          if git diff --quiet -- src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm; then
-            echo "WASM unchanged"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
-          git commit -m "build(v2): rebuild WASM after full audit"
-          git push
+          set +e
+          total=0
+          failed=0
+          for t in .build-slot-v2/slot_v2_*_test; do
+            [ -x "$t" ] || continue
+            total=$((total+1))
+            echo "===== RUN $(basename "$t") ====="
+            "$t"
+            rc=$?
+            if [ $rc -ne 0 ]; then
+              echo "AUDIT_FAIL $(basename "$t") rc=$rc"
+              failed=$((failed+1))
+            else
+              echo "AUDIT_OK $(basename "$t")"
+            fi
+          done
+          echo "AUDIT_SUMMARY total=$total failed=$failed passed=$((total-failed))"
+          exit $failed
