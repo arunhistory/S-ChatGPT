@@ -36,6 +36,31 @@ int main() {
     ok = ok && state.last_section_flow.preference_level == 3u;
     ok = ok && state.machine.stock.count == 0u;
 
+    // A TierUp earned while payout occurs outside the AT area (e.g. BONUS)
+    // must be consumed on the first lever after returning to AT.
+    {
+        slotv2::runtime::State deferred{};
+        slotv2::runtime::reset(deferred, 0x2401ULL);
+        slotv2::at_state::start(
+            deferred.machine.at,
+            slotv2::at_state::Tier::Lower
+        );
+        deferred.machine.area = slotv2::machine_state::Area::AT;
+        deferred.session.phase = slotv2::session::Phase::Complete;
+        slotv2::pending_event::add(
+            deferred.pending,
+            slotv2::pending_event::SectionTierUp
+        );
+        const auto lever = slotv2::runtime::lever(deferred);
+        ok = ok && ((lever >> 24) & 0xffu) == 0u;
+        ok = ok && deferred.machine.at.tier
+            == slotv2::at_state::Tier::Middle;
+        ok = ok && !slotv2::pending_event::has(
+            deferred.pending,
+            slotv2::pending_event::SectionTierUp
+        );
+    }
+
     if (!ok) {
         std::cerr << "slot_v2_runtime_accounting_test: FAILED\n";
         return 1;
