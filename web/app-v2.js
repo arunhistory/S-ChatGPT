@@ -490,6 +490,11 @@
       if(s.sectionTransition&(1<<2))add({eye:"SECTION",title:"特化ZONE",sub:"有利区間報酬",cls:"gold",banner:"特化ZONE",note:"有利区間ルーレット",bannerCls:"hot",log:"有利区間：特化ZONE"});
       if(s.sectionTransition&(1<<3))add({eye:"SECTION",title:"上位特化ZONE",sub:"有利区間報酬",cls:"freeze",banner:"上位特化ZONE",note:"有利区間ルーレット",bannerCls:"premium",log:"有利区間：上位特化"});
     }
+    // When a section cut happened during BONUS, TierUp is resolved only after
+    // returning to AT. The following BET can clear the packed transition
+    // result before presentation, so preserve the visible tier change itself.
+    if(!(s.sectionTransition&1)&&old.at&&s.at&&s.tier>old.tier)
+      add({role:"tier_up",eye:"SECTION",title:"AT 昇格",sub:"有利区間報酬",cls:"gold judge-result",banner:"AT昇格",note:"有利区間ルーレット",bannerCls:"hot",log:"有利区間：TIER UP"});
 
     // AT internal event itself.
     const atEvent=(s.atResolution>>>8)&255;
