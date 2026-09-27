@@ -155,10 +155,6 @@ SettingResetStatus resetWithSetting(
     state.normal_at_trigger = {};
     state.normal_hit_entry = {};
     state.entry_gate_transition = {};
-    // BONUS cycle/transition are one-game results for presentation and flow.
-    // Never carry the previous BONUS completion into the next AT/normal game.
-    state.bonus_cycle = {};
-    state.bonus_transition = {};
     state.revival_game = {};
     state.revival_finalize = {};
     state.latent = {};
