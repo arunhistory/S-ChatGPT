@@ -46,6 +46,34 @@ int main() {
 
         ok = ok && second.applied && second.tier_changed;
         ok = ok && machine.at.tier == slotv2::at_state::Tier::Upper;
+
+        // A TierUp earned while BONUS is active must stay pending, then be
+        // consumed exactly once when AT becomes the active area again.
+        machine.area = slotv2::machine_state::Area::Bonus;
+        slotv2::pending_event::add(
+            pending,
+            slotv2::pending_event::SectionTierUp
+        );
+        const auto deferred = slotv2::section_transition::applyPendingTierUp(
+            machine,
+            pending
+        );
+        ok = ok && !deferred.applied;
+        ok = ok && slotv2::pending_event::has(
+            pending,
+            slotv2::pending_event::SectionTierUp
+        );
+
+        machine.area = slotv2::machine_state::Area::AT;
+        const auto resolved = slotv2::section_transition::applyPendingTierUp(
+            machine,
+            pending
+        );
+        ok = ok && resolved.applied;
+        ok = ok && !slotv2::pending_event::has(
+            pending,
+            slotv2::pending_event::SectionTierUp
+        );
     }
 
     {
