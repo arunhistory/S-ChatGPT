@@ -18,6 +18,11 @@ struct Result {
 // ・TierUp: Lower->Middle / Middle->Upper
 // ・Special: 通常特化5Gを開始
 // ・UpperSpecial: pendingを残し、upper-special-transitionが90%継続特化へ接続
+Result applyPendingTierUp(
+    machine_state::State& machine,
+    pending_event::State& pending
+);
+
 Result apply(
     machine_state::State& machine,
     pending_event::State& pending,
