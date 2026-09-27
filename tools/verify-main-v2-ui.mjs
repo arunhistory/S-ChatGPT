@@ -122,4 +122,5 @@ assert.match(js,/role===5&&status===1/);
 assert.match(js,/bonus_net_gain\(Math\.max\(0,payout-3\)\)/);
 assert.match(js,/startedArea=u32\(e\.slot_v2_machine_area\(\)\)/);
 assert.match(js,/old\.area===3&&s\.area!==3&&s\.area!==4&&!s\.at/);
+assert.match(js,/old\.at&&s\.at&&s\.tier>old\.tier/);
 assert.match(js,/playPresentationEvents/);
