@@ -103,7 +103,7 @@ function settle(areaAtStart){
   }
   if(areaAtStart===2)payout=Math.max(payout,13);
   if(payout)e.slot_v2_payout(payout);
-  if(areaAtStart===2)e.slot_v2_bonus_net_gain(10);
+  if(areaAtStart===2)e.slot_v2_bonus_net_gain(Math.max(0,payout-3));
 }
 function run(seed,games){
   e.slot_v2_reset(seed>>>0,Math.floor(seed/0x100000000)>>>0);
