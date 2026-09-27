@@ -139,6 +139,7 @@ function run(seed,games){
       previousBonusEnd=false;
     }
 
+    const areaForSpin=u32(e.slot_v2_machine_area());
     e.slot_v2_bet(3);
     const role=packed&255, special=(packed>>>8)&255;
     if(role<stats.roles.length)stats.roles[role]++;
@@ -151,7 +152,7 @@ function run(seed,games){
     }else{
       assert.equal(phase,1,`accepted lever enters stoppable phase, got ${phase}`);
       commitReels(role,stats);
-      settle(areaBefore);
+      settle(areaForSpin);
     }
 
     const areaAfter=u32(e.slot_v2_machine_area());
