@@ -427,8 +427,8 @@
     const status=acquisition&255,role=(acquisition>>>8)&255,award=(acquisition>>>16)&65535;
     let payout=status===1?award:0;
     if(role===2)payout=Math.max(1,payout);
-    // Explicit prototype settlement adapter. Probabilities, AT state and
-    // bonus completion continue to come from the newly compiled native C++.
+    // Browser settlement adapter. All accounting and BONUS completion are
+    // committed through the production C++ runtime APIs.
     if(areaAtStart===3){
       const tier=e.slot_v2_at_tier();
       const net=[6,6,9][tier]||6;
@@ -437,8 +437,8 @@
     if(areaAtStart===2){
       payout=Math.max(payout,13); // 3 BET + 10 experimental BONUS net
     }
-    if(payout)e.slot_v2_test_payout(payout);
-    if(areaAtStart===2)e.slot_v2_test_bonus_gain(10);
+    if(payout)e.slot_v2_payout(payout);
+    if(areaAtStart===2)e.slot_v2_bonus_net_gain(10);
     credits+=payout;
     lastWin=payout;
     const current=Number(e.slot_v2_section_diff());diff.push(current);
@@ -679,7 +679,7 @@
     const gate=u32(e.slot_v2_entry_gate());
     const entryJudge=Boolean((gate&1)&&(gate&2));
     credits-=3;
-    e.slot_v2_test_bet(3);
+    e.slot_v2_bet(3);
     // Do not leak the internally fixed AT/BONUS destination before the third reel reveals it.
     $("roleResult").textContent=currentSpecial===3?"フリーズ":(entryJudge?"開始図柄":(ROLE[currentRole]||"?"));
     $("payoutResult").textContent="判定中";
@@ -787,7 +787,7 @@
       const instance=await WebAssembly.instantiate(binary,{});
       e=instance.instance.exports;memory=e.memory;
       for(const key of ["slot_v2_reset","slot_v2_preview_stop","slot_v2_normal_latent","slot_v2_debug_arm",
-        "slot_v2_debug_count","slot_v2_test_bet","slot_v2_test_payout","slot_v2_test_bonus_gain",
+        "slot_v2_debug_count","slot_v2_bet","slot_v2_payout","slot_v2_bonus_net_gain",
         "slot_v2_normal_flow","slot_v2_at_omen","slot_v2_special_zone_transition",
         "slot_v2_upper_special","slot_v2_chain_zone","slot_v2_at_stock_restart",
         "slot_v2_entry_gate_transition","slot_v2_at_cold",
