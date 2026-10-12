@@ -2,7 +2,7 @@
   "use strict";
   const $ = id => document.getElementById(id);
   let e = null, memory = null, engineReady = false, auto = false, timer = null;
-  let totalSpins = 0, startedArea = 0, currentRole = 0, currentSpecial = 0, lastWin = 0, credits = 1000;
+  let totalSpins = 0, currentRole = 0, currentSpecial = 0, lastWin = 0, credits = 1000;
   let presentationLock = false;
   const presentationTimers = [];
   const stopped = [true,true,true], centers = [0,0,0], history = [], diff = [0];
@@ -22,7 +22,7 @@
     "9":"内部Pendingフラグ","10":"通常モード","11":"潜伏経路"};
   const TRANSLATE = {
     "RoleFlag::None":"なし","RoleFlag::Miss":"ハズレ","RoleFlag::OneMedal":"1枚役",
-    "RoleFlag::Bell9":"9枚ベル（上・中・下段）","RoleFlag::Bell15":"15枚ベル（右上がり）","RoleFlag::ThreeMedal":"3枚役（右下がり）",
+    "RoleFlag::Bell9":"9枚ベル（中段有効ライン）","RoleFlag::Bell15":"15枚ベル（右上がり）","RoleFlag::ThreeMedal":"3枚役（右下がり）",
     "RoleFlag::Replay":"リプレイ","RoleFlag::WeakCherry":"弱チェリー",
     "RoleFlag::StrongCherry":"強チェリー","RoleFlag::Watermelon":"スイカ",
     "RoleFlag::WeakChance":"弱チャンス目","RoleFlag::StrongChance":"強チャンス目",
@@ -214,7 +214,11 @@
     say(title,"特殊直撃成立","premium");
     later(()=>{
       e.slot_v2_complete_special();
-      totalSpins++;stopped.fill(true);lastWin=0;
+      const payout=u32(e.slot_v2_accounting_settle());
+      if(payout===0xffffffff)throw Error("特殊直撃のC++精算を確定できませんでした");
+      credits+=payout;
+      lastWin=payout;
+      totalSpins++;stopped.fill(true);
       diff.push(Number(e.slot_v2_section_diff()));
       presentationLock=false;
       updateEvent(old,snapshot());
@@ -422,27 +426,11 @@
     if(currentRole===2&&reel===0)return 0;
     return 0;
   }
-  function settle(areaAtStart){
-    const acquisition=e.slot_v2_acquisition();
-    const status=acquisition&255,role=(acquisition>>>8)&255,award=(acquisition>>>16)&65535;
-    let payout=status===1?award:0;
-    if(role===2)payout=Math.max(1,payout);
-    // REPLAY has no medal payout in the reel judge, but it grants the next
-    // 3-medal play for free. Credit the current 3-medal BET back here so
-    // accounting/difference coins stay net-zero for a normal REPLAY.
-    if(role===5&&status===1)payout=Math.max(3,payout);
-    // Browser settlement adapter. All accounting and BONUS completion are
-    // committed through the production C++ runtime APIs.
-    if(areaAtStart===3){
-      const tier=e.slot_v2_at_tier();
-      const net=[6,6,9][tier]||6;
-      payout=Math.max(payout,3+net);
+  function settle(){
+    const payout=u32(e.slot_v2_accounting_settle());
+    if(payout===0xffffffff){
+      throw Error("C++精算を確定できませんでした");
     }
-    if(areaAtStart===2){
-      payout=Math.max(payout,13); // 3 BET + 10 experimental BONUS net
-    }
-    if(payout)e.slot_v2_payout(payout);
-    if(areaAtStart===2)e.slot_v2_bonus_net_gain(Math.max(0,payout-3));
     credits+=payout;
     lastWin=payout;
     const current=Number(e.slot_v2_section_diff());diff.push(current);
@@ -610,7 +598,7 @@
 
   function finish(){
     const previous=startedSnapshot||prev;
-    settle(startedArea);
+    settle();
     totalSpins++;
     stopped.fill(true);
     const s=snapshot();
@@ -681,17 +669,14 @@
     const old=snapshot();
     const result=u32(e.slot_v2_lever()),status=(result>>>24)&255;
     if(status!==0){say("内部処理待ち","PUSHや状態確定が必要（状態コード "+status+"）");auto=false;setAutoLabel();refresh();return;}
-    // runtime::lever() may resolve AT-end -> Revival/UpperComeback before
-    // starting this spin. Settlement must use the area the spin actually
-    // started in, not the stale pre-lever area snapshot.
-    startedArea=u32(e.slot_v2_machine_area());
     startedSnapshot=old;
     currentRole=result&255;
     currentSpecial=(result>>>8)&255;
     const gate=u32(e.slot_v2_entry_gate());
     const entryJudge=Boolean((gate&1)&&(gate&2));
-    credits-=3;
-    e.slot_v2_bet(3);
+    const chargedBet=u32(e.slot_v2_accounting_begin());
+    if(chargedBet===0xffffffff)throw Error("C++ BET精算を開始できませんでした");
+    credits-=chargedBet;
     // Do not leak the internally fixed AT/BONUS destination before the third reel reveals it.
     $("roleResult").textContent=currentSpecial===3?"フリーズ":(entryJudge?"開始図柄":(ROLE[currentRole]||"?"));
     $("payoutResult").textContent="判定中";
@@ -792,14 +777,14 @@
     window.addEventListener("resize",drawGraph);
     try{
       // Absolute to this HTML directory, not the legacy slot.wasm.
-      const response=await fetch("slot-v2.wasm?v=20260927-audit2",{cache:"no-store"});
+      const response=await fetch("slot-v2.wasm?v=20261013-accounting1",{cache:"no-store"});
       if(!response.ok)throw Error("新WASM取得失敗: HTTP "+response.status);
       const binary=await response.arrayBuffer();
       if(!WebAssembly.validate(binary))throw Error("取得したV2 WASMが不正");
       const instance=await WebAssembly.instantiate(binary,{});
       e=instance.instance.exports;memory=e.memory;
       for(const key of ["slot_v2_reset","slot_v2_preview_stop","slot_v2_normal_latent","slot_v2_debug_arm",
-        "slot_v2_debug_count","slot_v2_bet","slot_v2_payout","slot_v2_bonus_net_gain",
+        "slot_v2_debug_count","slot_v2_accounting_begin","slot_v2_accounting_settle",
         "slot_v2_normal_flow","slot_v2_at_omen","slot_v2_special_zone_transition",
         "slot_v2_upper_special","slot_v2_chain_zone","slot_v2_at_stock_restart",
         "slot_v2_entry_gate_transition","slot_v2_at_cold",
