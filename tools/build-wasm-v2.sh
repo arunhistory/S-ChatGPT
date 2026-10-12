@@ -13,6 +13,8 @@ mkdir -p "$WASM_DIR"
   -Wl,--export=slot_v2_reset \
   -Wl,--export=slot_v2_reset_setting \
   -Wl,--export=slot_v2_setting \
+  -Wl,--export=slot_v2_accounting_begin \
+  -Wl,--export=slot_v2_accounting_settle \
   -Wl,--export=slot_v2_lever \
   -Wl,--export=slot_v2_last_special \
   -Wl,--export=slot_v2_revival_finalize \
