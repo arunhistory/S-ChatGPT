@@ -56,12 +56,23 @@ enum class SettingResetStatus : uint8_t {
     NotImplemented = 2
 };
 
+struct SpinAccountingState {
+    bool open{false};
+    bool replay_free_next{false};
+    machine_state::Area area{machine_state::Area::Normal};
+    at_state::Tier tier{at_state::Tier::Lower};
+    int32_t bet{0};
+    int32_t payout{0};
+    int32_t net{0};
+};
+
 struct State {
     Rng rng{};
     session::State session{};
     acquisition::Result acquisition{};
     machine_state::State machine{};
     accounting::State accounting{};
+    SpinAccountingState spin_accounting{};
     point_ledger::State points{};
     bool special_committed{false};
     special_apply::Result last_special_apply{};
@@ -122,6 +133,12 @@ SettingResetStatus resetWithSetting(
     uint8_t setting
 );
 uint32_t currentSetting(const State& state);
+
+// C++ owns all per-game coin accounting. The browser only opens settlement
+// after an accepted lever and reads the charged bet / resulting payout.
+uint32_t beginSpinAccounting(State& state);
+uint32_t settleSpinAccounting(State& state);
+
 uint32_t lever(State& state);
 uint32_t stop(State& state, uint32_t reel, uint32_t pressed_position);
 uint32_t previewStop(const State& state, uint32_t reel, uint32_t pressed_position);
