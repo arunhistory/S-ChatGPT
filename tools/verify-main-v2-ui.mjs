@@ -15,7 +15,7 @@ const e=instance.exports;
 for(const key of ["slot_v2_reset","slot_v2_lever","slot_v2_stop","slot_v2_preview_stop","slot_v2_phase",
    "slot_v2_machine_area","slot_v2_normal_latent","slot_v2_entry_gate",
    "slot_v2_debug_arm","slot_v2_debug_count","slot_v2_debug_name_ptr",
-   "slot_v2_bet","slot_v2_payout","slot_v2_bonus_net_gain",
+   "slot_v2_accounting_begin","slot_v2_accounting_settle",
    "slot_v2_at_table",
   "slot_v2_normal_flow","slot_v2_at_omen","slot_v2_special_zone_transition",
   "slot_v2_upper_special","slot_v2_chain_zone","slot_v2_at_stock_restart",
@@ -45,9 +45,16 @@ function spin(){
          " result="+result+" after="+after+" area="+e.slot_v2_machine_area()+
          " pending="+e.slot_v2_pending_events());
    }
-   if(after===2){e.slot_v2_complete_special();return}
+   const bet=e.slot_v2_accounting_begin()>>>0;
+   assert.notEqual(bet,0xffffffff,"C++ accounting begin");
+   if(after===2){
+       e.slot_v2_complete_special();
+       assert.notEqual(e.slot_v2_accounting_settle()>>>0,0xffffffff,"special settlement");
+       return;
+   }
    for(let reel=0;reel<3;reel++)commitPreviewedStop(reel,[0,5,6]);
    assert.equal(e.slot_v2_phase(),3,"completed after three stops");
+   assert.notEqual(e.slot_v2_accounting_settle()>>>0,0xffffffff,"spin settlement");
 }
 spin();
 const first=e.slot_v2_normal_latent();
@@ -118,9 +125,11 @@ assert.match(js,/有利区間 CROSS/);
 assert.match(js,/slot_v2_preview_stop/);
 assert.match(js,/commit exactly one real STOP/);
 assert.match(js,/\[3,4,5,12,13,14\]\.includes\(currentRole\)/);
-assert.match(js,/role===5&&status===1/);
-assert.match(js,/bonus_net_gain\(Math\.max\(0,payout-3\)\)/);
-assert.match(js,/startedArea=u32\(e\.slot_v2_machine_area\(\)\)/);
+assert.match(js,/slot_v2_accounting_begin/);
+assert.match(js,/slot_v2_accounting_settle/);
+assert.doesNotMatch(js,/experimental BONUS net/);
+assert.doesNotMatch(js,/slot_v2_bonus_net_gain/);
+assert.doesNotMatch(js,/startedArea/);
 assert.match(js,/old\.area===3&&s\.area!==3&&s\.area!==4&&!s\.at/);
 assert.match(js,/old\.at&&s\.at&&s\.tier>old\.tier/);
 assert.match(js,/playPresentationEvents/);
