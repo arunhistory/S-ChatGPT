@@ -61,6 +61,70 @@ int main() {
         );
     }
 
+    // Browser-facing per-spin accounting is fully decided by C++.
+    {
+        slotv2::runtime::State s{};
+        slotv2::runtime::reset(s, 0x2410ULL);
+
+        // Normal one-medal: 3 BET -> 1 payout.
+        s.session.phase = slotv2::session::Phase::Stopping;
+        ok = ok && slotv2::runtime::beginSpinAccounting(s) == 3u;
+        s.session.phase = slotv2::session::Phase::Complete;
+        s.acquisition = {
+            slotv2::RoleFlag::OneMedal,
+            slotv2::acquisition::Status::NoPayoutRole,
+            0
+        };
+        ok = ok && slotv2::runtime::settleSpinAccounting(s) == 1u;
+        ok = ok && s.accounting.total_diff == -2;
+
+        // Replay makes the next game free instead of inventing a medal payout.
+        s.session.phase = slotv2::session::Phase::Stopping;
+        ok = ok && slotv2::runtime::beginSpinAccounting(s) == 3u;
+        s.session.phase = slotv2::session::Phase::Complete;
+        s.acquisition = {
+            slotv2::RoleFlag::Replay,
+            slotv2::acquisition::Status::Acquired,
+            0
+        };
+        ok = ok && slotv2::runtime::settleSpinAccounting(s) == 0u;
+        s.session.phase = slotv2::session::Phase::Stopping;
+        ok = ok && slotv2::runtime::beginSpinAccounting(s) == 0u;
+
+        // Upper AT guarantees net +9 for the game: free replay BET -> payout 9.
+        s.spin_accounting.area = slotv2::machine_state::Area::AT;
+        s.spin_accounting.tier = slotv2::at_state::Tier::Upper;
+        s.session.phase = slotv2::session::Phase::Complete;
+        s.acquisition = {
+            slotv2::RoleFlag::Miss,
+            slotv2::acquisition::Status::NoPayoutRole,
+            0
+        };
+        ok = ok && slotv2::runtime::settleSpinAccounting(s) == 9u;
+    }
+
+    {
+        slotv2::runtime::State s{};
+        slotv2::runtime::reset(s, 0x2411ULL);
+        slotv2::bonus_transition::start(
+            s.machine,
+            slotv2::bonus_state::Kind::Regular,
+            slotv2::machine_state::Area::Normal
+        );
+        s.session.phase = slotv2::session::Phase::Stopping;
+        ok = ok && slotv2::runtime::beginSpinAccounting(s) == 3u;
+        s.session.phase = slotv2::session::Phase::Complete;
+        s.acquisition = {
+            slotv2::RoleFlag::Miss,
+            slotv2::acquisition::Status::NoPayoutRole,
+            0
+        };
+        ok = ok && slotv2::runtime::settleSpinAccounting(s) == 9u;
+        ok = ok && s.machine.bonus.medals_left == 44;
+        ok = ok && s.bonus_transition.outcome
+            == slotv2::bonus_transition::Outcome::None;
+    }
+
     if (!ok) {
         std::cerr << "slot_v2_runtime_accounting_test: FAILED\n";
         return 1;
