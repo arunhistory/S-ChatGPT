@@ -69,11 +69,9 @@ int main() {
             stopAll(state);
 
             ok = ok && state.special_zone_transition.outcome
-                == slotv2::special_zone_transition::Outcome::BonusQueued;
-            ok = ok && state.machine.entry_gate.active;
-            ok = ok && state.machine.entry_gate.kind
-                == slotv2::entry_gate::Kind::Bonus;
-            ok = ok && state.machine.entry_gate.bonus_return_to_at;
+                == slotv2::special_zone_transition::Outcome::BonusOmenStarted;
+            ok = ok && state.machine.at_omen.active;
+            ok = ok && !state.machine.entry_gate.active;
             ok = ok && !state.machine.bonus.active;
             ok = ok && !slotv2::pending_event::has(
                 state.pending,
