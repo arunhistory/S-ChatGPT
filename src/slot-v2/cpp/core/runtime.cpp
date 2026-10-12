@@ -112,6 +112,7 @@ SettingResetStatus resetWithSetting(
     state.acquisition = {};
     machine_state::reset(state.machine);
     state.accounting = {};
+    state.spin_accounting = {};
     state.points = {};
     state.special_committed = false;
     state.last_special_apply = {};
@@ -168,6 +169,94 @@ SettingResetStatus resetWithSetting(
 
 uint32_t currentSetting(const State& state) {
     return static_cast<uint32_t>(state.setting);
+}
+
+uint32_t beginSpinAccounting(State& state) {
+    if (state.spin_accounting.open) {
+        return static_cast<uint32_t>(state.spin_accounting.bet);
+    }
+
+    if (state.session.phase != session::Phase::Stopping
+        && state.session.phase != session::Phase::SpecialPending) {
+        return 0xffffffffu;
+    }
+
+    const bool free_replay = state.spin_accounting.replay_free_next;
+    state.spin_accounting.replay_free_next = false;
+    state.spin_accounting.open = true;
+    state.spin_accounting.area = state.machine.area;
+    state.spin_accounting.tier = state.machine.at.tier;
+    state.spin_accounting.bet = free_replay ? 0 : 3;
+    state.spin_accounting.payout = 0;
+    state.spin_accounting.net = -state.spin_accounting.bet;
+
+    // A zero debit is deliberate on replay: it also clears the previous
+    // section-flow presentation result without inventing a coin movement.
+    (void)applyBet(state, state.spin_accounting.bet);
+    return static_cast<uint32_t>(state.spin_accounting.bet);
+}
+
+uint32_t settleSpinAccounting(State& state) {
+    if (!state.spin_accounting.open) {
+        return static_cast<uint32_t>(
+            state.spin_accounting.payout < 0 ? 0 : state.spin_accounting.payout
+        );
+    }
+
+    if (state.session.phase != session::Phase::Complete) {
+        return 0xffffffffu;
+    }
+
+    int payout = 0;
+    const auto role = state.acquisition.internal_role;
+
+    if (role == RoleFlag::OneMedal) {
+        payout = 1;
+    } else if (state.acquisition.status == acquisition::Status::Acquired
+        && state.acquisition.medals > 0) {
+        payout = state.acquisition.medals;
+    }
+
+    const bool replay_acquired =
+        role == RoleFlag::Replay
+        && state.acquisition.status == acquisition::Status::Acquired;
+
+    if (state.spin_accounting.area == machine_state::Area::AT) {
+        int at_net = at_state::kLowerNetPerGame;
+        switch (state.spin_accounting.tier) {
+            case at_state::Tier::Lower:
+                at_net = at_state::kLowerNetPerGame;
+                break;
+            case at_state::Tier::Middle:
+                at_net = at_state::kMiddleNetPerGame;
+                break;
+            case at_state::Tier::Upper:
+                at_net = at_state::kUpperNetPerGame;
+                break;
+        }
+        const int target = state.spin_accounting.bet + at_net;
+        if (payout < target) payout = target;
+    } else if (state.spin_accounting.area == machine_state::Area::Bonus) {
+        // Regular/Episode BONUS are both about +6 medals per game.
+        const int target = state.spin_accounting.bet + 6;
+        if (payout < target) payout = target;
+    }
+
+    if (payout > 0) {
+        (void)applyPayout(state, payout);
+    }
+
+    const int net = payout - state.spin_accounting.bet;
+    state.spin_accounting.payout = payout;
+    state.spin_accounting.net = net;
+    state.spin_accounting.replay_free_next = replay_acquired;
+    state.spin_accounting.open = false;
+
+    if (state.spin_accounting.area == machine_state::Area::Bonus) {
+        (void)applyBonusNetGain(state, net > 0 ? net : 0);
+    }
+
+    return static_cast<uint32_t>(payout);
 }
 
 uint32_t lever(State& state) {
