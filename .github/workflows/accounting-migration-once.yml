@@ -1,0 +1,44 @@
+name: Accounting migration verification
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/accounting-migration-once.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build focused native tests
+        run: |
+          rm -rf .build-slot-v2
+          cmake -S . -B .build-slot-v2
+          cmake --build .build-slot-v2 --target             slot_v2_runtime_accounting_test             slot_v2_runtime_bonus_test             slot_v2_stop_test
+      - name: Run focused native tests
+        run: |
+          ./.build-slot-v2/slot_v2_runtime_accounting_test
+          ./.build-slot-v2/slot_v2_runtime_bonus_test
+          ./.build-slot-v2/slot_v2_stop_test
+      - name: Build and verify WASM
+        run: |
+          bash tools/build-wasm-v2.sh
+          cp src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
+          node tools/verify-main-v2-ui.mjs
+      - name: Publish rebuilt WASM
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm; then
+            echo "WASM unchanged"
+            exit 0
+          fi
+          git add src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
+          git commit -m "build(v2): rebuild WASM for C++ accounting"
+          git push
