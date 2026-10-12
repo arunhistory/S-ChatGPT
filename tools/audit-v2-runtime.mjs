@@ -13,7 +13,7 @@ const required=[
   "slot_v2_lower_fall_challenge","slot_v2_lower_fall_push",
   "slot_v2_bonus_state","slot_v2_bonus_cycle","slot_v2_bonus_transition",
   "slot_v2_at_active","slot_v2_at_tier","slot_v2_section_diff",
-  "slot_v2_bet","slot_v2_payout","slot_v2_bonus_net_gain","slot_v2_complete_special"
+  "slot_v2_accounting_begin","slot_v2_accounting_settle","slot_v2_complete_special"
 ];
 for(const k of required)assert.equal(typeof e[k],"function","missing "+k);
 
@@ -90,20 +90,10 @@ function commitReels(role,stats){
   }
   stats.stoppedSpins++;
 }
-function settle(areaAtStart){
-  const acquisition=u32(e.slot_v2_acquisition());
-  const status=acquisition&255, role=(acquisition>>>8)&255, award=(acquisition>>>16)&65535;
-  let payout=status===1?award:0;
-  if(role===2)payout=Math.max(1,payout);
-  if(role===5&&status===1)payout=Math.max(3,payout);
-  if(areaAtStart===3){
-    const tier=u32(e.slot_v2_at_tier());
-    const net=[6,6,9][tier]??6;
-    payout=Math.max(payout,3+net);
-  }
-  if(areaAtStart===2)payout=Math.max(payout,13);
-  if(payout)e.slot_v2_payout(payout);
-  if(areaAtStart===2)e.slot_v2_bonus_net_gain(Math.max(0,payout-3));
+function settle(){
+  const payout=u32(e.slot_v2_accounting_settle());
+  assert.notEqual(payout,0xffffffff,"C++ settlement completes");
+  return payout;
 }
 function run(seed,games){
   e.slot_v2_reset(seed>>>0,Math.floor(seed/0x100000000)>>>0);
@@ -140,7 +130,8 @@ function run(seed,games){
     }
 
     const areaForSpin=u32(e.slot_v2_machine_area());
-    e.slot_v2_bet(3);
+    const charged=u32(e.slot_v2_accounting_begin());
+    assert.notEqual(charged,0xffffffff,"C++ accounting begins");
     const role=packed&255, special=(packed>>>8)&255;
     if(role<stats.roles.length)stats.roles[role]++;
     const phase=u32(e.slot_v2_phase());
@@ -148,11 +139,12 @@ function run(seed,games){
     if(phase===2){
       e.slot_v2_complete_special();
       assert.equal(u32(e.slot_v2_phase()),3,"direct special completes");
+      settle();
       stats.directSpecial++;
     }else{
       assert.equal(phase,1,`accepted lever enters stoppable phase, got ${phase}`);
       commitReels(role,stats);
-      settle(areaForSpin);
+      settle();
     }
 
     const areaAfter=u32(e.slot_v2_machine_area());
