@@ -46,6 +46,16 @@ uint32_t slot_v2_setting() {
 }
 
 __attribute__((visibility("default")))
+uint32_t slot_v2_accounting_begin() {
+    return slotv2::runtime::beginSpinAccounting(g_runtime);
+}
+
+__attribute__((visibility("default")))
+uint32_t slot_v2_accounting_settle() {
+    return slotv2::runtime::settleSpinAccounting(g_runtime);
+}
+
+__attribute__((visibility("default")))
 uint32_t slot_v2_lever() {
     return slotv2::runtime::lever(g_runtime);
 }
