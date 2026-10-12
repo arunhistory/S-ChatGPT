@@ -1,5 +1,4 @@
-# rerun 2
-name: Accounting migration verification
+name: V2 full verification
 
 on:
   push:
@@ -17,21 +16,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Build focused native tests
-        run: |
-          rm -rf .build-slot-v2
-          cmake -S . -B .build-slot-v2
-          cmake --build .build-slot-v2 --target             slot_v2_runtime_accounting_test             slot_v2_runtime_bonus_test             slot_v2_stop_test
-      - name: Run focused native tests
-        run: |
-          ./.build-slot-v2/slot_v2_runtime_accounting_test
-          ./.build-slot-v2/slot_v2_runtime_bonus_test
-          ./.build-slot-v2/slot_v2_stop_test
-      - name: Build and verify WASM
+      - name: Run all 65 native V2 tests
+        run: bash tools/test-v2.sh
+      - name: Build V2 WASM
         run: |
           bash tools/build-wasm-v2.sh
           cp src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
-          node tools/verify-main-v2-ui.mjs
+      - name: Verify browser contract
+        run: node tools/verify-main-v2-ui.mjs
+      - name: Run 100k-game WASM audit
+        run: node tools/audit-v2-runtime.mjs
       - name: Publish rebuilt WASM
         run: |
           git config user.name "github-actions[bot]"
@@ -41,5 +35,5 @@ jobs:
             exit 0
           fi
           git add src/slot-v2/wasm/slot-v2.wasm web/slot-v2.wasm
-          git commit -m "build(v2): rebuild WASM for C++ accounting"
+          git commit -m "build(v2): publish fully verified WASM"
           git push
