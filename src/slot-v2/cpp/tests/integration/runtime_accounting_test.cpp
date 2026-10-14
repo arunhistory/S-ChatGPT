@@ -125,6 +125,32 @@ int main() {
             == slotv2::bonus_transition::Outcome::None;
     }
 
+    // Reel-less special direct must never inherit the previous game's
+    // acquisition/payout.
+    {
+        slotv2::runtime::State s{};
+        slotv2::runtime::reset(s, 0x2412ULL);
+        s.session.phase = slotv2::session::Phase::Complete;
+        s.acquisition = {
+            slotv2::RoleFlag::Bell15,
+            slotv2::acquisition::Status::Acquired,
+            15
+        };
+        ok = ok && slotv2::runtime::armDebugFlag(
+            s,
+            slotv2::debug::Channel::Special,
+            static_cast<uint32_t>(slotv2::SpecialHit::UpperAT)
+        );
+        const auto packed = slotv2::runtime::lever(s);
+        ok = ok && ((packed >> 8) & 0xffu)
+            == static_cast<uint32_t>(slotv2::SpecialHit::UpperAT);
+        ok = ok && s.acquisition.status
+            == slotv2::acquisition::Status::NotReady;
+        ok = ok && slotv2::runtime::beginSpinAccounting(s) == 3u;
+        (void)slotv2::runtime::completeSpecial(s);
+        ok = ok && slotv2::runtime::settleSpinAccounting(s) == 0u;
+    }
+
     if (!ok) {
         std::cerr << "slot_v2_runtime_accounting_test: FAILED\n";
         return 1;
