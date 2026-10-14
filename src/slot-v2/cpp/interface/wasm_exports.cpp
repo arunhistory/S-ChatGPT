@@ -392,20 +392,6 @@ uint32_t slot_v2_last_role() {
     return slotv2::runtime::lastRole(g_runtime);
 }
 
-// Accounting belongs to the native engine. The browser sends the bet and
-// the measured, accepted acquisition; it never modifies the game lottery.
-__attribute__((visibility("default")))
-void slot_v2_bet(uint32_t medals) {
-    if (medals <= 15u) (void)slotv2::runtime::applyBet(g_runtime, static_cast<int>(medals));
-}
-__attribute__((visibility("default")))
-void slot_v2_payout(uint32_t medals) {
-    if (medals <= 1000u) (void)slotv2::runtime::applyPayout(g_runtime, static_cast<int>(medals));
-}
-__attribute__((visibility("default")))
-void slot_v2_bonus_net_gain(int32_t net) {
-    if (net >= -100 && net <= 1000) (void)slotv2::runtime::applyBonusNetGain(g_runtime, net);
-}
 __attribute__((visibility("default")))
 int64_t slot_v2_total_diff() {
     return g_runtime.accounting.total_diff;
@@ -504,31 +490,5 @@ uint32_t slot_v2_debug_name_ptr(uint32_t index) {
         reinterpret_cast<uintptr_t>(slotv2::debug::kCatalogue[index].name)
     );
 }
-
-// Browser test adapter: explicit accounting, not silent/automatic C++ spins.
-// The frontend must call these once per completed spin.
-__attribute__((visibility("default")))
-int64_t slot_v2_test_bet(uint32_t medals) {
-    if (medals > 3u) return slotv2::runtime::sectionDiff(g_runtime);
-    return slotv2::runtime::applyBet(g_runtime, static_cast<int>(medals)).total_diff;
-}
-
-__attribute__((visibility("default")))
-int64_t slot_v2_test_payout(uint32_t medals) {
-    if (medals > 100u) return slotv2::runtime::sectionDiff(g_runtime);
-    return slotv2::runtime::applyPayout(g_runtime, static_cast<int>(medals)).total_diff;
-}
-
-// BONUS award targets 50/80 by existing C++ engine. This adapter
-// specifies the net-gain amount from the browser's test payout model.
-__attribute__((visibility("default")))
-uint32_t slot_v2_test_bonus_gain(uint32_t net_medals) {
-    if (net_medals > 100u) return 0u;
-    return static_cast<uint32_t>(
-        slotv2::runtime::applyBonusNetGain(g_runtime, static_cast<int>(net_medals)).outcome
-    );
-}
-
-
 
 }
