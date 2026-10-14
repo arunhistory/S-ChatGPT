@@ -145,6 +145,11 @@ SettingResetStatus resetWithSetting(
     state.bonus_cycle = {};
     state.bonus_transition = {};
     state.upper_comeback_cycle = {};
+    // Acquisition belongs to exactly one completed reel game. Clear it as
+    // soon as a new lever is accepted so reel-less special-direct games can
+    // never reuse the previous game's payout result.
+    state.acquisition = {};
+
     state.at_single_transition = {};
     state.at_omen_game = {};
     state.at_omen_finalize = at_omen::FinalizeOutcome::None;
