@@ -36,6 +36,30 @@ int main() {
     ok = ok && state.revival_game.games_before == 5u;
     ok = ok && state.revival_game.games_after == 4u;
 
+    // The five-game revival also runs the ordinary Normal "hit" frame
+    // independently from role-based revival. CZ/direct-AT/special-direct are
+    // excluded. Search deterministic seeds until the hidden 1/1700 frame hits.
+    bool saw_hidden_hit = false;
+    for (uint64_t seed = 1; seed <= 100000 && !saw_hidden_hit; ++seed) {
+        slotv2::runtime::State probe{};
+        slotv2::runtime::reset(probe, seed);
+        slotv2::runtime::startRevivalChallenge(
+            probe,
+            slotv2::at_state::Tier::Lower
+        );
+        probe.session.phase = slotv2::session::Phase::Complete;
+
+        const uint32_t packed = slotv2::runtime::lever(probe);
+        ok = ok && ((packed >> 8) & 0xffu) == 0u; // no special direct
+        if (probe.machine.revival.kicked_normal_hit) {
+            saw_hidden_hit = true;
+            ok = ok && probe.machine.area == slotv2::machine_state::Area::Revival;
+            ok = ok && !probe.machine.at.active;
+            ok = ok && !probe.machine.cz.active;
+        }
+    }
+    ok = ok && saw_hidden_hit;
+
     if (!ok) {
         std::cerr << "slot_v2_runtime_revival_test: FAILED\n";
         return 1;
