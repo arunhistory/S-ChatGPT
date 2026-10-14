@@ -499,6 +499,19 @@ uint32_t lever(State& state) {
         state.machine.area == machine_state::Area::Revival
         && state.machine.revival.active;
 
+    // Revival uses two independent lotteries each game:
+    // 1) normal-role appearance -> revival_lottery
+    // 2) the ordinary Normal "hit" frame only (setting 6: about 1/1700).
+    // CZ, direct AT and all special direct hits are separate systems and are
+    // intentionally not drawn during the five-game revival challenge.
+    if (revival_game_active) {
+        const auto raw = setting_profile::normalRaw(state.setting);
+        if (raw.bonus_threshold_27 > 0u
+            && state.rng.next27() < raw.bonus_threshold_27) {
+            recordRevivalHiddenNormalHit(state);
+        }
+    }
+
     const bool at_omen_game_active =
         state.machine.area == machine_state::Area::AT
         && state.machine.at.active
@@ -552,7 +565,8 @@ uint32_t lever(State& state) {
         result.main_lottery_ran = false;
         result.entry_wait = false;
     } else {
-        // 特殊直撃は通常時だけ。復活チャレンジは通常小役だけを同率で抽選する。
+        // 特殊直撃は通常時だけ。復活チャレンジでは通常小役を本抽選し、
+        // 通常当たり1/1700だけは上で独立した裏抽選として記録する。
         const bool allow_special =
             state.machine.area == machine_state::Area::Normal
             && !revival_game_active
