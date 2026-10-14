@@ -20,6 +20,10 @@ for(const key of ["slot_v2_reset","slot_v2_lever","slot_v2_stop","slot_v2_previe
   "slot_v2_normal_flow","slot_v2_at_omen","slot_v2_special_zone_transition",
   "slot_v2_upper_special","slot_v2_chain_zone","slot_v2_at_stock_restart",
   "slot_v2_entry_gate_transition","slot_v2_at_cold"])assert.equal(typeof e[key],"function",key);
+for (const legacy of [
+  "slot_v2_bet","slot_v2_payout","slot_v2_bonus_net_gain",
+  "slot_v2_test_bet","slot_v2_test_payout","slot_v2_test_bonus_gain"
+]) assert.equal(e[legacy],undefined,"legacy accounting export removed: "+legacy);
 assert.equal(e.slot_v2_debug_count(),71);
 e.slot_v2_reset(0x12341234,0);
 assert.equal(e.slot_v2_setting(),6);
